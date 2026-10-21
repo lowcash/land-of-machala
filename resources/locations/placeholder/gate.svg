@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#1e2022;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#1e2022;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb2bf"/><stop offset="1" stop-color="#d4d9d6"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<g fill="#eef0ee" class="o" opacity=".9"><path d="M120 150q20-40 70-30 30-30 80 0 50-5 50 30z"/><path d="M1240 110q20-40 70-30 30-30 80 0 50-5 50 30z"/></g></g>
+<g id="wall-left">
+<rect class="o" x="-10" y="290" width="470" height="470" fill="#8d8e8a"/>
+<g fill="#8d8e8a" class="o"><rect x="-10" y="250" width="80" height="50"/><rect x="110" y="250" width="80" height="50"/><rect x="230" y="250" width="80" height="50"/><rect x="350" y="250" width="110" height="50"/></g>
+<g class="t" opacity=".6"><path d="M-10 380h470M-10 470h470M-10 560h470M-10 650h470M80 290v90M240 290v90M400 290v90M160 380v90M320 380v90M40 470v90M200 470v90M360 470v90M120 560v90M280 560v90M420 560v90"/></g>
+</g>
+<g id="wall-right">
+<rect class="o" x="1140" y="290" width="470" height="470" fill="#8d8e8a"/>
+<g fill="#8d8e8a" class="o"><rect x="1140" y="250" width="110" height="50"/><rect x="1290" y="250" width="80" height="50"/><rect x="1410" y="250" width="80" height="50"/><rect x="1530" y="250" width="80" height="50"/></g>
+<g class="t" opacity=".6"><path d="M1140 380h470M1140 470h470M1140 560h470M1140 650h470M1200 290v90M1360 290v90M1520 290v90M1280 380v90M1440 380v90M1200 470v90M1360 470v90M1520 470v90M1280 560v90M1440 560v90"/></g>
+</g>
+<g id="gate-towers">
+<rect class="o" x="400" y="150" width="200" height="620" fill="#a5a6a1"/>
+<rect class="o" x="1000" y="150" width="200" height="620" fill="#a5a6a1"/>
+<g class="o" fill="#a5a6a1"><rect x="390" y="100" width="46" height="60"/><rect x="477" y="100" width="46" height="60"/><rect x="564" y="100" width="46" height="60"/><rect x="990" y="100" width="46" height="60"/><rect x="1077" y="100" width="46" height="60"/><rect x="1164" y="100" width="46" height="60"/></g>
+<g class="t" opacity=".6"><path d="M400 250h200M400 350h200M400 450h200M400 550h200M1000 250h200M1000 350h200M1000 450h200M1000 550h200M480 150v100M540 250v100M470 350v100M540 450v100M1070 150v100M1130 250v100M1060 350v100M1130 450v100"/></g>
+<rect class="o" x="450" y="210" width="26" height="70" rx="12" fill="#2f3335"/><rect class="o" x="1124" y="210" width="26" height="70" rx="12" fill="#2f3335"/>
+</g>
+<g id="arch">
+<path class="o" d="M520 770V430q0-170 280-170t280 170v340z" fill="#c3c4be"/>
+<path class="o" d="M590 770V450q0-120 210-120t210 120v320z" fill="#2c3033"/>
+<g id="keystones" class="o" fill="#d2d3cd"><path d="M770 258h60l10 60h-80z"/><path d="M590 450l-70-20 6-40 70 20z"/><path d="M1010 450l70-20-6-40-70 20z"/></g>
+</g>
+<g id="portcullis">
+<g class="o" fill="none" stroke="#3a3f43" stroke-width="12"><path d="M640 770V400M720 770V360M800 770V345M880 770V360M960 770V400"/></g>
+<g class="o" fill="none" stroke="#3a3f43" stroke-width="10"><path d="M600 450h400M600 540h400M600 630h400M600 720h400"/></g>
+<g fill="#56606a"><path d="M634 770l6 30 6-30zM714 770l6 30 6-30zM794 770l6 30 6-30zM874 770l6 30 6-30zM954 770l6 30 6-30z"/></g>
+</g>
+<g id="ground">
+<rect y="760" width="1600" height="140" fill="#9a9a90"/>
+<rect class="o" x="-10" y="756" width="1620" height="10" fill="#6e6e66"/>
+<g class="t" opacity=".5"><path d="M0 820h1600M0 870h1600M200 766l-60 134M500 766l-20 134M800 766v134M1100 766l20 134M1400 766l60 134"/></g>
+</g>
+<g id="crate">
+<rect class="o" x="1230" y="650" width="190" height="130" fill="#8a6a3f"/>
+<path class="t" d="M1230 650l190 130M1420 650l-190 130M1230 715h190"/>
+<rect class="o" x="1260" y="600" width="120" height="60" fill="#9a7a4a"/><path class="t" d="M1260 630h120"/>
+</g>
+<g id="grass"><g fill="#6f8a55" class="o"><path d="M250 770q10-40 20 0 10-30 20 0z"/><path d="M1090 770q10-40 20 0 10-30 20 0z"/></g></g>
+</svg>

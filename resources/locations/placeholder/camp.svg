@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2a140c;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a140c;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8502e"/><stop offset="1" stop-color="#f0a85a"/></linearGradient>
+<radialGradient id="fire" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd36a" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a2a" stop-opacity="0"/></radialGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<circle cx="260" cy="210" r="90" fill="#ffd98a" opacity=".9"/></g>
+<g id="hills-far">
+<path class="o" d="M-10 520q200-230 420-120t380-80q220-170 420-20t420-90v420h-1640z" fill="#8a4a30"/>
+</g>
+<g id="hills-near">
+<path class="o" d="M-10 640q250-190 520-80t520-40q240-120 580 30v350h-1620z" fill="#6b3a22"/>
+<g class="t" opacity=".5"><path d="M180 600q40-30 80 0M1300 560q40-30 80 0M900 580q30-24 60 0"/></g>
+</g>
+<g id="big-shape-tarp">
+<path class="o" d="M450 700q-30-200 130-300 120-70 250-10 150 80 120 310z" fill="#a8452a"/>
+<path class="o" d="M450 700q-30-200 130-300l60 300z" fill="#8a3820"/>
+<g class="t"><path d="M640 400l-30 300M760 392l20 308"/></g>
+<g class="o" fill="#d9b24a"><circle cx="580" cy="440" r="8"/><circle cx="740" cy="410" r="8"/><circle cx="860" cy="440" r="8"/></g>
+<path class="t" d="M470 640l-70 60M950 650l60 50"/>
+<path class="o" d="M400 700l20-30 20 30zM1000 700l20-30 20 30z" fill="#6b3a22"/>
+</g>
+<g id="campfire">
+<ellipse cx="1190" cy="700" rx="230" ry="110" fill="url(#fire)"/>
+<g class="o" fill="#4a2a18"><rect x="1100" y="720" width="180" height="26" rx="12" transform="rotate(-8 1190 733)"/><rect x="1100" y="720" width="180" height="26" rx="12" transform="rotate(8 1190 733)"/></g>
+<path class="o" d="M1150 730q-50-10-30-90 30 20 40-30 50 40 20 90 30-20 40-70 50 60 10 130z" fill="#ff7a1f"/>
+<path d="M1170 730q-30-8-10-60 20 10 25-20 30 30 10 80z" fill="#ffd45e"/>
+<g class="o" fill="#8d8478"><circle cx="1090" cy="760" r="20"/><circle cx="1130" cy="772" r="18"/><circle cx="1250" cy="772" r="18"/><circle cx="1292" cy="760" r="20"/></g>
+</g>
+<g id="log-seat"><rect class="o" x="1340" y="720" width="150" height="46" rx="20" fill="#7a4a2a"/><ellipse class="o" cx="1490" cy="743" rx="12" ry="23" fill="#c89860"/></g>
+<g id="crate-sack">
+<rect class="o" x="150" y="700" width="130" height="100" fill="#8a5a30"/><path class="t" d="M150 700l130 100M280 700l-130 100"/>
+<path class="o" d="M300 800q-20-60 30-90 50 30 30 90z" fill="#c9a86a"/>
+</g>
+<g id="ground"><path class="o" d="M-10 810q500-40 1000-10t620 0v100h-1620z" fill="#5a3018"/></g>
+</svg>

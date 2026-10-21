@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<style>.o{stroke:#2a1a10;stroke-width:5;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a1a10;stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<path class="o" d="M30 238q10-30 52-36 46-8 92 0 42 6 52 36z" fill="#6a5a3a"/>
+<path class="o" d="M112 206V58h32v148z" fill="#a8723a"/>
+<path class="o" d="M64 100h128v30H64z" fill="#a8723a"/>
+<path class="t" opacity=".6" d="M120 70v120M136 70v120M80 108v14M176 108v14"/>
+<g class="o" fill="#9a9a90"><ellipse cx="62" cy="228" rx="16" ry="10"/><ellipse cx="196" cy="230" rx="14" ry="9"/><ellipse cx="90" cy="236" rx="10" ry="6"/></g>
+<g class="o" fill="#e8e0c8"><circle cx="148" cy="218" r="9"/><circle cx="162" cy="214" r="7"/></g>
+</svg>

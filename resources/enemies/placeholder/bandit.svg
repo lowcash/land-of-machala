@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<style>.o{stroke:#1c140c;stroke-width:9;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#1c140c;stroke-width:6;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<g id="back-arm"><path class="o" d="M610 380C680 420 700 500 690 580l-60 10C640 520 610 470 570 440z" fill="#6b4a2a"/><circle class="o" cx="660" cy="596" r="30" fill="#e8b890"/></g>
+<g id="legs">
+<path class="o" d="M440 610l-20 270-30 84h140l-14-84 40-270z" fill="#4a3a2a"/>
+<path class="o" d="M540 610l40 270-20 84h140l-26-84-20-270z" fill="#5a4630"/>
+<path class="o" d="M388 930h146v34H378z" fill="#2a1c10"/><path class="o" d="M556 930h146v34H546z" fill="#2a1c10"/>
+</g>
+<g id="torso"><path class="o" d="M390 360C430 330 590 330 640 360L670 630H380z" fill="#7a8a4a"/>
+<path class="o" d="M390 590h280v50H390z" fill="#3a2a1a"/><rect class="o" x="500" y="594" width="50" height="42" fill="#d9a53a"/>
+<g class="t" opacity=".6"><path d="M440 400l10 180M600 400l-10 180"/></g></g>
+<g id="head"><path class="o" d="M470 250C470 190 560 180 580 250 590 310 560 340 520 340 480 340 470 300 470 250z" fill="#e8b890"/>
+<path class="o" d="M450 270C430 180 530 130 600 190 620 230 600 260 590 260 570 220 520 210 470 260z" fill="#4a5a2a"/>
+<path class="o" d="M470 290h110l-10 50H490z" fill="#b8442a"/>
+<circle cx="500" cy="262" r="8" fill="#1c140c"/><circle cx="548" cy="262" r="8" fill="#1c140c"/><path class="t" d="M486 244l26 8M562 244l-26 8"/></g>
+<g id="front-arm-club">
+<path class="o" d="M420 380C340 420 300 520 320 580l60-10C380 520 420 470 450 440z" fill="#6b4a2a"/><circle class="o" cx="344" cy="590" r="32" fill="#e8b890"/>
+<path class="o" d="M338 590L240 250q-6-30 24-40l52-10q30 0 30 34l10 40z" fill="#8a5a2a"/>
+<g class="o" fill="#c8c8d0"><circle cx="244" cy="232" r="9"/><circle cx="290" cy="222" r="9"/><circle cx="274" cy="262" r="9"/></g></g>
+</svg>

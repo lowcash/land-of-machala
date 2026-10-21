@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<style>.o{stroke:#2a1a10;stroke-width:5;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a1a10;stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<rect class="o" x="36" y="86" width="184" height="152" fill="#a8723a"/>
+<path class="o" d="M36 86l24-26h160l-0 26z" fill="#c48a4a"/>
+<g class="t" opacity=".7"><path d="M36 134h184M36 186h184"/></g>
+<path class="o" d="M36 86l184 152M220 86L36 238" fill="none" stroke-width="12" stroke="#7a4a22"/>
+<path class="t" d="M36 86l184 152M220 86L36 238" stroke="#2a1a10"/>
+<rect class="o" x="36" y="86" width="184" height="152" fill="none"/>
+<g class="o" fill="#d9a53a"><circle cx="52" cy="102" r="5"/><circle cx="204" cy="102" r="5"/><circle cx="52" cy="222" r="5"/><circle cx="204" cy="222" r="5"/></g>
+</svg>

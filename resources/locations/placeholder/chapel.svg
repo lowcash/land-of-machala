@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#0c1a14;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#0c1a14;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a42"/><stop offset="1" stop-color="#7fa592"/></linearGradient>
+<linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe4d6" stop-opacity="0"/><stop offset=".6" stop-color="#cfe4d6" stop-opacity=".6"/><stop offset="1" stop-color="#cfe4d6" stop-opacity="0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<circle cx="1280" cy="170" r="70" fill="#e6efdc" opacity=".85"/></g>
+<g id="far-trees">
+<g class="o" fill="#1d3a2c"><path d="M-20 520l60-260 60 260zM90 540l70-300 70 300zM1290 540l70-290 70 290zM1400 520l60-280 60 280zM1500 550l60-250 60 250z"/></g>
+<rect y="380" width="1600" height="200" fill="url(#fog)"/>
+</g>
+<g id="hill"><path class="o" d="M-10 640q300-120 700-80t940-40v380h-1640z" fill="#2f5a3e"/></g>
+<g id="chapel">
+<rect class="o" x="560" y="360" width="400" height="290" fill="#8f9a8c"/>
+<path class="o" d="M530 370l230-140 230 140z" fill="#3a2f2a"/>
+<g class="t" opacity=".55"><path d="M560 440h400M560 520h400M560 600h400M650 360v80M800 440v80M880 520v80M700 600v50"/></g>
+<path class="o" d="M700 650V520q0-60 60-60t60 60v130z" fill="#1c2a24"/>
+<rect class="o" x="880" y="460" width="46" height="80" rx="20" fill="#1c2a24"/>
+<rect class="o" x="965" y="140" width="190" height="510" fill="#a0aa9c"/>
+<path class="o" d="M945 150l115-110 115 110z" fill="#3a2f2a"/>
+<g id="belfry"><path class="o" d="M1000 250h120v110q0-56-60-56t-60 56z" fill="#0d1612"/><path class="t" d="M1060 250v50"/></g>
+<g class="t" opacity=".55"><path d="M965 400h190M965 470h190M965 540h190M965 610h190"/></g>
+<path class="o" d="M1060 40V0M1040 18h40" />
+</g>
+<g id="graveyard">
+<g class="o" fill="#a9b2a2"><rect x="150" y="610" width="36" height="120"/><rect x="118" y="640" width="100" height="34"/>
+<rect x="300" y="650" width="30" height="100"/><rect x="275" y="672" width="80" height="28"/>
+<rect x="1250" y="620" width="34" height="116"/><rect x="1218" y="648" width="98" height="32"/>
+<path d="M1400 770v-90q0-34 40-34t40 34v90z"/><path d="M420 770v-70q0-26 32-26t32 26v70z"/></g>
+<g class="t" opacity=".6"><path d="M1430 700v40M452 710v30"/></g>
+</g>
+<g id="dead-tree">
+<path class="o" d="M420 760q10-160-20-260 20 40 50 70 0-60-10-100 30 50 40 110 20-30 50-60-30 50-30 100 4 70 14 140z" fill="#3a2a22"/>
+</g>
+<g id="path-ground">
+<path class="o" d="M-10 780q500-60 900-30t720 10v140h-1620z" fill="#3b6a48"/>
+<path d="M600 900q60-130 160-150h120q-20 20-60 150z" fill="#8a7a55" opacity=".9"/>
+</g>
+<g id="mist"><rect y="560" width="1600" height="260" fill="url(#fog)"/><g fill="#d6e8dc" opacity=".35"><ellipse cx="300" cy="700" rx="320" ry="40"/><ellipse cx="1250" cy="690" rx="360" ry="44"/><ellipse cx="800" cy="610" rx="260" ry="26"/></g></g>
+</svg>

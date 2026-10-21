@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<style>.o{stroke:#140c14;stroke-width:9;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#140c14;stroke-width:6;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<g id="cloak"><path class="o" d="M400 340C360 420 330 640 320 860l140 20 60-120 60 120 140-20C710 640 690 420 640 340z" fill="#5a2a3a"/></g>
+<g id="back-arm"><path class="o" d="M640 360C730 400 760 500 740 600l-70 10C690 530 650 470 600 440z" fill="#3a2a30"/><circle class="o" cx="712" cy="616" r="34" fill="#d8a888"/></g>
+<g id="legs">
+<path class="o" d="M420 600l-24 280-34 84h156l-14-84 44-280z" fill="#2a2430"/>
+<path class="o" d="M540 600l46 280-24 84h156l-30-84-24-280z" fill="#352c3a"/>
+<path class="o" d="M352 920h170v44H342z" fill="#1c1418"/><path class="o" d="M552 920h170v44H542z" fill="#1c1418"/>
+</g>
+<g id="torso"><path class="o" d="M360 350C420 310 620 310 680 350L700 620H340z" fill="#5a4a50"/>
+<g class="o" fill="#8a8a98"><circle cx="420" cy="420" r="10"/><circle cx="480" cy="440" r="10"/><circle cx="540" cy="440" r="10"/><circle cx="600" cy="420" r="10"/><circle cx="450" cy="500" r="10"/><circle cx="520" cy="510" r="10"/><circle cx="590" cy="500" r="10"/></g>
+<path class="o" d="M340 580h360v60H340z" fill="#b8442a"/><rect class="o" x="500" y="584" width="54" height="50" fill="#d9a53a"/>
+<path class="o" d="M330 330C300 360 300 400 340 410L420 350z" fill="#7a7a88"/><path class="o" d="M710 330C740 360 740 400 700 410L620 350z" fill="#7a7a88"/></g>
+<g id="head"><path class="o" d="M460 230C460 170 560 160 590 230 600 300 570 330 520 330 470 330 460 290 460 230z" fill="#d8a888"/>
+<path class="o" d="M440 230C430 150 520 110 590 160 620 190 610 230 600 232L460 232z" fill="#8a8a98"/><path class="o" d="M520 110V74" /><path class="o" d="M520 74q50 10 40 60-30-20-40-10z" fill="#b8442a"/>
+<path class="o" d="M470 296C480 330 560 330 590 290 560 310 500 310 470 296z" fill="#2a1c14"/>
+<circle cx="492" cy="252" r="8" fill="#140c14"/><circle cx="552" cy="252" r="8" fill="#140c14"/><path class="t" d="M476 232l30 10M568 232l-30 10M470 240l30 40"/></g>
+<g id="front-arm-sword">
+<path class="o" d="M390 360C300 400 250 500 260 600l70 10C340 540 390 470 440 440z" fill="#3a2a30"/><circle class="o" cx="290" cy="620" r="36" fill="#d8a888"/>
+<path class="o" d="M276 612l-50-420q-4-30 14-30t18 30l30 420z" fill="#c8ccd8"/><path class="t" d="M244 240l16 300"/>
+<path class="o" d="M230 600h120v30H230z" fill="#d9a53a"/><path class="o" d="M278 630h32v70h-32z" fill="#6b4a2a"/></g>
+</svg>

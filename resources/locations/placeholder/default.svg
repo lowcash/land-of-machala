@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2e2a24;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2e2a24;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4b4ae"/><stop offset="1" stop-color="#e6e0cc"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<circle cx="800" cy="220" r="80" fill="#f4f0e0" opacity=".8"/></g>
+<g id="far"><path class="o" d="M-10 520q300-100 600-40t520-20q300-70 490 30v410h-1610z" fill="#a8a496"/></g>
+<g id="mid"><path class="o" d="M-10 640q360-110 720-50t520-10q220-40 380 20v300h-1620z" fill="#8f8c7c"/></g>
+<g id="near"><path class="o" d="M-10 770q500-70 1000-20t620-10v170h-1620z" fill="#78766a"/><path d="M660 900q60-100 160-120h60q-20 30-70 120z" fill="#b8b09a"/></g>
+<g id="stones"><g class="o" fill="#c4c0b0"><path d="M300 700l30-50 50 8 20 40z"/><path d="M1200 690l24-44 44 6 18 38z"/></g></g>
+</svg>

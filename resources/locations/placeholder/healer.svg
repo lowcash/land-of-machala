@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#1e2a18;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#1e2a18;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<radialGradient id="light" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#f6f0b0" stop-opacity=".8"/><stop offset="1" stop-color="#f6f0b0" stop-opacity="0"/></radialGradient>
+<radialGradient id="fire" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#ffd36a" stop-opacity=".8"/><stop offset="1" stop-color="#ff7a2a" stop-opacity="0"/></radialGradient>
+</defs>
+<g id="wall"><rect width="1600" height="650" fill="#8fae7a"/>
+<g fill="#7a9a66" opacity=".6"><rect y="140" width="1600" height="6"/><rect y="300" width="1600" height="6"/><rect y="460" width="1600" height="6"/></g></g>
+<g id="beam"><rect class="o" x="-10" y="0" width="1620" height="80" fill="#6b4a2a"/><rect class="o" x="-10" y="80" width="1620" height="26" fill="#7d5a34"/></g>
+<g id="window"><ellipse cx="800" cy="310" rx="320" ry="240" fill="url(#light)"/>
+<rect class="o" x="700" y="180" width="200" height="220" rx="90" fill="#bfe0e8"/><path class="t" d="M800 180v220M700 290h200"/></g>
+<g id="herbs-hanging">
+<path class="t" d="M240 106v100M440 106v70M1180 106v90M1380 106v120"/>
+<g class="o"><path d="M210 206l30-10 30 10-8 90h-44z" fill="#6aa04a"/><path d="M410 176l30-10 30 10-8 80h-44z" fill="#c9a24a"/><path d="M1150 196l30-10 30 10-8 80h-44z" fill="#8a5a9a"/><path d="M1350 226l30-10 30 10-8 90h-44z" fill="#5f9a46"/></g></g>
+<g id="shelf"><rect class="o" x="1160" y="360" width="360" height="22" fill="#6b4a2a"/><rect class="o" x="1160" y="500" width="360" height="22" fill="#6b4a2a"/>
+<g class="o"><rect x="1190" y="300" width="50" height="60" rx="10" fill="#4f86a8"/><rect x="1260" y="316" width="44" height="44" rx="8" fill="#c94f3a"/><rect x="1330" y="296" width="56" height="64" rx="12" fill="#e0b24a"/><rect x="1410" y="320" width="50" height="40" rx="8" fill="#8a5a9a"/>
+<rect x="1200" y="440" width="60" height="60" rx="12" fill="#6aa04a"/><rect x="1290" y="430" width="50" height="70" rx="10" fill="#d9b24a"/><rect x="1370" y="450" width="70" height="50" rx="10" fill="#4f86a8"/></g></g>
+<g id="bed"><rect class="o" x="110" y="400" width="420" height="30" fill="#6b4a2a"/><rect class="o" x="110" y="400" width="30" height="250" fill="#6b4a2a"/><rect class="o" x="500" y="440" width="30" height="210" fill="#6b4a2a"/>
+<rect class="o" x="140" y="430" width="360" height="110" rx="20" fill="#f1ead2"/><rect class="o" x="150" y="410" width="110" height="50" rx="20" fill="#fffaea"/><path class="o" d="M270 430h230v110H270z" fill="#c75a46"/><g class="t" opacity=".6"><path d="M310 430v110M360 430v110M410 430v110M460 430v110"/></g></g>
+<g id="floor"><rect class="o" x="-10" y="640" width="1620" height="270" fill="#8a6a40"/><g class="t" opacity=".6"><path d="M0 720h1600M0 800h1600M0 870h1600M260 648l-50 252M640 648l-20 252M1000 648l20 252M1380 648l50 252"/></g></g>
+<g id="cauldron"><ellipse cx="1000" cy="660" rx="200" ry="70" fill="url(#fire)"/>
+<g class="o" fill="#4a2a18"><rect x="920" y="660" width="170" height="22" rx="10" transform="rotate(-10 1000 672)"/><rect x="920" y="660" width="170" height="22" rx="10" transform="rotate(10 1000 672)"/></g>
+<path class="o" d="M900 600q-20 90 40 120h120q60-30 40-120z" fill="#3a3a40"/><ellipse class="o" cx="1000" cy="600" rx="100" ry="22" fill="#6fb04a"/>
+<path class="o" d="M920 700q-40-10-30-60 24 8 28-24 36 30 12 84z" fill="#ff8a1f"/>
+<g fill="#e8f2e0" opacity=".6"><circle cx="980" cy="540" r="22"/><circle cx="1020" cy="500" r="28"/><circle cx="990" cy="450" r="22"/></g></g>
+</svg>

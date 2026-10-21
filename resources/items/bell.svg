@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<g id="bell" stroke="#2a1a10" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+<path id="hanger" d="M52 22q0-12 12-12t12 12" fill="none"/>
+<path id="body" d="M26 92q10-8 12-30 0-34 26-34t26 34q2 22 12 30z" fill="#d9a53a"/>
+<path id="shine" d="M46 60q2-18 14-24" fill="none" stroke="#fff2b8" stroke-width="5"/>
+<path id="lip" d="M20 92h88v10H20z" fill="#b8832a"/>
+<circle id="clapper" cx="64" cy="112" r="8" fill="#5a3a1e"/>
+</g>
+</svg>

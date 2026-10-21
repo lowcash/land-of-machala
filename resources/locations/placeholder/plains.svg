@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2a3412;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a3412;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fa8e0"/><stop offset="1" stop-color="#d8eef0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<circle cx="1300" cy="150" r="70" fill="#fff2b0" opacity=".9"/>
+<g fill="#ffffff" opacity=".9"><ellipse cx="320" cy="170" rx="170" ry="38"/><ellipse cx="430" cy="146" rx="100" ry="34"/><ellipse cx="860" cy="260" rx="150" ry="30"/></g></g>
+<g id="far-hill"><path class="o" d="M-10 520q300-110 600-30t560-30q220-50 460 30v440h-1620z" fill="#a9cf6a"/></g>
+<g id="windmill"><path class="o" d="M1130 480l20-140h60l20 140z" fill="#e8d9b0"/><path class="o" d="M1120 345l60-70 60 70z" fill="#a8452a"/>
+<g class="o" fill="#f1ead2"><path d="M1180 310l-10-130h22zM1180 310l130 10v22zM1180 310l10 130h-22zM1180 310l-130-10v-22z"/></g><circle class="o" cx="1180" cy="310" r="12" fill="#6b3a1d"/></g>
+<g id="near-hill"><path class="o" d="M-10 640q280-130 620-60t620-20q220-30 380 40v300h-1620z" fill="#8fc24e"/></g>
+<g id="lone-tree"><path class="o" d="M340 620q-8-60 0-110h34q8 50 0 110z" fill="#6b4a2a"/><circle class="o" cx="357" cy="470" r="80" fill="#4f9a3e"/><circle class="o" cx="300" cy="510" r="48" fill="#5fae48"/></g>
+<g id="fence"><path class="t" d="M1000 640l560-10M1000 668l560-10"/><g class="o" fill="#a8723a"><rect x="1010" y="610" width="14" height="70"/><rect x="1130" y="608" width="14" height="70"/><rect x="1250" y="606" width="14" height="70"/><rect x="1370" y="604" width="14" height="70"/><rect x="1490" y="602" width="14" height="70"/></g></g>
+<g id="meadow"><path class="o" d="M-10 740q500-50 1000-20t620-10v200h-1620z" fill="#7cb440"/>
+<g class="o"><circle cx="200" cy="790" r="12" fill="#f6e060"/><circle cx="260" cy="820" r="12" fill="#ffffff"/><circle cx="760" cy="800" r="12" fill="#e86a8a"/><circle cx="1100" cy="830" r="12" fill="#f6e060"/><circle cx="1400" cy="800" r="12" fill="#ffffff"/></g>
+<g class="t" opacity=".6"><path d="M420 800q-14-24 0-40M880 830q-14-24 0-40M1250 780q-14-24 0-40"/></g></g>
+</svg>

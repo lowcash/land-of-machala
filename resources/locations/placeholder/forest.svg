@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#0e1d12;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#0e1d12;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb48a"/><stop offset="1" stop-color="#d8e8b0"/></linearGradient>
+<linearGradient id="ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f0b0" stop-opacity=".5"/><stop offset="1" stop-color="#f6f0b0" stop-opacity="0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
+<g id="far-trees"><g class="o" fill="#4a8a52"><path d="M-20 560l70-330 70 330zM180 570l80-380 80 380zM420 560l70-300 70 300zM1010 560l80-340 80 340zM1230 570l70-380 70 380zM1440 560l80-320 80 320z"/></g></g>
+<g id="rays" fill="url(#ray)"><path d="M620 0h120l-160 700h-140zM880 0h90l-100 700h-110z"/></g>
+<g id="mid-trees"><g class="o" fill="#2f6b3a"><path d="M300 640l90-430 90 430zM540 640l70-340 70 340zM900 650l80-380 80 380zM1130 640l90-420 90 420z"/></g>
+<g class="o" fill="#5a3a22"><rect x="375" y="640" width="30" height="40"/><rect x="598" y="640" width="24" height="40"/><rect x="965" y="650" width="30" height="40"/><rect x="1205" y="640" width="30" height="40"/></g></g>
+<g id="trunks-front">
+<path class="o" d="M60 900q10-300 0-640l-10-90h110l-8 90q-14 340-10 640z" fill="#6b4a2a"/>
+<path class="o" d="M1420 900q10-300 0-640l-10-90h120l-8 90q-14 340-10 640z" fill="#5a3a22"/>
+<g class="o" fill="#2f6b3a"><circle cx="110" cy="130" r="120"/><circle cx="1480" cy="110" r="130"/><circle cx="260" cy="40" r="90"/><circle cx="1330" cy="30" r="90"/></g>
+<g class="t" opacity=".6"><path d="M90 300v200M1470 280v220"/></g>
+</g>
+<g id="ground"><path class="o" d="M-10 700q500-60 1000-20t620 0v240h-1620z" fill="#3f7a3a"/>
+<path d="M620 900q60-140 180-170h80q-20 40-90 170z" fill="#a68a58"/>
+<g class="o"><path d="M300 800q-20-40 0-60 20 20 0 60zM360 810q-20-40 0-60 20 20 0 60zM1180 790q-20-40 0-60 20 20 0 60z" fill="#5fa04a"/><circle cx="1000" cy="800" r="14" fill="#c94f3a"/><circle cx="1060" cy="820" r="12" fill="#e0b24a"/></g></g>
+</svg>

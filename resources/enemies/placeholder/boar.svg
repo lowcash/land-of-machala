@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<style>.o{stroke:#24140c;stroke-width:9;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24140c;stroke-width:6;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<g id="tail"><path class="o" d="M850 560q70-40 60-100" fill="none" stroke-width="14"/><circle class="o" cx="910" cy="456" r="14" fill="#5a3a22"/></g>
+<g id="hind-legs">
+<path class="o" d="M640 700l-10 190-20 74h96l-6-74 24-190z" fill="#4a2e1c"/>
+<path class="o" d="M730 700l-4 190-16 74h92l-8-74 16-190z" fill="#5a3a22"/>
+</g>
+<g id="body"><path class="o" d="M290 640C260 480 380 380 560 380 720 380 860 440 870 600 876 710 800 770 680 774L440 774C350 774 300 720 290 640z" fill="#5a3a22"/>
+<path class="o" d="M340 730C440 770 700 774 830 710 800 770 740 784 680 784L440 784C390 784 350 760 340 730z" fill="#8a6a44"/>
+<path class="o" d="M360 440l24-60 26 56 26-70 28 62 30-72 30 66 30-70 30 70 30-60 30 60 26-48 20 60" fill="#24140c" stroke-width="10"/>
+<g class="t" opacity=".6"><path d="M520 480q20 30 0 60M620 480q20 30 0 60M720 500q16 30 0 56"/></g></g>
+<g id="front-legs">
+<path class="o" d="M350 720l-10 170-24 74h100l-6-74 20-170z" fill="#4a2e1c"/>
+<path class="o" d="M450 730l-6 160-20 74h96l-6-74 20-160z" fill="#5a3a22"/>
+</g>
+<g id="head"><path class="o" d="M360 470C310 440 230 470 190 540L130 620C120 660 160 700 220 700L330 700C400 690 430 600 410 540z" fill="#5a3a22"/>
+<path class="o" d="M130 620C120 660 160 700 220 700L250 690C230 650 190 625 150 618z" fill="#8a6a44"/>
+<ellipse class="o" cx="146" cy="636" rx="26" ry="18" fill="#c48a8a"/><circle cx="138" cy="636" r="5" fill="#24140c"/><circle cx="156" cy="634" r="5" fill="#24140c"/>
+<path class="o" d="M200 690C170 690 150 650 168 620 190 640 214 660 220 690z" fill="#f4ecd4"/>
+<path class="o" d="M300 690C330 700 360 680 366 640 340 650 312 666 300 690z" fill="#f4ecd4"/>
+<path class="o" d="M360 480L400 400 420 490z" fill="#4a2e1c"/>
+<circle class="o" cx="260" cy="560" r="14" fill="#f2c94a"/><circle cx="256" cy="562" r="5" fill="#24140c"/>
+<path class="t" d="M220 530q30-24 60-10"/></g>
+</svg>

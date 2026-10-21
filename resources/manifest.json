@@ -1,0 +1,254 @@
+{
+  "note": "status: placeholder = jednotná provizorní sada (ruční SVG), legacy = starší AI obrázky, v kódu se nepoužívají (resources/legacy/), final = schválený pro výrobu. source: ai | hand-svg; u final doplnit nástroj a licenci.",
+  "assets": [
+    {
+      "id": "locations-placeholder-bank",
+      "kind": "background",
+      "path": "resources/locations/placeholder/bank.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-camp",
+      "kind": "background",
+      "path": "resources/locations/placeholder/camp.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-chapel",
+      "kind": "background",
+      "path": "resources/locations/placeholder/chapel.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-city",
+      "kind": "background",
+      "path": "resources/locations/placeholder/city.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-default",
+      "kind": "background",
+      "path": "resources/locations/placeholder/default.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-forest",
+      "kind": "background",
+      "path": "resources/locations/placeholder/forest.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-gate",
+      "kind": "background",
+      "path": "resources/locations/placeholder/gate.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-healer",
+      "kind": "background",
+      "path": "resources/locations/placeholder/healer.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-hills",
+      "kind": "background",
+      "path": "resources/locations/placeholder/hills.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-landing",
+      "kind": "background",
+      "path": "resources/locations/placeholder/landing.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-market",
+      "kind": "background",
+      "path": "resources/locations/placeholder/market.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-mountains",
+      "kind": "background",
+      "path": "resources/locations/placeholder/mountains.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-plains",
+      "kind": "background",
+      "path": "resources/locations/placeholder/plains.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-road",
+      "kind": "background",
+      "path": "resources/locations/placeholder/road.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-smith",
+      "kind": "background",
+      "path": "resources/locations/placeholder/smith.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-tavern",
+      "kind": "background",
+      "path": "resources/locations/placeholder/tavern.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-townhall",
+      "kind": "background",
+      "path": "resources/locations/placeholder/townhall.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "locations-placeholder-village",
+      "kind": "background",
+      "path": "resources/locations/placeholder/village.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "enemies-placeholder-bandit",
+      "kind": "enemy",
+      "path": "resources/enemies/placeholder/bandit.svg",
+      "size": "1024x1024",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "enemies-placeholder-boar",
+      "kind": "enemy",
+      "path": "resources/enemies/placeholder/boar.svg",
+      "size": "1024x1024",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "enemies-placeholder-brigand",
+      "kind": "enemy",
+      "path": "resources/enemies/placeholder/brigand.svg",
+      "size": "1024x1024",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "enemies-placeholder-wolf",
+      "kind": "enemy",
+      "path": "resources/enemies/placeholder/wolf.svg",
+      "size": "1024x1024",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-bell",
+      "kind": "prop",
+      "path": "resources/items/bell.svg",
+      "size": "128x128",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "stejný soubor jako items-bell; rekvizita zvonu"
+    },
+    {
+      "id": "props-placeholder-barrel",
+      "kind": "prop",
+      "path": "resources/props/placeholder/barrel.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-crate",
+      "kind": "prop",
+      "path": "resources/props/placeholder/crate.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-dug-earth",
+      "kind": "prop",
+      "path": "resources/props/placeholder/dug-earth.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-grave-marker",
+      "kind": "prop",
+      "path": "resources/props/placeholder/grave-marker.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-lantern",
+      "kind": "prop",
+      "path": "resources/props/placeholder/lantern.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-pile",
+      "kind": "prop",
+      "path": "resources/props/placeholder/pile.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "props-placeholder-sack",
+      "kind": "prop",
+      "path": "resources/props/placeholder/sack.svg",
+      "size": "256x256",
+      "status": "placeholder",
+      "source": "hand-svg"
+    },
+    {
+      "id": "items-bell",
+      "kind": "item",
+      "path": "resources/items/bell.svg",
+      "size": "128x128",
+      "status": "placeholder",
+      "source": "hand-svg"
+    }
+  ]
+}
