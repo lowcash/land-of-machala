@@ -14,7 +14,7 @@ This is a **public cut** of the project: engine, rules, UI, tests, assets and a 
 **Run:** open `prototype/index.html` in a browser (plain scripts, no build, no server).
 **Tests:** `node --test prototype/js/test/*.test.js` · **combat simulation:** `node prototype/js/sim.js 2000`.
 
-Licensing: code is MIT ([LICENSE](LICENSE)); game content (setting, texts, story, art) is not covered and stays all rights reserved ([NOTICE.md](NOTICE.md)).
+Licensing: code is MIT ([LICENSE](LICENSE)); game content (setting, texts, story, art) is CC BY-NC-ND 4.0 ([NOTICE.md](NOTICE.md)).
 
 ---
 
@@ -24,4 +24,4 @@ Textová webová RPG. Autor: `lowcash`. Vývoj je asistovaný AI.
 
 Tohle je **veřejný výřez** projektu: engine, pravidla, UI, testy, assety a demo příběh (kauza Zvon). Plánování, nápady a skutečný příběh vznikají jinde a sem nepatří; skutečný příběh a jeho tajemství veřejný kód nikdy nenese.
 
-Spuštění: otevři `prototype/index.html`. Dokumentace: [docs/README.md](docs/README.md). Pravidla pro přispěvatele a agenty: [AGENTS.md](AGENTS.md). Licence: kód je MIT ([LICENSE](LICENSE)); obsah hry (svět, texty, příběh, grafika) licence nepokrývá a zůstává vyhrazený ([NOTICE.md](NOTICE.md)).
+Spuštění: otevři `prototype/index.html`. Dokumentace: [docs/README.md](docs/README.md). Pravidla pro přispěvatele a agenty: [AGENTS.md](AGENTS.md). Licence: kód je MIT ([LICENSE](LICENSE)); obsah hry (svět, texty, příběh, grafika) je CC BY-NC-ND 4.0 ([NOTICE.md](NOTICE.md)).
