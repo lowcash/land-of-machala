@@ -264,7 +264,7 @@ function actionBtn({
 /* jednotná provizorní sada ručních SVG (resources/locations/placeholder/); starší AI obrázky jsou v resources/legacy/ */
 const BG_DIR = "../resources/locations/placeholder/";
 const BG = Object.fromEntries(
-  ["city", "healer", "smith", "bank", "forest", "plains", "hills", "mountains", "road", "village", "chapel", "tavern", "townhall", "gate", "market", "camp", "swamp", "lake", "desert", "default", "landing"].map((k) => [k, `${BG_DIR}${k}.svg`])
+  ["city", "healer", "smith", "bank", "forest", "plains", "hills", "mountains", "road", "village", "chapel", "tavern", "townhall", "gate", "market", "camp", "default", "landing"].map((k) => [k, `${BG_DIR}${k}.svg`])
 );
 
 /* nepřátelé: provizorní SVG podle id, jinak vlk */
