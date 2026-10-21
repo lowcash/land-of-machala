@@ -1,6 +1,6 @@
 # Documentation
 
-The docs are in Czech (the game is Czech-language).
+Start with the English [OVERVIEW.md](OVERVIEW.md). The detailed docs below are in Czech (the game is Czech-language).
 
 | I want to know… | Where |
 |---|---|

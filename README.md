@@ -2,7 +2,7 @@
 
 **A text RPG about how sure you can be.** Nobody in this world lies out of malice, but everybody knows a slightly different story, and every fight, rumour and deal asks the same question: *how much do you trust what you see?*
 
-Play it in a browser tab. No build, no server, no dependencies: open `prototype/index.html`.
+Play it in a browser tab: **https://lowcash.github.io/land-of-machala/** (the same files, hosted on GitHub Pages). No build, no server, no dependencies; locally just open `prototype/index.html`.
 
 ## What makes it interesting
 
@@ -22,7 +22,7 @@ node prototype/js/sim.js 2000                  # simulate 2000 fights per strate
 node prototype/js/gen-docs.js                  # regenerate the tables in docs/reference
 ```
 
-The game, its texts and the docs in `docs/` are in **Czech**; the code is plain JavaScript. Start with [docs/README.md](docs/README.md) (`docs/reference/architecture.md` is the map of the code).
+The game, its texts and the docs in `docs/` are in **Czech**; the code is plain JavaScript. Start with [docs/OVERVIEW.md](docs/OVERVIEW.md) (English), then [docs/README.md](docs/README.md).
 
 ## License
 
