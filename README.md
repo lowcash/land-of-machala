@@ -1,27 +1,29 @@
 # Land of Machala
 
-A text-based web RPG set in a satirical Czech-flavoured fantasy world. Author: `lowcash`. AI-assisted development.
+**A text RPG about how sure you can be.** Nobody in this world lies out of malice, but everybody knows a slightly different story, and every fight, rumour and deal asks the same question: *how much do you trust what you see?*
 
-This is a **public cut** of the project: engine, rules, UI, tests, assets and a small demo story (the "Zvon" case). The game itself, its texts and these docs are in **Czech**. Planning, ideas and the real story live elsewhere and are not part of this repository.
+Play it in a browser tab. No build, no server, no dependencies: open `prototype/index.html`.
 
-| What | Where |
-|---|---|
-| documentation (how it works today) | [docs/README.md](docs/README.md) |
-| HTML prototype (storybook) | [prototype/](prototype/) |
-| assets | [resources/](resources/) |
-| contributor / agent rules | [AGENTS.md](AGENTS.md) |
+## What makes it interesting
 
-**Run:** open `prototype/index.html` in a browser (plain scripts, no build, no server).
-**Tests:** `node --test prototype/js/test/*.test.js` · **combat simulation:** `node prototype/js/sim.js 2000`.
+- **Enemies telegraph, and the hint can lie.** Every turn you see what the enemy seems to be preparing, labelled *sure / I think so / unclear*. The label is the real probability that the hint is right. Your INT, your experience with that kind of enemy and a potion of foresight change it; elites bluff.
+- **One stolen bell, six rumours.** Everybody in town has a different version. Check them at the bandit camp, in the town hall registers, at the chapel at night. A deadline runs (5 days); if you do nothing, the world decides without you. Your classes and races read different kinds of clues.
+- **Death is a place.** Lose a fight and everything you carry stays in your corpse on the map; you wake up at the healer with a stick and a tunic and must walk back for it. Quest items never duplicate.
+- **A world you can plan around.** Encounters sit in fixed places derived from the game seed, tracks are visible by day, and nothing spawns while you walk: the same road gives the same result.
+- **Rules are pure, tested modules.** Combat, world, quests, rumours and saves live in `prototype/js/systems/` as DOM-free UMD modules with a deterministic RNG, so everything is simulated and covered by tests.
+- **A built-in storybook.** The dev bar jumps straight into any scene (a wounded hero at the healer, the bell in your bag at the verdict, a full backpack at the stash), lets you tweak one value at a time and can reveal the enemy's true intent.
 
-Licensing: code is MIT ([LICENSE](LICENSE)); game content (setting, texts, story, art) is CC BY-NC-ND 4.0 ([NOTICE.md](NOTICE.md)).
+## Run
 
----
+```
+open prototype/index.html                      # play
+node --test prototype/js/test/*.test.js        # tests
+node prototype/js/sim.js 2000                  # simulate 2000 fights per strategy
+node prototype/js/gen-docs.js                  # regenerate the tables in docs/reference
+```
 
-## Česky
+The game, its texts and the docs in `docs/` are in **Czech**; the code is plain JavaScript. Start with [docs/README.md](docs/README.md) (`docs/reference/architecture.md` is the map of the code).
 
-Textová webová RPG. Autor: `lowcash`. Vývoj je asistovaný AI.
+## License
 
-Tohle je **veřejný výřez** projektu: engine, pravidla, UI, testy, assety a demo příběh (kauza Zvon). Plánování, nápady a skutečný příběh vznikají jinde a sem nepatří; skutečný příběh a jeho tajemství veřejný kód nikdy nenese.
-
-Spuštění: otevři `prototype/index.html`. Dokumentace: [docs/README.md](docs/README.md). Pravidla pro přispěvatele a agenty: [AGENTS.md](AGENTS.md). Licence: kód je MIT ([LICENSE](LICENSE)); obsah hry (svět, texty, příběh, grafika) je CC BY-NC-ND 4.0 ([NOTICE.md](NOTICE.md)).
+Code: MIT ([LICENSE](LICENSE)). Game content (setting, texts, story, art): CC BY 4.0 ([NOTICE.md](NOTICE.md)).

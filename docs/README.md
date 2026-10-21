@@ -1,11 +1,13 @@
-# Dokumentace
+# Documentation
 
-| chci vědět… | kam |
+The docs are in Czech (the game is Czech-language).
+
+| I want to know… | Where |
 |---|---|
-| **jak to dnes opravdu funguje** (čísla generovaná z kódu) | [reference/](reference/): [architecture (mapa kódu, formáty dat, jak přidat)](reference/architecture.md) · [mechanics (rejstřík mechanik)](reference/mechanics.md) · [combat](reference/combat.md) · [characters](reference/characters.md) · [items](reference/items.md) · [map](reference/map.md) · [places](reference/places.md) · [world](reference/world.md) · [quests](reference/quests.md) · [kauza](reference/kauza.md) · [storybook](reference/storybook.md) |
-| UI konvence | [design/ui.md](design/ui.md) |
-| formát changelogu | [CHANGELOG-FORMAT.md](CHANGELOG-FORMAT.md) |
+| **how it works today** (numbers generated from the code) | [reference/](reference/): [architecture (code map, data formats, how to add things)](reference/architecture.md) · [mechanics (index of mechanics)](reference/mechanics.md) · [combat](reference/combat.md) · [characters](reference/characters.md) · [items](reference/items.md) · [map](reference/map.md) · [places](reference/places.md) · [world](reference/world.md) · [quests](reference/quests.md) · [kauza (rumour cases)](reference/kauza.md) · [storybook](reference/storybook.md) |
+| UI conventions | [design/ui.md](design/ui.md) |
+| changelog format | [CHANGELOG-FORMAT.md](CHANGELOG-FORMAT.md) |
 
-Pravidla pro přispěvatele: [../AGENTS.md](../AGENTS.md). `reference/` je pravda o prototypu, `design/` je záměr; při rozporu platí kód.
+Contributor rules: [../AGENTS.md](../AGENTS.md). `reference/` describes the prototype; if docs and code disagree, the code wins.
 
-Spuštění: otevři `prototype/index.html`. Testy: `node --test prototype/js/test/*.test.js` · simulace: `node prototype/js/sim.js 2000` · tabulky v `reference/`: `node prototype/js/gen-docs.js`.
+Run: open `prototype/index.html`. Tests: `node --test prototype/js/test/*.test.js` · simulation: `node prototype/js/sim.js 2000` · reference tables: `node prototype/js/gen-docs.js`.
