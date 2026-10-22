@@ -206,7 +206,7 @@ const ORIGIN_STEPS = [
     choices: [
       { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "ves a pole", race: "local", bridge: "„Pivo? To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
       { say: "Slanou polévku po šichtě.", hint: "solný důl", race: "saltfolk", bridge: "„Z dolů. To je pak žízeň,“ zakašle pijan." },
-      { say: "Kvas z bahenních plodů.", hint: "slatě", race: "woodfolk", bridge: "„Ze slatí? Tam prý stezky mění místo, kdykoli mrkneš. Nebo je to tím pivem,“ řekne pijan." },
+      { say: "Kvas z bahenních plodů.", hint: "slatě", race: "woodfolk", bridge: "„Ze slatí? Tam prý stezky… chodí, kam se jim zachce. Jako já,“ řekne pijan." },
       { say: "Víno a pečeného kapra na břehu.", hint: "brod", race: "riverfolk", bridge: "„Od vody. Tam prý chlap chytí rybu dřív, než si sundá boty,“ řekne pijan." },
       { say: "Mléko z paseky, ještě teplé.", hint: "paseka", race: "hillfolk", bridge: "„Z pasek. Tam prý ovce ví o zimě dřív než pastýř,“ řekne pijan." },
     ],
@@ -952,8 +952,9 @@ const MORNING_REACT = {
   hide: " Zvon se už neozval, nebo sis ho nezapamatoval.",
   ward: " Amulet držíš pořád v dlani.",
 };
+const MORNING_NOORDER = "Šel ses vyspat do seníku za krčmou, když už ses nic neobjednal.";
 const prologMorning = () =>
-  (MORNING_BASE[state.picks.origin] || MORNING_BASE.default) + (MORNING_REACT[state.prologReact] || "");
+  (state.prologDone.class ? MORNING_BASE[state.picks.origin] || MORNING_BASE.default : MORNING_NOORDER) + (MORNING_REACT[state.prologReact] || "");
 
 /** Konec ukázky: ráno po prologu a tečka, hra dál nepokračuje. */
 function openDemoEnd(text) {
