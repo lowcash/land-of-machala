@@ -23,22 +23,26 @@ function randomName() {
 /* PILGRIM / BASE / RACE_MOD / CLASS_INFO / RACE_INFO: js/data/characters.js */
 const { PILGRIM, BASE, RACE_MOD, CLASS_INFO, RACE_INFO } = LOM;
 const CLASS_LABEL = Object.fromEntries(Object.entries(CLASS_INFO).map(([k, v]) => [k, v.label]));
+/* nevybrané povolání nebo rasa = neznámý poutník (picks drží výchozí hodnotu jen kvůli datům) */
+const pickedClass = () => (state.prologDone.class ? state.picks.class : null);
+const pickedRace = () => (state.prologDone.race ? state.picks.race : null);
+const classLabelNow = () => CLASS_LABEL[pickedClass()] || "Povaleč";
 
 const STAT_META = [
-  { key: "hp", icon: "♥", label: "HP", title: "Život — když dojde na 0, padáš." },
+  { key: "hp", icon: "♥", label: "HP", title: "Život: když dojde na 0, padáš." },
   { key: "res", icon: "✦", label: "Res", title: "Energie nebo mana podle povolání." },
-  { key: "str", icon: "⚔", label: "STR", title: "Síla — fyzické poškození." },
-  { key: "dex", icon: "◎", label: "DEX", title: "Obratnost — zásah a útěk." },
-  { key: "vit", icon: "⬡", label: "VIT", title: "Vitalita — max HP a odolnost." },
-  { key: "int", icon: "✧", label: "INT", title: "Intelekt — mana a magie." },
-  { key: "atk", icon: "⚔", label: "ATK", title: "Útok — poškození zbraní a síly." },
-  { key: "def", icon: "⬡", label: "DEF", title: "Obrana — snižuje přijaté poškození." },
-  { key: "gold", icon: "🪙", label: "Zlato", title: "Měšec — zlato u sebe (banka je jinde)." },
+  { key: "str", icon: "⚔", label: "STR", title: "Síla: fyzické poškození." },
+  { key: "dex", icon: "◎", label: "DEX", title: "Obratnost: zásah a útěk." },
+  { key: "vit", icon: "⬡", label: "VIT", title: "Vitalita: max HP a odolnost." },
+  { key: "int", icon: "✧", label: "INT", title: "Intelekt: mana a magie." },
+  { key: "atk", icon: "⚔", label: "ATK", title: "Útok: poškození zbraní a síly." },
+  { key: "def", icon: "⬡", label: "DEF", title: "Obrana: snižuje přijaté poškození." },
+  { key: "gold", icon: "🪙", label: "Zlato", title: "Měšec: zlato u sebe (banka je jinde)." },
 ];
 
 const STAT_BY = Object.fromEntries(STAT_META.map((m) => [m.key, m]));
 
-/** Jednotný chip se ikonou — všude místo holého ATK/DEF/STR… */
+/** Jednotný chip se ikonou - všude místo holého ATK/DEF/STR… */
 function statChip(key, value, opts = {}) {
   const m = STAT_BY[key];
   if (!m) return `${key} ${value ?? ""}`;
@@ -77,7 +81,7 @@ function actionPanel(label, innerHtml, opts = {}) {
     : opts.reserveSticky
       ? `<div class="action-sticky is-spacer" aria-hidden="true"></div>`
       : "";
-  /* sticky mimo scroll — obsah neprosvítá pod zpět; fade jen na .action-scroll */
+  /* sticky mimo scroll - obsah neprosvítá pod zpět; fade jen na .action-scroll */
   return `<div class="action-panel">
     ${sticky}
     <div class="action-scroll" data-action-body>
@@ -89,12 +93,12 @@ function actionPanel(label, innerHtml, opts = {}) {
   </div>`;
 }
 
-/** @deprecated alias — starý název v CSS komentářích */
+/** @deprecated alias - starý název v CSS komentářích */
 function lanePanel(label, innerHtml) {
   return actionPanel(label, innerHtml);
 }
 
-/** Zlato — tip podle kontextu: Cena | Odměna | Měšec */
+/** Zlato - tip podle kontextu: Cena | Odměna | Měšec */
 function goldAmt(n, opts = {}) {
   return statChipBtn("gold", String(n), { tip: opts.tip || "Cena" });
 }
@@ -145,7 +149,7 @@ function itemTipBits(item, extra = []) {
 }
 
 /**
- * Jednotná dlaždice předmětu — inventář, picker na postavě, later boj.
+ * Jednotná dlaždice předmětu - inventář, picker na postavě, later boj.
  * opts: { on, act, disabled, tag }
  */
 function itemTileHtml(item, opts = {}) {
@@ -179,32 +183,53 @@ function itemTileHtml(item, opts = {}) {
 const ORIGIN_STEPS = [
   {
     pick: "class",
-    text: "Probouzíš se v husté mlze. Nevíš, kdo jsi, ani jak jsi se sem dostal. Před sebou se mihnou čtyři obrysy. Ke kterému tě to táhne?",
+    text: "Jsi v krčmě. Dusno od kouře, cítit je pečená cibule a zatuchlina ze starých sudů. V rohu na stole chrápe pijan. Ve vsi se proslýchá, že z kaple zmizel zvon.\nSvatava před tebe postaví korbel: „Platíš hned, nebo jako Karel na sekeru? Dluh píšu jen tomu, kdo něco umí.“",
+    /* volba: say = řeč (v uvozovkách), act = gesto (kurzíva), actAfter = gesto až po řeči; použij jen to, co k volbě přirozeně patří */
     choices: [
-      { title: "Široká ramena a lesk ocele v mlze", hint: "těžký krok", class: "mercenary" },
-      { title: "Stín, který skoro není", hint: "tichý dech", class: "tracker" },
-      { title: "Šepot a jiskra ve tmě", hint: "podivný chlad", class: "chanter" },
-      { title: "Pach inkoustu a vosku", hint: "suchý šelest", class: "legist" },
-    ],
-  },
-  {
-    pick: "react",
-    text: "Obrys k tobě přistoupí. Cítíš z něj zvláštní energii. Z lesa se ozve řev. Co uděláš dřív, než přemýšlíš?",
-    choices: [
-      { title: "Vyrazíš vstříc zvuku", hint: "vpřed", react: "fight" },
-      { title: "Přitiskneš se k zemi a posloucháš", hint: "stranou", react: "hide" },
-      { title: "Zvedneš ruku a něco si šeptneš", hint: "dovnitř", react: "ward" },
+      { say: "Dělám, co se komu hodí. Platí to líp než pole.", act: "Pokrčíš rameny, ruka na pásu.", hint: "pacholek", class: "mercenary" },
+      { say: "Kácím a chodím po lesích. Víc se neptej.", hint: "dřevorubec", class: "tracker" },
+      { act: "Vytáhneš ze záňadří svazek sušených bylin a položíš ho na pult.", hint: "bylinkář", class: "chanter" },
+      { say: "Umím psát a číst. Smlouvy čtu i drobným písmem.", hint: "písař", class: "legist" },
+      { say: "Já si nic neobjednal.", cheek: true },
     ],
   },
   {
     pick: "race",
-    text: "Z lesa se vyřítí monstrum. Není čas — a přesto ti hlavou proletí, odkud jsi přišel. Co v tobě zůstalo?",
+    lead: {
+      mercenary: "„Co se komu hodí, to znám. Hlavně ať se ti hodí zaplatit.“ Opřeš se o lavici tak, aby bylo vidět na dveře.",
+      tracker: "„Dřevo se vždycky hodí.“ Ze zvyku pootočíš hlavu ke dveřím.",
+      chanter: "„Bylinky? Svoje neduhy si léčím pivem.“ Chvíli mlčíš a posloucháš, jak v rohu chrápe pijan.",
+      legist: "„Smlouvy mi nevnucuj. Počítat umím líp než kdejaký písař.“ Díváš se, jak Svatava bez zaváhání sčítá zářezy na trámu u pultu.",
+      none: "„Neobjednal,“ zopakuje Svatava. Zvedne korbel a vypije ho do dna, postaví ho prázdný na pult a vůbec ji to nerozhodí.",
+    },
+    text: "Pijan zvedne hlavu ze stolu a dívá se kamsi vedle tebe.\n„Kdo to tam stojí? Odkud seš a co se u vás pije?“",
     choices: [
-      { title: "Pach chleba a prach cest", hint: "nížina", race: "local" },
-      { title: "Kámen a sůl pod nehty", hint: "solný důl", race: "saltfolk" },
-      { title: "Jehličí a stín mezi kmeny", hint: "hvozd", race: "woodfolk" },
-      { title: "Voda a rákos na botách", hint: "brod", race: "riverfolk" },
-      { title: "Dým z paseky a vítr z kopců", hint: "paseka", race: "hillfolk" },
+      { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "ves a pole", race: "local", bridge: "„Pivo? To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
+      { say: "Slanou polévku po šichtě.", hint: "solný důl", race: "saltfolk", bridge: "„Z dolů. To je pak žízeň,“ zakašle pijan." },
+      { say: "Kvas z bahenních plodů.", hint: "slatě", race: "woodfolk", bridge: "„Ze slatí? Tam prý stezky mění místo, kdykoli mrkneš. Nebo je to tím pivem,“ řekne pijan." },
+      { say: "Víno a pečeného kapra na břehu.", hint: "brod", race: "riverfolk", bridge: "„Od vody. Tam prý chlap chytí rybu dřív, než si sundá boty,“ řekne pijan." },
+      { say: "Mléko z paseky, ještě teplé.", hint: "paseka", race: "hillfolk", bridge: "„Z pasek. Tam prý ovce ví o zimě dřív než pastýř,“ řekne pijan." },
+    ],
+  },
+  {
+    pick: "react",
+    text: "Svatava mezitím odešla do sklepa pro další sud. Chvíli se nic neděje, pak přijde tupá rána. „Čert to vem, herdek, vždyť jsem to tu měla sotva tři dni!“\n„Co zas je,“ řekne pijan a opře si hlavu o stůl. Pak se od kaple ozve zvon, jednou. Což je divné, protože žádný tam není. Co uděláš?",
+    choices: [
+      { say: "Vždyť v kapli žádný zvon není.", act: "Překvapeně vstaneš a vyjdeš ven.", react: "fight", bridge: "Venku mokrá tma a od kaple ticho, jako by tam zvon nikdy nevisel. Vrátíš se dovnitř s prázdnou." },
+      { act: "Neuděláš nic. Počkáš, jestli se to ozve znovu.", react: "hide", bridge: "Chvíli čekáš. Zvon se už neozve." },
+      { say: "Zvon, který tu není, nevěstí nic dobrého.", act: "Sevřeš amulet pod košilí.", react: "ward", bridge: "Amulet je studený a nic se neděje, což tě uklidní míň, než čekáš." },
+    ],
+  },
+  {
+    pick: "origin",
+    text: "Pijan zvedne hlavu ze stolu a podívá se na tebe, jako by tě viděl poprvé.\n„Jak ses sem vlastně dostal? Sem se chodí hlavně kvůli pivu.“",
+    choices: [
+      { say: "Dlužím, co dlužím. Přišel jsem to vyřešit.", hint: "dlužník", origin: "debtor" },
+      { act: "Ukážeš ruce plné mozolů a spálenin od výhně.", hint: "učeň kováře", origin: "apprentice" },
+      { say: "Hlídal jsem bránu. Už ne.", hint: "bývalý strážný", origin: "watchman" },
+      { say: "Jdu z Brodu a zítra zas dál.", hint: "poutník z Brodu", origin: "wayfarer" },
+      { act: "Stáhneš si kapuci hlouběji.", origin: "exile" },
+      { say: "Ty mě nepoznáváš? Vždyť jsem odsud.", hint: "rodák", origin: "native" },
     ],
   },
 ];
@@ -214,20 +239,22 @@ const hl = (t) => `<span class="hl">${nbspCzech(t)}</span>`;
 
 /**
  * České typo: nezalamovat jednopísmenné / krátké předložky a spojky
- * (a, i, k, o, s, u, v, z, na, do, …) — orphan prevention.
+ * (a, i, k, o, s, u, v, z, na, do, …) - orphan prevention.
  * HTML tagy nechá být (pracuje po segmentech mimo <>).
  */
-function nbspCzech(input) {
+function nbspCzech(input, opts = {}) {
   if (!input || typeof input !== "string") return input;
+  if (opts.tail) input = input.replace(/ ([^ <>]+)$/, "\u00A0$1"); /* poslední slovo nikdy samo na řádku */
+  /* krátká slova (předložky, spojky, "se", "je"...) se vážou k NÁSLEDUJÍCÍMU slovu: nikdy nezůstanou na konci řádku */
   const short =
-    "a|i|k|o|s|u|v|z|A|I|K|O|S|U|V|Z|na|Na|ke|Ke|ve|Ve|do|Do|od|Od|po|Po|za|Za|se|Se|si|Si|by|By|že|Že|až|Až|či|Či|už|Už|co|Co|to|To|tu|Tu";
-  const re = new RegExp(` (${short})(?=[ \\u00A0.,;:!?…])`, "g");
-  const fix = (text) => text.replace(re, "\u00A0$1");
+    "a|i|k|o|s|u|v|z|na|ke|ve|do|od|po|za|se|si|by|že|až|či|už|co|to|tu|ze|ani|ale|jak|jen|pro|bez|pod|nad|při|nebo|je|jsi|jsem|mu|ho|ti|mi|tě|ať|já|my|ty|on|ona|jde|má";
+  const re = new RegExp(`(?<=^|[\\s\\u00A0>])(${short}) (?=\\S)`, "gi");
+  const fix = (text) => text.replace(re, "$1\u00A0");
   return input.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, text) => (tag ? tag : fix(text)));
 }
 
 const TOWN_PROSE = nbspCzech(
-  `Nacházíš se v centru města ${hl("Machala")}. Na náměstí voní čerstvý chléb, od studny se nese smích a někde v průjezdu štěká pes. Nad výhní žhne štít, u léčitele voní byliny — město žije svým tempem.`
+  `Nacházíš se v centru města ${hl("Machala")}. Na náměstí voní čerstvý chléb, od studny se nese smích a někde v průjezdu štěká pes. Nad výhní žhne štít, u léčitele voní byliny. Město žije svým tempem.`
 );
 
 /** Akční tlačítko: název + krátká věta (story = větná volba) */
@@ -270,7 +297,7 @@ const BG = Object.fromEntries(
 /* nepřátelé: provizorní SVG podle id, jinak vlk */
 const enemyImg = (id) => `../resources/enemies/placeholder/${["wolf", "boar", "bandit", "brigand"].includes(id) ? id : "wolf"}.svg`;
 
-/* Mini-mapa — data v js/data/map.js (docs/reference/map.md) */
+/* Mini-mapa - data v js/data/map.js (docs/reference/map.md) */
 const MAP_MAX = LOM.MAP_MAX;
 const TERRAIN_CS = LOM.TERRAIN_CS;
 const TERRAIN_BG = LOM.TERRAIN_BG;
@@ -296,13 +323,13 @@ const PLACE = {
     line: `Nabízí se tedy zajít k ${hl("Lidmile")}, až budeš potřebovat záplatu`,
     hint: "navštívit léčitelku",
     bg: "healer",
-    /* scéna (full) + greeting (foe vpravo) — ne jedna smíchaná věta. Text smí být pole variant (viz variants.js). */
+    /* scéna (full) + greeting (foe vpravo) - ne jedna smíchaná věta. Text smí být pole variant (viz variants.js). */
     prose: [
       `Voní bylinky. V rohu suší snopy, na stole leží čisté obvazy. Na polici visí obrázek paní z pohraničí.`,
       `Ve vzduchu visí kouř z kadidla. Na polici cinkají lahvičky; Lidmila právě drtila kořeny.`,
       `U okna se suší svazky heřmánku a v hrnci něco tiše bublá. Obrázek paní z pohraničí se dívá z police.`,
     ],
-    greeting: [`„Bolí to, protože je čtvrtek. Kde?“`, `„Posaď se. Kde to bolí?“`, `„Zase ty? Ukaž — a neříkej, že prší.“`],
+    greeting: [`„Bolí to, protože je čtvrtek. Kde?“`, `„Posaď se. Kde to bolí?“`, `„Zase ty? Ukaž a neříkej, že prší.“`],
     /* priority: heal → protijed → buffy */
     services: [
       { id: "heal", name: "Ošetření", descHtml: () => statChipBtn("hp", null), price: 50 },
@@ -338,7 +365,6 @@ const PLACE = {
     greeting: [`„Uložit, nebo vybrat?“`, `„Vše podle smlouvy. Smlouva ovšem také.“`, `„Lhůta běží. Co potřebujete?“`],
     /* priority: uložit → vybrat */
     services: [
-      { id: "give_bell", name: "Odevzdat zvon Zástavě", desc: "Odměna 40 🪙", price: 0, when: () => bagCount("bell") > 0 && !kauzaState().verdict },
       { id: "dep_all", name: "Uložit vše", desc: "Do Zástavy", price: 0 },
       { id: "dep_50", name: "Uložit", descHtml: () => goldAmt(50), price: 0 },
       { id: "wd_50", name: "Vybrat", descHtml: () => goldAmt(50), price: 0 },
@@ -385,6 +411,7 @@ const PLACE = {
         price: 8,
       },
       { id: "rumor", name: "Drb", descHtml: () => goldAmt(5), price: 5 },
+      { id: "inspect_cask", name: "Prohlédnout sud ve sklepě", desc: "prasklé dno · stopa", price: 0, when: () => kauzaStarted() && !!kauzaState().claims.c1 },
       { id: "stash", name: "Úschovna", descHtml: () => `${state.stash.items.length}/${LOM.Stash.TUNE.stashCap} věcí · ${goldAmt(LOM.Stash.TUNE.stashFeePerDay)}/den`, price: 0 },
       { id: "dice", name: "Kostky", desc: "Hra", price: 0 },
     ],
@@ -397,7 +424,7 @@ const PLACE = {
     bg: "gate",
     prose: [
       `Těžká brána, bedna na sezení. Strážný Petr tiskne oštěp, jako by ho někdo chtěl vzít.`,
-      `Brána vrže ve větru. Petr stojí zpříma. U soklu mostu stojí soška ochránce od vody — ruka se k ní sama táhne.`,
+      `Brána vrže ve větru. Petr stojí zpříma. U soklu mostu stojí soška ochránce od vody, ruka se k ní sama táhne.`,
       `Prach, stín věže a bedna u zdi. Petr si rovná čapku. „Hlídám bránu. Hlídám bránu.“`,
     ],
     greeting: [`„Hlídám bránu. Hlídám bránu. Co chceš?“`, `„Jméno. Ne, počkej, to nechci. Co chceš?“`, `„Kdo tam? Aha. Ty.“`],
@@ -413,9 +440,8 @@ const PLACE = {
     greeting: [`„Číslo? Ne, počkejte, nemáme čísla. Co potřebujete?“`, `„Dotaz? Odpovím na otázku, kterou jste položil.“`, `„Formulář máme. Na odpovědi.“`],
     services: [
       { id: "lookup_priest", name: "Nahlédnout do farní knihy", desc: "Poplatek za vzduch v knihách", price: 5, when: () => kauzaStarted() },
-      { id: "lookup_register", name: "Nahlédnout do knihy odvozů", desc: "Kdo co vezl", price: 5, when: () => kauzaStarted() },
-      { id: "lookup_deed", name: "Nahlédnout do zástavní listiny", desc: "Smlouvy a lhůty", price: 5, when: () => kauzaStarted() },
-      { id: "pay_debt", name: "Splatit dluh kaple", descHtml: () => `Dražba odpadá`, price: 150, when: () => kauzaStarted() },
+      { id: "lookup_deed", name: "Nahlédnout do kupní listiny", desc: "Prodej zvonu a vklady", price: 5, when: () => kauzaStarted() },
+      { id: "pay_debt", name: "Doplatit farnosti za střechu", descHtml: () => `Zvon se vrátí z hutí`, price: 150, when: () => kauzaStarted() && !kauzaState().verdict },
     ],
   },
   market: {
@@ -437,7 +463,7 @@ const PLACE = {
   },
 };
 
-/** Věty při vstupu/odchodu — jen dialog (L/R barvy = kdo mluví, bez „Jméno:“). you/foe smí být pole variant. */
+/** Věty při vstupu/odchodu - jen dialog (L/R barvy = kdo mluví, bez „Jméno:“). you/foe smí být pole variant. */
 const PLACE_BEATS = {
   healer: {
     openTalk: {
@@ -446,14 +472,14 @@ const PLACE_BEATS = {
     },
     openServices: {
       you: `„Ukaž mi, co nabízíš.“`,
-      foe: `„Vyber — ošetření první. Platba i v naturáliích.“`,
+      foe: `„Vyber si. Ošetření první, platba i v naturáliích.“`,
     },
     closeServices: {
       you: `„Zatím nic, díky.“`,
       foe: `„Jak chceš. Jsem tu.“`,
     },
     closeTalk: {
-      you: `„Díky, Lidmilo — zatím.“`,
+      you: `„Díky, Lidmilo. Zatím.“`,
       foe: `„Když něco, stačí říct.“`,
     },
   },
@@ -464,7 +490,7 @@ const PLACE_BEATS = {
     },
     openServices: {
       you: `„Co máš na prodej a opravu?“`,
-      foe: `„Prodej, nákup, oprava — co dřív?“`,
+      foe: `„Prodej, nákup, oprava? Co dřív?“`,
     },
     closeServices: {
       you: `„Ještě se rozmyslím.“`,
@@ -500,7 +526,7 @@ const PLACE_BEATS = {
     },
     openServices: {
       you: `„Co tu jde koupit?“`,
-      foe: `„Spánek, pivo, drby — co dřív?“`,
+      foe: `„Spánek, pivo, drby? Co dřív?“`,
     },
     closeServices: {
       you: `„Ještě ne.“`,
@@ -528,7 +554,7 @@ const PLACE_BEATS = {
     },
     openServices: {
       you: `„Ukaž zboží.“`,
-      foe: `„Prodej, chléb, odvar — jenom pro vás!“`,
+      foe: `„Prodej, chléb, odvar, jenom pro vás!“`,
     },
     closeServices: {
       you: `„Ještě se podívám jinde.“`,
@@ -616,28 +642,26 @@ const EQUIP_SLOTS = [
   "trinket",
 ];
 
-/** Verze prototyupu — bump při smysluplném releasu; © rok = aktuální. */
+/** Verze prototyupu - bump při smysluplném releasu; © rok = aktuální. */
 const APP_VERSION = "0.1.1";
 const APP_YEAR = new Date().getFullYear();
 
 /**
- * Client prefs — localStorage (device).
+ * Client prefs - localStorage (device).
  * Server/User prefs až když účet musí syncovat napříč zařízeními.
- * Klíče: lom.prefs (+ migrace starého lom.audio).
+ * Klíč: lom.prefs.
  */
 const PREFS_KEY = "lom.prefs";
-const AUDIO_PREFS_KEY = "lom.audio"; /* legacy */
 function defaultPrefs() {
   return { music: 60, sfx: 80, muted: false, hotkeys: true, kodex: true, lang: "cs" };
 }
 function loadPrefs() {
   const fallback = defaultPrefs();
   try {
-    const raw = localStorage.getItem(PREFS_KEY) || localStorage.getItem(AUDIO_PREFS_KEY);
+    const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return fallback;
     const p = JSON.parse(raw);
-    const hotkeys =
-      p.hotkeys !== undefined ? p.hotkeys !== false : p.combatHotkeys !== false;
+    const hotkeys = p.hotkeys !== false;
     return {
       music: Math.min(100, Math.max(0, Number(p.music) ?? 60)),
       sfx: Math.min(100, Math.max(0, Number(p.sfx) ?? 80)),
@@ -664,7 +688,7 @@ function savePrefs() {
       })
     );
   } catch {
-    /* private mode / quota — ignore */
+    /* private mode / quota - ignore */
   }
 }
 function saveAudioPrefs() {
@@ -682,8 +706,8 @@ function combatHint(key, text) {
 }
 function dockFooterHtml() {
   const kbd = showHotkeyUi();
-  const tip = (label, n) => (kbd ? `${label} — klávesa ${n}` : label);
-  /* kbd vždy v DOM (is-off = visibility) — footer nemění výšku */
+  const tip = (label, n) => (kbd ? `${label} (klávesa ${n})` : label);
+  /* kbd vždy v DOM (is-off = visibility) - footer nemění výšku */
   const k = (n) => `<kbd class="${kbd ? "" : "is-off"}" aria-hidden="${kbd ? "false" : "true"}">${n}</kbd>`;
   return `
     <button type="button" class="dock-ico" data-act="open-char" title="${tip("Postava", 1)}" aria-label="Postava"><span aria-hidden="true">👤</span><em>Postava</em>${k(1)}</button>
@@ -702,16 +726,16 @@ const makeState = () => ({
   gold: 80,
   bank: 20,
   place: null,
-  placeThread: [], // konverzace na místě — append, ne přepis
+  placeThread: [], // konverzace na místě - append, ne přepis
   panelTab: "quests", // panel Úkoly: quests | notebook
   notebookNew: false, // přibyla fáma od posledního otevření Zápisníku (puntík)
   kzReply: null, // čeká odpověď hráče na právě slyšenou fámu: { cid, ctx: "place"|"cell", place?, at? }
-  placeTalkPath: [], // vnořený dialog — stack id uzlů
+  placeTalkPath: [], // vnořený dialog - stack id uzlů
   placeTalkDone: {}, // placeKey → { [askId]: true }
-  placeView: "hub", // hub | talk | services — o 1 úroveň zpět
+  placeView: "hub", // hub | talk | services - o 1 úroveň zpět
   invDiscardIdx: null,
   equipPickSlot: null, // Postava: otevřený slot picker
-  equipConfirm: null, // { itemId } — potvrzení změny výzbroje
+  equipConfirm: null, // { itemId } - potvrzení změny výzbroje
   mode: "town", // town | place | exits
   mapX: 3,
   mapY: 3,
@@ -739,16 +763,20 @@ const makeState = () => ({
   guest: false,
   originReached: 0,
   prologDone: { class: false, race: false, origin: false },
+  prologBridges: {} /* krok prologu → věta, kterou navazuje další krok */,
+  prologStory: false /* postava vznikla průchodem prologu (Postava = shrnutí a jméno), ne ručním výběrem */,
   origin: null,
   standing: {},
   freeHealAfterDeath: false,
   prologReact: null,
+  prologReply: null,
+  prologCheek: 0 /* kolikrát hráč v prologu odseknul; zatím jen počítadlo drzosti */,
   flashGear: false,
   flashStats: false,
   flashKeys: [], /* jen změněné attributy při flash */
   confirmDelete: false,
   deleteTyped: "",
-  /* výdrž na mapě — odděleně od combat resource */
+  /* výdrž na mapě - odděleně od combat resource */
   travel: { energy: 14, energyMax: 14 },
   audio: (() => {
     const p = loadPrefs();
@@ -761,7 +789,7 @@ const makeState = () => ({
   lootLeaveConfirm: false,
   /* nested panely: klik mimo / × = o úroveň výš (ne rovnou zavřít root) */
   panelStack: [],
-  /* stub — ikony v kontextu; real clock / weather later */
+  /* stub - ikony v kontextu; real clock / weather later */
   weather: { label: "jasno", icon: "🌤" }, // maketa
   clock: LOM.newClock(),
   hp: null, // null = plné HP (trvalé HP mezi boji)
@@ -779,7 +807,7 @@ const makeState = () => ({
   stash: LOM.Stash.newStash(), // úschovna v hospodě (js/systems/stash.js)
   piles: [], // odložené (open) a zakopané (buried) hromádky na mapě
   pileSeq: 0,
-  cellMenu: null, // null | drop | bury | pile — výběr věci na políčku mapy
+  cellMenu: null, // null | drop | bury | pile - výběr věci na políčku mapy
   visits: {}, // placeKey → kolikrát jsi tam vešel (varianty vět)
   vc: {}, // klíč věty → kolikrát už zazněla (varianty vět)
   placeWho: "host", // s kým na místě mluvíš (id osoby z PLACE.people, "host" = npc)
@@ -884,7 +912,7 @@ function syncContinue() {
   }
   const d = r.state;
   box.innerHTML = `<button type="button" class="btn btn-primary wide" data-act="continue-game">Pokračovat</button>
-    <span class="tip">${escapeHtml(d.name || "Poutník")} · úroveň ${d.level} · ${CLASS_LABEL[d.picks.class] || ""}</span>`;
+    <span class="tip">${escapeHtml(d.name || "Poutník")} · úroveň ${d.level} · ${(d.prologDone?.class && CLASS_LABEL[d.picks.class]) || "Povaleč"}</span>`;
 }
 
 const FLOW_SEGS = ORIGIN_STEPS.length + 1; /* prolog kroky + Původ */
@@ -911,6 +939,37 @@ function syncDevPad() {
   root.style.setProperty("--dev-pad", `${bar.offsetHeight}px`);
 }
 
+/** Veřejný export přepíše na true: ukázka končí po prologu (bez landingu a bez pokračování do hry). */
+const PUBLIC_DEMO = true;
+
+/** Ráno po prologu: do seníku jsme se večer nějak doplazili (ne Svatavina zásluha), pak následek volby u zvonu. */
+const MORNING_BASE = {
+  native: "Domů ses večer nějak doplazil, i když si nepamatuješ jak.",
+  default: "Probudíš se v seníku za krčmou. Doplazil ses tam večer nějak sám, víc si nepamatuješ.",
+};
+const MORNING_REACT = {
+  fight: " Na botách máš zaschlé bláto od kaple, kde nic nebylo.",
+  hide: " Zvon se už neozval, nebo sis ho nezapamatoval.",
+  ward: " Amulet držíš pořád v dlani.",
+};
+const prologMorning = () =>
+  (MORNING_BASE[state.picks.origin] || MORNING_BASE.default) + (MORNING_REACT[state.prologReact] || "");
+
+/** Konec ukázky: ráno po prologu a tečka, hra dál nepokračuje. */
+function openDemoEnd(text) {
+  const el = document.createElement("aside");
+  el.className = "loot-overlay";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", "Konec ukázky");
+  el.innerHTML = `<div class="loot-sheet confirm-sheet">
+      <strong>Ráno</strong>
+      <p>${nbspCzech(text)}</p>
+      <p class="muted">Tím ukázka prologu končí. Hra dál pokračuje jen ve vývojové verzi.</p>
+      <div class="loot-actions"><button type="button" class="btn btn-primary" data-act="demo-restart">Zkusit prolog znovu</button></div>
+    </div>`;
+  document.body.appendChild(el);
+}
+
 const DEV_BAR_KEY = "lom.devBarCollapsed";
 const DEV_VIS_KEY = "lom.dev";
 const DEV_KNOB_SEC = {
@@ -933,7 +992,7 @@ const DEV_KNOB_SEC = {
 };
 
 function loadDevBarPrefs() {
-  const out = { collapsed: true, sections: { postava: false, svet: false, boj: false, ladeni: false } };
+  const out = { collapsed: true, sections: { postava: false, svet: false, boj: false, ladeni: false, stav: true } };
   try {
     const raw = localStorage.getItem(DEV_BAR_KEY);
     if (raw === "1" || raw === "0") {
@@ -992,7 +1051,6 @@ function initDevBar() {
     bar.classList.toggle("is-collapsed", prefs.collapsed);
     panel.hidden = prefs.collapsed;
     detailBtn.setAttribute("aria-expanded", String(!prefs.collapsed));
-    detailBtn.textContent = prefs.collapsed ? "Detail ▾" : "Detail ▴";
     syncDevPad();
   };
   const applySections = () => {
@@ -1041,9 +1099,9 @@ function setGameBg(key) {
 
 const ENEMY_INTRO = {
   wolf: "Les zhoustne. Z křoví vystoupí vlk.",
-  boar: "Křoví praská — z podrostu vyrazí divočák.",
+  boar: "Křoví praská, z podrostu vyrazí divočák.",
   bandit: "Na cestě se zvedne bandita a opře se o kyj. „Peníze, nebo život.“",
-  brigand: "Zpoza kamenů vystoupí zbojník. Nespěchá — ví, že ty ano.",
+  brigand: "Zpoza kamenů vystoupí zbojník. Nespěchá. Ví, že ty ano.",
 };
 
 function bagCount(id) {
@@ -1081,7 +1139,7 @@ function startCombat(introLines, opts = {}) {
       def: s.def,
       dex: s.dex,
       int: s.int,
-      classId: state.picks.class,
+      classId: pickedClass(),
     },
     items: { heal: bagCount("potion"), foresight: bagCount("foresight") },
     familiarity: (state.kills[enemyId] || 0) * 0.015,
@@ -1272,6 +1330,7 @@ function renderConfirmPicks() {
   if (classBonus) {
     classBonus.innerHTML = state.prologDone.class && c ? bonusRowHtml(c.bonuses) : "";
   }
+  document.querySelectorAll("#origin-class .bonus-label").forEach((el) => (el.hidden = !(state.prologDone.class && c)));
   if (originEffects) {
     originEffects.textContent = state.prologDone.origin && o ? o.effectsLine || "" : "";
   }
@@ -1279,19 +1338,28 @@ function renderConfirmPicks() {
   const raceSum = document.querySelector("#origin-race > summary");
   const classSum = document.querySelector("#origin-class > summary");
   const originSum = document.querySelector("#origin-origin > summary");
+  const story = !!state.prologStory;
+  $("screen-confirm-box")?.classList.toggle("confirm-summary", story);
+  const again = $("prolog-again");
+  if (again) again.hidden = !story;
+  if (story && !state.prologDone.class && classBlurb) {
+    classBlurb.textContent = "Pořádnou práci nemáš. Zato znáš hospody, zadní vrátka a co se šeptá.";
+  }
   if (raceSum) {
     raceSum.innerHTML = state.prologDone.race
-      ? `Vyber svou rasu <em class="acc-picked">${r?.icon || ""} ${r?.label || ""}</em>`
-      : "Vyber svou rasu";
+      ? `${story ? "Kraj" : "Vyber svůj kraj"} <em class="acc-picked">${r?.icon || ""} ${r?.label || ""}</em>`
+      : "Vyber svůj kraj";
   }
   if (classSum) {
     classSum.innerHTML = state.prologDone.class
-      ? `Vyber své povolání <em class="acc-picked">${c?.icon || ""} ${c?.label || ""}</em>`
-      : "Vyber své povolání";
+      ? `${story ? "Živnost" : "Vyber svou živnost"} <em class="acc-picked">${c?.icon || ""} ${c?.label || ""}</em>`
+      : story
+        ? `Živnost <em class="acc-picked">🍺 Povaleč</em>`
+        : "Vyber svou živnost";
   }
   if (originSum) {
     originSum.innerHTML = state.prologDone.origin
-      ? `Vyber svůj původ <em class="acc-picked">${o?.icon || ""} ${o?.label || ""}</em>`
+      ? `${story ? "Původ" : "Vyber svůj původ"} <em class="acc-picked">${o?.icon || ""} ${o?.label || ""}</em>`
       : "Vyber svůj původ";
   }
   const chrome = $("origin-chrome");
@@ -1303,7 +1371,7 @@ function renderConfirmPicks() {
       fwdAct: "origin-fwd",
       canFwd: false,
       segsHtml: flowSegsHtml(FLOW_SEGS - 1),
-      sub: "Vytvoř svého hrdinu",
+      sub: state.prologStory ? "Tvůj příběh začíná" : "Vytvoř svého hrdinu",
     });
   }
   const box = $("confirm-stats");
@@ -1312,20 +1380,56 @@ function renderConfirmPicks() {
   }
   syncOriginAccordions();
   updateStartGate();
+  bindScrollFade(document.querySelector(".origin-scroll"));
 }
 
-/** Vstoupit do hry až po volbě rasy + povolání + původu */
+const missingPicks = () =>
+  state.prologStory ? [] : [!state.prologDone.race && "kraj", !state.prologDone.class && "živnost", !state.prologDone.origin && "původ"].filter(Boolean);
+
+function closeStartModal() {
+  $("start-modal")?.classList.add("hidden");
+}
+
+/** Potvrzení, když hráč něco nevybral: řekne, co se stane, a nechá ho vrátit se. */
+function openStartModal(missing) {
+  let el = $("start-modal");
+  if (!el) {
+    el = document.createElement("aside");
+    el.id = "start-modal";
+    el.className = "loot-overlay hidden";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-label", "Začít bez voleb");
+    el.addEventListener("click", (e) => {
+      if (e.target === el) closeStartModal();
+    });
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div class="loot-sheet confirm-sheet">
+      <strong>Začít bez těchto voleb?</strong>
+      <p>Nevybráno: <strong>${missing.join(", ")}</strong>. Začneš jako neznámý poutník s neutrálními staty a bez startovních bonusů. Za hry už to nezměníš.</p>
+      <div class="loot-actions">
+        <button type="button" class="btn btn-ghost" data-act="start-back">Zpět k výběru</button>
+        <button type="button" class="btn btn-primary" data-act="start-confirm">Začít takto</button>
+      </div>
+    </div>`;
+  el.classList.remove("hidden");
+  el.querySelector("[data-act=start-back]").focus();
+}
+
+/** Poznámka u tlačítka Vstoupit do hry (nevybrané volby) */
 function updateStartGate() {
   const btn = document.querySelector('[data-act="start-game"]');
   if (!btn) return;
-  const ok = state.prologDone.race && state.prologDone.class && state.prologDone.origin;
-  btn.disabled = !ok;
-  btn.title = ok ? "" : "Nejdřív zvol rasu, povolání a původ";
+  /* vstoupit jde bez voleb (zůstanou neznámé), ale ne bez jména */
+  const missing = missingPicks();
+  const hasName = !!$("input-name")?.value.trim();
+  btn.disabled = !hasName;
+  const note = $("origin-cta-note");
+  if (note) note.textContent = !hasName ? "Vyber si jméno hrdiny (kostka ti pomůže)." : missing.length ? `Nevybráno: ${missing.join(", ")}. Zůstane neznámé.` : "";
 }
 
 /**
- * Desktop: všechny otevřené.
- * Mobil: focus na sekci; výchozí = první nehotová.
+ * Vždy jedna otevřená sekce: focus, jinak první nehotová.
  * focus: "race" | "class" | "origin" | undefined
  */
 function syncOriginAccordions(focus) {
@@ -1333,13 +1437,6 @@ function syncOriginAccordions(focus) {
   const classEl = $("origin-class");
   const originEl = $("origin-origin");
   if (!raceEl || !classEl) return;
-  const wide = window.matchMedia("(min-width: 720px)").matches;
-  if (wide) {
-    raceEl.open = true;
-    classEl.open = true;
-    if (originEl) originEl.open = true;
-    return;
-  }
   const openOnly = (which) => {
     raceEl.open = which === "race";
     classEl.open = which === "class";
@@ -1349,9 +1446,15 @@ function syncOriginAccordions(focus) {
     openOnly(focus);
     return;
   }
+  if (state.prologStory) {
+    raceEl.open = classEl.open = true;
+    if (originEl) originEl.open = true;
+    return;
+  }
   if (!state.prologDone.race) openOnly("race");
   else if (!state.prologDone.class) openOnly("class");
   else if (!state.prologDone.origin) openOnly("origin");
+  else openOnly("race"); /* vše hotovo (např. scéna ze storybooku): ať není nic zavřené naslepo */
 }
 
 function updateStatsPreview() {
@@ -1374,7 +1477,7 @@ function fillPlayerBox(id, opts = {}) {
   el.innerHTML = `
     <div class="thumb hero" title="${name}"></div>
     <div class="box-body">
-      <div class="box-title clip"><strong>${name}</strong> <span class="muted">Lv ${state.level} · ${CLASS_LABEL[state.picks.class]}</span></div>
+      <div class="box-title clip"><strong>${name}</strong> <span class="muted">Lv ${state.level} · ${classLabelNow()}</span></div>
       <div class="bar hp"><span class="bar-ico has-tip" data-tip="${STAT_BY.hp.title}" aria-label="HP">${STAT_BY.hp.icon}</span><i style="--p:${(hp / s.hpMax) * 100}%"></i><em>${hp}/${s.hpMax}</em></div>
       <div class="bar mp"><span class="bar-ico has-tip" data-tip="${resTip}" aria-label="${resTip}">${resIco}</span><i style="--p:${(res / resMax) * 100}%"></i><em>${res}/${resMax}</em></div>
       <div class="gear-strip${flash}">
@@ -1489,9 +1592,9 @@ function flashChangedStats(before) {
 
 function equippedLabel(slot) {
   const id = state.equipped[slot];
-  if (!id) return "—";
+  if (!id) return "–";
   const item = INVENTORY.find((i) => i.id === id);
-  if (!item) return "—";
+  if (!item) return "–";
   const bonus = [];
   if (item.atk) bonus.push(`${STAT_BY.atk.icon}+${item.atk}`);
   if (item.def) bonus.push(`${STAT_BY.def.icon}+${item.def}`);
@@ -1571,7 +1674,7 @@ function setAuth(mode) {
   }
 }
 
-/** Scroll lane / panel — klíč = stav; jiný stav = nahoře, stejný = pamatovat */
+/** Scroll lane / panel - klíč = stav; jiný stav = nahoře, stejný = pamatovat */
 const laneScrollMem = {};
 let laneScrollKey = null;
 const panelScrollMem = {};
@@ -1582,7 +1685,35 @@ function clearUiScrollMem() {
   laneScrollKey = null;
 }
 
+/** Úvod: jeden citát, při každém návratu na úvod jiný (lidová moudrost, slavná věta, repliky z města). */
+const LANDING_QUOTES = [
+  { q: "„Mlčeti zlato.“", by: "lidové rčení" },
+  { q: "„Musíme obdělávat svou zahradu.“", by: "Voltaire, Candide" },
+  { q: "„Bolí to, protože je čtvrtek.“", by: "Lidmila, léčitelka" },
+  { q: "„Platit budete tak jako tak.“", by: "Svatava z Přívozu, hostinská" },
+];
+let landingQuoteIdx = -1;
+let landingQuoteShown = false;
+function showLandingQuote() {
+  landingQuoteShown = true;
+  const q = $("landing-quote");
+  const by = $("landing-quote-by");
+  if (!q || !by) return;
+  let i = Math.floor(Math.random() * LANDING_QUOTES.length);
+  if (i === landingQuoteIdx) i = (i + 1) % LANDING_QUOTES.length;
+  landingQuoteIdx = i;
+  q.textContent = LANDING_QUOTES[i].q;
+  by.textContent = `– ${LANDING_QUOTES[i].by}`;
+  revealText(q, { step: 55, max: 900 });
+  revealText(by, { step: 40, max: 500, delay: 700 });
+}
+
 function setScreen(name) {
+  const reveal = name === "landing" && (state.screen !== "landing" || !landingQuoteShown);
+  if (state.screen !== name) {
+    lastOriginStep = -1;
+    lastRevealed = "";
+  }
   /* DEV / přechod sekcí: jiná obrazovka = reset scrollů a panelů; stejná = pamatovat */
   if (state.screen !== name) {
     clearUiScrollMem();
@@ -1607,6 +1738,7 @@ function setScreen(name) {
   });
   if (name === "confirm") updateStatsPreview();
   render();
+  if (reveal) showLandingQuote();
 }
 
 function laneStateKey() {
@@ -1641,6 +1773,38 @@ function kodexLog(html) {
   });
 }
 
+/**
+ * Náběh textu: slova se objeví postupně (fade). Rozdělí jen mezery, ne nezlomitelné (nbsp drží pohromadě).
+ * Celé to trvá nejvýš ~1,1 s bez ohledu na délku; `prefers-reduced-motion` efekt vypne.
+ */
+function revealText(el, { step = 26, max = 1100, delay = 0 } = {}) {
+  if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.trim()) nodes.push(n);
+  const total = nodes.reduce((a, n) => a + n.nodeValue.split(/[ \t\n]+/).filter(Boolean).length, 0);
+  const per = Math.min(step, max / Math.max(total, 1));
+  let i = 0;
+  for (const n of nodes) {
+    const frag = document.createDocumentFragment();
+    for (const part of n.nodeValue.split(/([ \t\n]+)/)) {
+      if (!part) continue;
+      if (/^[ \t\n]+$/.test(part)) {
+        frag.appendChild(document.createTextNode(part));
+        continue;
+      }
+      const w = document.createElement("span");
+      w.className = "w";
+      w.style.setProperty("--d", `${delay + Math.round(i++ * per)}ms`);
+      w.textContent = part;
+      frag.appendChild(w);
+    }
+    n.replaceWith(frag);
+  }
+}
+
+let lastRevealed = "";
+
 function setLog(html) {
   state.log = html;
   html = kodexLog(html);
@@ -1648,6 +1812,16 @@ function setLog(html) {
   const el = $(id);
   if (el) {
     el.innerHTML = html;
+    /* nová vyprávěná věta (ne opakovaný render téhož textu) se vypíše postupně */
+    const bubbles = el.querySelectorAll(".log-bubble");
+    const fresh =
+      id === "town-log" /* boj zůstává svižný, bez náběhu */
+        ? el.querySelector(".log-bubble.fresh.scene, .log-bubble.fresh.foe") || (bubbles.length === 1 ? bubbles[0] : null)
+        : null;
+    if (fresh && fresh.textContent !== lastRevealed) {
+      lastRevealed = fresh.textContent;
+      revealText(fresh);
+    }
     scrollLogToEnd();
   }
 }
@@ -1727,7 +1901,7 @@ function openPanel(kind, opts = {}) {
   const sheetNow = mainPanelSheet();
   if (opts.pushFrom && cur && cur !== kind && !overlay.classList.contains("hidden") && sheetNow) {
     state.panelStack.push(cur);
-    /* pod novým panelem ztlumený klon — bez id (jinak $() bere under a dismiss rozbije stack) */
+    /* pod novým panelem ztlumený klon - bez id (jinak $() bere under a dismiss rozbije stack) */
     overlay.querySelectorAll(".panel-under").forEach((n) => n.remove());
     const under = sheetNow.cloneNode(true);
     under.classList.add("panel-under");
@@ -1751,7 +1925,7 @@ function openPanel(kind, opts = {}) {
   if (!sheet || !title || !body || !foot) return;
   overlay.classList.remove("hidden");
   overlay.dataset.kind = kind;
-  /* landing / prolog / původ — bez herního footeru → overlay přes celou obrazovku */
+  /* landing / prolog / původ - bez herního footeru → overlay přes celou obrazovku */
   const preGame =
     state.screen === "landing" || state.screen === "origins" || state.screen === "confirm";
   overlay.classList.toggle("is-fullscreen", preGame);
@@ -1841,7 +2015,7 @@ function openPanel(kind, opts = {}) {
               st === "available"
                 ? `Nabízí ${q.giver.npc} (${PLACE[q.giver.place].title}). Zeptej se v rozhovoru.`
                 : st === "active" || st === "ready"
-                  ? `Odevzdat: ${q.turnIn.cell ? `${q.turnIn.npc} — ${cellLabel(...q.turnIn.cell)} (${q.turnIn.cell})` : `${q.turnIn.npc} — ${PLACE[q.turnIn.place].title}`}`
+                  ? `Odevzdat: ${q.turnIn.cell ? `${q.turnIn.npc}, ${cellLabel(...q.turnIn.cell)} (${q.turnIn.cell})` : `${q.turnIn.npc}, ${PLACE[q.turnIn.place].title}`}`
                   : "";
             const rewardSrc = q.reward || {};
             const rew = [
@@ -1898,11 +2072,11 @@ function openPanel(kind, opts = {}) {
         const open = pick === slot ? " pick-open" : "";
         const tip = item
           ? itemTipBits(item, ["klik změní"]).join(" · ")
-          : `${ui.label} — prázdné · klik vybere`;
+          : `${ui.label}: prázdné · klik vybere`;
         return `<button type="button" class="equip-slot can-equip has-tip ${ui.cls}${item ? " on" : ""}${open}" data-act="char-slot" data-slot="${slot}" data-tip="${tip}" aria-expanded="${pick === slot}" aria-label="${tip}">
           <span class="panel-tile-ico" aria-hidden="true">${item?.icon || "·"}</span>
           <strong class="equip-slot-label">${ui.label}</strong>
-          <span class="inv-cell-name">${item ? item.name : "—"}</span>
+          <span class="inv-cell-name">${item ? item.name : "–"}</span>
         </button>`;
       })
       .join("");
@@ -1918,7 +2092,7 @@ function openPanel(kind, opts = {}) {
       const conf = state.equipConfirm;
       let bodyPop = "";
       if (conf?.itemId) {
-        /* úroveň 2: jen dotaz — seznam skrytý (nemáte) */
+        /* úroveň 2: jen dotaz - seznam skrytý (nemáte) */
         const next = INVENTORY.find((i) => i.id === conf.itemId);
         const prev = equippedId && INVENTORY.find((i) => i.id === equippedId);
         const same = equippedId === conf.itemId;
@@ -1962,8 +2136,8 @@ function openPanel(kind, opts = {}) {
           </div>
         </div>`;
     }
-    const clsLabel = CLASS_INFO[state.picks.class]?.label || "Poutník";
-    const raceLabel = RACE_INFO[state.picks.race]?.label || "—";
+    const clsLabel = CLASS_INFO[pickedClass()]?.label || "Povaleč";
+    const raceLabel = RACE_INFO[pickedRace()]?.label || "neznámý původ";
     body.innerHTML = `
       <div class="panel-head">
         <p><strong>${escapeHtml(state.name || "Poutník")}</strong> · ${clsLabel} · ${raceLabel}</p>
@@ -1992,7 +2166,7 @@ function openPanel(kind, opts = {}) {
           </section>
           <section class="panel-section">
             <h3 class="panel-section-title">Dovednosti</h3>
-            <p class="muted">Strom schopností podle povolání — brzy.</p>
+            <p class="muted">Strom schopností podle povolání, brzy.</p>
           </section>
         </div>
       </div>
@@ -2093,7 +2267,7 @@ function openPanel(kind, opts = {}) {
             <strong>Jazyk</strong>
             <div class="lang-switch" role="group" aria-label="Jazyk">
               <button type="button" class="lang-btn is-on" data-act="lang-cs" aria-pressed="true" title="Čeština">🇨🇿 CS</button>
-              <button type="button" class="lang-btn" data-act="lang-en" disabled title="English — brzy" aria-pressed="false">🇬🇧 EN</button>
+              <button type="button" class="lang-btn" data-act="lang-en" disabled title="English (brzy)" aria-pressed="false">🇬🇧 EN</button>
             </div>
           </li>
           <li class="settings-audio">
@@ -2101,11 +2275,11 @@ function openPanel(kind, opts = {}) {
             <label class="check settings-mute"><input type="checkbox" data-act="audio-mute" ${a.muted ? "checked" : ""} /> Ztlumit vše</label>
             <label class="settings-slider">Hudba
               <input type="range" min="0" max="100" value="${a.music}" data-act="audio-music" ${a.muted ? "disabled" : ""} />
-              <em>${a.muted ? "—" : a.music}</em>
+              <em>${a.muted ? "–" : a.music}</em>
             </label>
             <label class="settings-slider">Zvuky
               <input type="range" min="0" max="100" value="${a.sfx}" data-act="audio-sfx" ${a.muted ? "disabled" : ""} />
-              <em>${a.muted ? "—" : a.sfx}</em>
+              <em>${a.muted ? "–" : a.sfx}</em>
             </label>
           </li>
           ${
@@ -2165,7 +2339,7 @@ function openPanel(kind, opts = {}) {
       { rank: 3, name: "Bořivoj", cls: "Mág", level: 10, wins: 66 },
       { rank: 4, name: "Zdislava", cls: "Lovec", level: 9, wins: 52 },
       { rank: 5, name: "Ctibor", cls: "Válečník", level: 8, wins: 41 },
-      { rank: 6, name: escapeHtml(state.name || "Ty"), cls: CLASS_LABEL[state.picks.class], level: state.level, wins: 1, you: true },
+      { rank: 6, name: escapeHtml(state.name || "Ty"), cls: classLabelNow(), level: state.level, wins: 1, you: true },
     ];
     body.innerHTML = `
       <div class="panel-scroll" data-scroll="ranks">
@@ -2219,15 +2393,15 @@ function openPanel(kind, opts = {}) {
               <p>ATK ≈ STR + bonus zbraně/výzbroje. DEF ≈ floor(VIT × 0.5) + zbroj. Přesnější vzorce a metriky doladíme; teď rough prototyp.</p>
             </details>
             <details class="faq-item" name="faq">
-              <summary>Boj — co dělat?</summary>
+              <summary>Boj: co dělat?</summary>
               <p>Sleduj telegraph nepřítele. Rychlý / Těžký / Obrana mají výhody podle záměru. Spam jen útok ≠ optimum. Detail: docs/reference/combat.md.</p>
             </details>
           </div>`,
       },
       terms: {
         title: "Podmínky",
-        html: `<p>Land of Machala je indie textová hra. Účet slouží jen tobě — bez botů a obchodu za reálné peníze.</p>
-          <p>Pro provoz držíme e-mail a herní data; nesdílíme je k marketingu. Účet <strong>deaktivuješ</strong> ve hře (Nastavení → Smazat) — data se skryjí. Do <strong>14 dnů</strong> lze požádat o obnovení; pak trvalý výmaz. Službu můžeme upravit nebo ukončit.</p>
+        html: `<p>Land of Machala je indie textová hra. Účet slouží jen tobě, bez botů a obchodu za reálné peníze.</p>
+          <p>Pro provoz držíme e-mail a herní data; nesdílíme je k marketingu. Účet <strong>deaktivuješ</strong> ve hře (Nastavení → Smazat). Data se skryjí. Do <strong>14 dnů</strong> lze požádat o obnovení; pak trvalý výmaz. Službu můžeme upravit nebo ukončit.</p>
           <p class="muted">Virtuální předměty nemají hotovostní hodnotu mimo hru.</p>`,
       },
     };
@@ -2241,15 +2415,44 @@ function openPanel(kind, opts = {}) {
 function choiceIsPicked(choice) {
   if (choice.class) return state.prologDone.class && state.picks.class === choice.class;
   if (choice.race) return state.prologDone.race && state.picks.race === choice.race;
+  if (choice.origin) return state.prologDone.origin && state.picks.origin === choice.origin;
   if (choice.react) return state.prologReact === choice.react;
   return false;
 }
+
+/** Okraj seznamu, který jde scrollovat, se zeslabí (fade): ukáže, že pokračuje nahoru či dolů. */
+function bindScrollFade(el) {
+  if (!el) return;
+  const update = () => {
+    el.classList.toggle("fade-top", el.scrollTop > 2);
+    el.classList.toggle("fade-bottom", el.scrollTop + el.clientHeight < el.scrollHeight - 2);
+  };
+  if (!el.dataset.fade) {
+    el.dataset.fade = "1";
+    el.addEventListener("scroll", update, { passive: true });
+  }
+  update();
+  requestAnimationFrame(update);
+}
+
+/** Tělo volby v prologu: gesto (kurzíva) a/nebo řeč v uvozovkách, v libovolném pořadí. */
+function choiceBodyHtml(c) {
+  const act = (t) => `<em class="choice-act">${nbspCzech(t)}</em>`;
+  const parts = [];
+  if (c.act) parts.push(act(c.act));
+  if (c.say) parts.push(`„${nbspCzech(c.say)}“`);
+  if (c.title) parts.push(nbspCzech(c.title, { tail: true }));
+  if (c.actAfter) parts.push(act(c.actAfter));
+  return parts.join(" ");
+}
+
+let lastOriginStep = -1;
 
 function renderOrigins() {
   const step = ORIGIN_STEPS[state.originStep];
   const box = $("origins-box");
   if (!box || !step) return;
-  const letters = ["A", "B", "C"];
+  const letters = ["A", "B", "C", "D", "E", "F"];
   const maxReached = Math.max(state.originStep, state.originReached || 0);
   state.originReached = maxReached;
   /* po první volbě šipky; → i na Původ (poslední seg flow) */
@@ -2269,26 +2472,40 @@ function renderOrigins() {
         segsHtml: flowSegsHtml(state.originStep),
       })
     : screenChrome({ label: "Prolog", segsHtml: flowSegsHtml(state.originStep) });
+  const stepChanged = lastOriginStep !== state.originStep;
+  lastOriginStep = state.originStep;
+  /* mezivěta po reakci na zvon: krok „domov“ na ni navazuje */
+  const lead = step.lead ? step.lead[pickedClass() || "none"] : "";
+  const bridge = state.prologBridges?.[state.originStep - 1] || ""; /* Svatavina odpověď nebo následek předchozí volby */
   box.innerHTML = `
     ${chrome}
-    <p class="prose-beat origin-text">${nbspCzech(step.text)}</p>
+    <div class="origin-body">${[bridge, lead, step.text]
+      .filter(Boolean)
+      .join("\n")
+      .split("\n")
+      .map((para) => `<p class="prose-beat origin-text">${nbspCzech(para, { tail: true })}</p>`)
+      .join("")}</div>
+    ${state.prologReply && step.pick === "class" ? `<p class="prose-beat origin-reply">${nbspCzech(state.prologReply)}</p>` : ""}
     <div class="choice-stack">
       ${step.choices
         .map((c, i) => {
           const picked = choiceIsPicked(c);
           const letter = letters[i] || String(i + 1);
-          return `<button type="button" class="choice btn-action${picked ? " picked" : ""}" data-origin-choice="${i}" aria-pressed="${picked}">
-            <strong><span class="choice-letter">${letter}</span> ${c.title}</strong>
-            <span class="btn-hint">${c.hint || ""}${picked ? " · zvoleno" : ""}</span>
+          return `<button type="button" class="choice btn-action${picked ? " picked" : ""}" style="--i:${i}" data-origin-choice="${i}" aria-pressed="${picked}">
+            <strong><span class="choice-letter">${letter}</span> ${choiceBodyHtml(c)}</strong>
+            ${c.hint ? `<span class="btn-hint">${c.hint}</span>` : ""}
           </button>`;
         })
         .join("")}
     </div>
-    <button type="button" class="btn btn-ghost skip-link" data-goto="confirm">Přeskočit úvod (jsem zkušený)</button>`;
+    `;
+  box.classList.toggle("step-in", stepChanged);
+  if (stepChanged) revealText(box.querySelector(".origin-body"));
+  bindScrollFade(box.querySelector(".choice-stack"));
 }
 
 /**
- * prose + thread[] — konverzace se appenduje (ne přepisuje).
+ * prose + thread[] - konverzace se appenduje (ne přepisuje).
  * Každý turn: { you?, foe?, scene?, fresh? }
  */
 function townLogHtml(prose, threadOrFeedback) {
@@ -2456,7 +2673,7 @@ const PLACE_ASK = {
       title: `Zeptat se, co je ${hl("nového")}`,
       hint: "zprávy z města",
       ask: `„Co je nového ve městě?“`,
-      ans: [`„Stejný den jako včera — drž se bran.“`, `„Nic, co by se nedalo ošetřit. Zatím.“`, `„Město dýchá, ale špatně spí.“`],
+      ans: [`„Stejný den jako včera. Drž se bran.“`, `„Nic, co by se nedalo ošetřit. Zatím.“`, `„Město dýchá, ale špatně spí.“`],
       children: [
         {
           id: "news_night",
@@ -2479,7 +2696,7 @@ const PLACE_ASK = {
           title: `Zeptat se na ${hl("protijed")}`,
           hint: "léčba",
           ask: `„Máš na to protijed?“`,
-          ans: `„Ano — v nabídce. Bez něj se rána kazí.“`,
+          ans: `„Ano, v nabídce. Bez něj se rána kazí.“`,
         },
         {
           id: "wolves_where",
@@ -2526,7 +2743,7 @@ const PLACE_ASK = {
       title: `Zeptat se na ${hl("zakázky")}`,
       hint: "práce za odměnu",
       ask: `„Máš nějaké zakázky?“`,
-      ans: `„Někdo nosí rezavé čepele — chci je na rozbor.“`,
+      ans: `„Někdo nosí rezavé čepele. Chci je na rozbor.“`,
       children: [
         {
           id: "jobs_pay",
@@ -2556,9 +2773,9 @@ const PLACE_ASK = {
     {
       id: "bell",
       title: `Zeptat se na ${hl("zvon")} z kaple`,
-      hint: "listiny · zástava",
+      hint: "listiny · vklad",
       ask: `„Nevíte něco o zvonu z kaple?“`,
-      ans: `„Vše proběhlo přesně podle smlouvy.“`,
+      ans: `„Zástava na zvon neběží. Hotovost z prodeje měla dojít sem.“`,
       claim: "c4",
       when: () => kauzaStarted(),
     },
@@ -2574,16 +2791,40 @@ const PLACE_ASK = {
       title: `Zeptat se na ${hl("poplatky")}`,
       hint: "cena úschovy",
       ask: `„Kolik berete za úschovu?“`,
-      ans: `„Úschova je zdarma. Výběr taky — dokud nejsi mrtvý.“`,
+      ans: `„Úschova je zdarma. Výběr taky, dokud nejsi mrtvý.“`,
     },
   ],
   tavern: [
+    {
+      id: "prolog_fight",
+      title: `Připomenout ${hl("noc")} se sudem`,
+      hint: "prolog · šel jsi ven",
+      when: () => state.prologReact === "fight",
+      ask: `„Tehdy jsem šel ven za zvonem. Nic jsem nenašel.“`,
+      ans: `„Viděla jsem tě jít. Vrátil ses s prázdnou — jako ten zvon. Sud pořád leží ve sklepě.“`,
+    },
+    {
+      id: "prolog_hide",
+      title: `Připomenout ${hl("noc")} se sudem`,
+      hint: "prolog · zůstal jsi",
+      when: () => state.prologReact === "hide",
+      ask: `„Tehdy jsem zůstal sedět. Sud i zvon — obojí najednou.“`,
+      ans: `„Sedět umíš. Sud je ve sklepě. A zvon? Lidi šeptají. Ptej se.“`,
+    },
+    {
+      id: "prolog_ward",
+      title: `Připomenout ${hl("noc")} se sudem`,
+      hint: "prolog · amulet",
+      when: () => state.prologReact === "ward",
+      ask: `„Tehdy jsem držel amulet. Sud stejně praskl.“`,
+      ans: `„Modlitba sud neslepí. Podívej se dolů, až budeš chtít vědět, odkud byly mince.“`,
+    },
     {
       id: "rumors",
       title: `Zeptat se na ${hl("drby")}`,
       hint: "fámy u stolu",
       ask: `„Co se šeptá u stolu?“`,
-      ans: `„V noci zase štěkali psi u lesa.“`,
+      ans: `„Ten sud praskl a od kaple zvonil zvon, kterého tam není. Peníze na sud prý od farnosti.“`,
       claim: "c1",
     },
     {
@@ -2651,10 +2892,10 @@ const PLACE_ASK = {
     },
     {
       id: "auction",
-      title: `Zeptat se na ${hl("dražbu")}`,
-      hint: "termín a dluh",
-      ask: `„Slyšel jsem o dražbě zvonu.“`,
-      ans: `„Dražba bude pět dní po oznámení. Kdo splatí dluh kaple, dražba odpadá.“`,
+      title: `Zeptat se na ${hl("lhůtu")} zvonu`,
+      hint: "přelití v hutích",
+      ask: `„Slyšel jsem, že zvon mají přelít.“`,
+      ans: `„Pět dní od oznámení. Kdo doplatí střechu, Matěj zvon vrátí. Jinak jde do pece.“`,
       when: () => kauzaStarted(),
     },
   ],
@@ -2671,7 +2912,7 @@ const PLACE_ASK = {
       title: `Zeptat se na zboží z ${hl("lesa")}`,
       hint: "výkup trofejí",
       ask: `„Kupuješ něco z lesa?“`,
-      ans: `„Zuby vlka. Kůži taky — když není plná blech.“`,
+      ans: `„Zuby vlka. Kůži taky, když není plná blech.“`,
     },
   ],
 };
@@ -2735,7 +2976,7 @@ function travelProse() {
     village: "Nízké chalupy a pach slámy.",
     road: "Prach cesty a stopy vozů.",
     plains: "Široký horizont, vítr v trávě.",
-    forest: "Stíny mezi kmeny — něco zapraská.",
+    forest: "Stíny mezi kmeny. Něco zapraská.",
     hills: "Kamení pod nohama, výhled daleko.",
     chapel: "Ticho a chlad kamenné kaple.",
   };
@@ -2790,7 +3031,7 @@ const ENCOUNTER_TEXT = {
   wolf: "Z podrostu se ozve zavrčení. Cestu ti zastoupí vlk.",
   boar: "Křoví praská. Z hustníku vyrazí divočák.",
   bandit: "Na cestě stojí bandita s kyjem a nevypadá, že chce jen pozdravit.",
-  brigand: "Zpoza kamenů vystoupí zbojník. Nespěchá — ví, že ty ano.",
+  brigand: "Zpoza kamenů vystoupí zbojník. Nespěchá. Ví, že ty ano.",
 };
 
 function ensureSpots() {
@@ -2818,12 +3059,12 @@ function corpseHere() {
 
 /* ---------- kauza Zvon (pravidla: js/systems/kauza.js, data: js/data/kauzy.js) ---------- */
 const KZ = LOM.KAUZY.zvon;
-const LOOKUP_CLAIM = { lookup_priest: "c2", lookup_register: "c3", lookup_deed: "c4" };
+const LOOKUP_CLAIM = { lookup_priest: "c2", lookup_deed: "c4" };
 const OMEN_FLAVOR = {
-  chanter: " Jako zaříkávač cítíš, že chlad vane z místa, kde zvon visel. Nebo ti to jen připadá.",
-  tracker: " Stopař v tobě slyší, že les se od kaple vzdaluje. Zvěř ví víc než lidé.",
-  mercenary: " Žoldák v tobě nechává tuhle hrůzu spíš chladnou. Přesto sis zvedl límec.",
-  legist: " Zákoník v tobě hledá pečeť, zápis, důvod. Nic tu není. Zůstává jen chlad.",
+  chanter: " Jako bylinkář cítíš, že chlad vane z místa, kde zvon visel. Nebo ti to jen připadá.",
+  tracker: " Dřevorubec v tobě slyší, že les se od kaple vzdaluje. Zvěř ví víc než lidé.",
+  mercenary: " Pacholek v tobě nechává tuhle hrůzu spíš chladnou. Přesto sis zvedl límec.",
+  legist: " Písař v tobě hledá pečeť, zápis, důvod. Nic tu není. Zůstává jen chlad.",
 };
 
 function kauzaState() {
@@ -2861,12 +3102,10 @@ function kauzaHear(cid, via, { defer = false } = {}) {
   return r;
 }
 
-/** Ušetřený bandita / zbojník vydá fámu (c6). */
+/** Ušetřený bandita: drobná stopa (ne jádro kauzy; c6 je teď od Ondry u hutí). */
 function kauzaOnSpare(enemyId) {
   if (enemyId !== "brigand" && enemyId !== "bandit") return null;
-  const k = kauzaState();
-  if (k.claims.c6) return null;
-  return kauzaHear("c6", "brigand", { defer: true });
+  return null;
 }
 
 function kauzaLookup(id) {
@@ -2964,7 +3203,7 @@ function kzBtn(act, title, hint, type) {
   return actionBtn({ title, hint, act, type, story: true });
 }
 
-/** Akce na políčkách kaple a tábora (mimo město). */
+/** Akce na políčkách kaple, vozu a hutí (mimo město). */
 function kauzaCellButtonsHtml() {
   const k = kauzaState();
   const at = (c) => c[0] === state.mapX && c[1] === state.mapY;
@@ -2978,12 +3217,19 @@ function kauzaCellButtonsHtml() {
     if (night) out.push(kzBtn("kz-omen", `Naslouchat ${hl("znamením")} v kapli`, "noc · tady se ověří, co ve dne nejde"));
     if (!k.verdict && bagCount("bell") > 0) out.push(kzBtn("kz-return", `Odevzdat ${hl("zvon")} Aničce`, "vrátit do kaple", "primary"));
   }
-  if (at(KZ.camp.cell)) {
-    const cleared = k.facts.campClearedDay === state.clock.day;
-    if (night && !cleared) out.push(kzBtn("kz-camp-night", `Vplížit se do ${hl("tábora")}`, "v noci tu sedí zbojník"));
-    else out.push(kzBtn("kz-camp", `Prohlédnout ${hl("tábor")}`, "stopy, kasička, plachta"));
-    if (k.facts.campSeen && (!night || cleared) && !hasItemAnywhere("bell") && !k.facts.bellGone) {
-      out.push(kzBtn("kz-bell", `Vzít ${hl("zvon")}`, `váží ${KZ.bell.weight} kg`, "primary"));
+  if (at(KZ.cart.cell)) {
+    out.push(kzBtn("kz-cart", `Prohlédnout ${hl("vůz")}`, "malý zvon · stopa"));
+  }
+  if (at(KZ.forge.cell)) {
+    if (!k.claims.c6) out.push(kzBtn("kz-ondra", `Promluvit s ${hl("Ondrou od vozu")}`, "posel u pece"));
+    const back6 = LOM.Kauza.follow(k, "c6");
+    if (back6 && back6.available) out.push(kzBtn("kz-back6", "Vrátit se k věci", back6.hint));
+    out.push(kzBtn("kz-forge", `Prohlédnout ${hl("hutě")}`, "pec · zvon · Matěj"));
+    if (k.facts.forgeSeen && !hasItemAnywhere("bell") && !k.facts.bellGone && !k.verdict) {
+      out.push(kzBtn("kz-bell", `Vzít ${hl("zvon")}`, `váží ${KZ.bell.weight} kg · ještě nepřelitý`, "primary"));
+    }
+    if (!k.verdict && bagCount("bell") > 0) {
+      out.push(kzBtn("kz-forge-verdict", `Nechat zvon ${hl("Matějovi")}`, "přelití · 40 🪙", "primary"));
     }
   }
   return out.join("");
@@ -3026,23 +3272,66 @@ function kauzaCellAct(act) {
         sys = kzStatusLine("c5", r);
       }
     }
-    kzSay({ scene: text + (OMEN_FLAVOR[state.picks.class] || ""), fresh: "scene" });
+    kzSay({ scene: text + (OMEN_FLAVOR[pickedClass()] || ""), fresh: "scene" });
     if (sys) logSys(sys);
   }
-  if (act === "kz-camp") {
-    k.facts.campSeen = true;
+  if (act === "kz-cart") {
     const texts = [];
     const sysLines = [];
-    for (const cid of ["c1", "c6"]) {
-      if (!k.claims[cid]) continue;
-      const r = LOM.Kauza.verify(k, cid, { via: "camp", day });
+    if (k.claims.c3) {
+      const r = LOM.Kauza.verify(k, "c3", { via: "cart", day });
       if (r.ok) {
         texts.push(r.text);
-        sysLines.push(kzStatusLine(cid, r));
+        sysLines.push(kzStatusLine("c3", r));
       }
     }
-    if (!texts.length) texts.push("Pustý tábor. Popel z ohniště, otisk něčeho těžkého a plachta přes velký tvar.");
-    if (!hasItemAnywhere("bell") && !k.facts.bellGone) texts.push("Pod plachtou leží zvon z kaple.");
+    if (!texts.length) texts.push("Vůz stojí u cesty. Na ojí visí malý zvonek — zní skoro jako kaple, ale je to jiný.");
+    const takeCartBell = !hasItemAnywhere("cart_bell") && !k.facts.cartBellTaken;
+    if (takeCartBell) texts.push("Zvonek jde sejmout.");
+    kzSay({ scene: texts.join(" "), fresh: "scene" });
+    sysLines.forEach((l) => logSys(l));
+    if (takeCartBell && bagCanFit("cart_bell")) {
+      bagPut("cart_bell");
+      k.facts.cartBellTaken = true;
+      kzSay({ scene: "Vezmeš vozový zvonek. Není z kaple — to poznáš po váze.", fresh: "scene" });
+    }
+  }
+  if (act === "kz-ondra") {
+    const h = kauzaHear("c6", "ondra", { defer: true });
+    kzSay({ you: `„Ty jsi posel od kaple?“`, foe: h.line, fresh: "foe" });
+    if (h.signal) kzSay({ scene: `<em>${h.signal}</em>`, fresh: "scene" });
+    if (h.sys) logSys(h.sys);
+    state.kzReply = { cid: "c6", ctx: "cell", at: [state.mapX, state.mapY] };
+  }
+  if (act === "kz-back6") {
+    const r = LOM.Kauza.followUp(k, "c6", day);
+    if (r.ok) {
+      const key = r.key;
+      const you = sayV(`kzfollow:c6:${key}`, KZ.follow[key].you);
+      const foe = sayV(`kzafter:c6:${key}`, r.pool);
+      kzSay({ you, fresh: "you" });
+      render();
+      setTimeout(() => {
+        if (state.mode === "place") return;
+        kzSay({ foe, fresh: "foe" });
+        render();
+      }, DIALOG_DELAY_MS);
+      return;
+    }
+  }
+  if (act === "kz-forge") {
+    k.facts.forgeSeen = true;
+    const texts = [];
+    const sysLines = [];
+    if (k.claims.c6) {
+      const r = LOM.Kauza.verify(k, "c6", { via: "forge", day });
+      if (r.ok) {
+        texts.push(r.text);
+        sysLines.push(kzStatusLine("c6", r));
+      }
+    }
+    if (!texts.length) texts.push("Žár pece, pach kovu. Matěj od pece otírá ruce. V koutě leží velký zvon z kaple — ještě celý.");
+    if (!hasItemAnywhere("bell") && !k.facts.bellGone) texts.push("Zvon jde odnést, dokud nepůjde do pece.");
     kzSay({ scene: texts.join(" "), fresh: "scene" });
     sysLines.forEach((l) => logSys(l));
   }
@@ -3054,11 +3343,8 @@ function kauzaCellAct(act) {
       kzSay({ scene: "Zvon je těžký a studený. Každý krok s ním bude pomalejší.", fresh: "scene" });
     }
   }
-  if (act === "kz-camp-night") {
-    state.encounter = null;
-    startCombat(["Ve tmě u ohně sedí zbojník. Pomalu vstává."], { enemyId: "brigand", seed: (state.seed ^ (day * 7919)) >>> 0, ambush: false });
-    state.combat.camp = true;
-    setScreen("combat");
+  if (act === "kz-forge-verdict") {
+    kauzaVerdict("forge");
     return;
   }
   if (act === "kz-return") {
@@ -3084,7 +3370,7 @@ function kauzaCardHtml(k) {
   const row = (cid) => {
     const c = KZ.claims[cid];
     const rec = k.claims[cid];
-    const cert = LOM.Kauza.certainty(k, cid, { int: s.int, classId: state.picks.class, raceId: state.picks.race });
+    const cert = LOM.Kauza.certainty(k, cid, { int: s.int, classId: pickedClass(), raceId: pickedRace() });
     const resolved = cert.status === "verified" || cert.status === "refuted";
     const outcome = resolved ? (cert.outcome === "half" ? "napůl pravda" : cert.status === "refuted" ? "nepravda" : "pravda") : "";
     const note = resolved ? c.verify.texts[cert.outcome] : cert.status === "open" ? c.verify.texts.none : `Ověřit: ${c.verify.where}`;
@@ -3291,7 +3577,7 @@ function takeCorpse() {
   render();
 }
 
-/** Služby místa — bez header labelu místa (ten je v kontext boxu); jen tabulka */
+/** Služby místa - bez header labelu místa (ten je v kontext boxu); jen tabulka */
 /** Cena služby; volby v questech ji mění (Svatava: přítel −50 %, smlouva +25 %). */
 const PLACE_NPC_ID = {
   healer: "lidmila",
@@ -3384,7 +3670,7 @@ function stashTakeItem(i) {
   const r = LOM.Stash.stashTake(state.stash, i, state.clock, { gold: state.gold, canFit: bagCanFit });
   if (!r.ok) {
     if (r.reason === "gold") return feedback(`Nemáš dost zlata na poplatek (${r.fee} 🪙).`);
-    if (r.reason === "fit") return feedback("Nemáš kam to dát — batoh je plný nebo moc těžký.");
+    if (r.reason === "fit") return feedback("Nemáš kam to dát: batoh je plný nebo moc těžký.");
     return;
   }
   state.gold -= r.fee;
@@ -3702,7 +3988,7 @@ function renderTownActions() {
         [
           questButtonsHtml(state.place, { offers: false }),
           actionBtn({
-            title: `Zeptat se — ${hl("rozhovor")}`,
+            title: `Zeptat se: ${hl("rozhovor")}`,
             hint: "začne dialog",
             act: "place-talk",
             story: true,
@@ -3744,7 +4030,7 @@ function renderTownActions() {
       act: "exits",
       story: true,
     });
-    /* bez „Machala“ / „Kam dál“ — kontext box + sticky stačí */
+    /* bez „Machala“ / „Kam dál“ - kontext box + sticky stačí */
     const parts = [];
     if (onTown) {
       parts.push(
@@ -3778,7 +4064,7 @@ function renderCombat() {
       <div class="box-body">
         <div class="box-title clip"><strong>${c.enemyName}</strong> <span class="muted">Lv ${c.enemyLevel || 1} · ${typeLabel}</span></div>
         <div class="bar hp"><span class="bar-ico" aria-hidden="true">${STAT_BY.hp.icon}</span><i style="--p:${pct}%"></i><em>${cond.label}${state.dev.reveal ? ` <span class="dev-tag">DEV ${c.enemyHp}/${c.enemyMax}</span>` : ""}</em></div>
-        <div class="bar mp bar-ghost" aria-hidden="true"><span class="bar-ico">${STAT_BY.res.icon}</span><i style="--p:0%"></i><em>—</em></div>
+        <div class="bar mp bar-ghost" aria-hidden="true"><span class="bar-ico">${STAT_BY.res.icon}</span><i style="--p:0%"></i><em>–</em></div>
         <div class="gear-strip">
           ${statChipBtn("atk", c.enemyAtk)}
           ${statChipBtn("def", c.enemyDef)}
@@ -3830,7 +4116,7 @@ function renderCombat() {
   });
 }
 
-/* útok nahoře (primární), přežití dole — méně scrollu k rozhodnutí; dostupnost z pravidel (js/systems/combat.js) */
+/* útok nahoře (primární), přežití dole - méně scrollu k rozhodnutí; dostupnost z pravidel (js/systems/combat.js) */
 function combatActionsHtml() {
   const c = state.combat;
   const av = c ? Object.fromEntries(LOM.availableActions(c).map((a) => [a.id, a])) : {};
@@ -3867,7 +4153,7 @@ function combatActionsHtml() {
       spare,
       btn("quick", `${hl("Rychlý")} výpad, ať spíš trefíš`, "Q", `lehčí zásah${cost("quick")}`),
       btn("heavy", `${hl("Těžký")} úder, ať to bolí`, "W", `víc dmg${cost("heavy")}`),
-      btn("special", `${hl(LOM.specialName(state.picks.class))}, jistý zásah`, "S", `nemine${cost("special")}`),
+      btn("special", `${hl(LOM.specialName(pickedClass()))}, jistý zásah`, "S", `nemine${cost("special")}`),
       `<div class="lane-split" role="separator"></div>`,
       btn("guard", `Stáhnout se za ${hl("štít")} a vydržet nápor`, "E", `méně ran${gain("guard")}`),
       btn("evade", `Uhnout stranou a hledat ${hl("mezeru")}`, "R", `lepší útěk${gain("evade")}`),
@@ -3909,14 +4195,14 @@ function render() {
   if (state.screen === "town") {
     const place = state.place && PLACE[state.place];
     const terr = terrainAt(state.mapX, state.mapY);
-    const camp = LOM.POI.camp.cell;
-    const bgKey = place?.bg || (state.mapX === camp[0] && state.mapY === camp[1] ? "camp" : TERRAIN_BG[terr]) || "city";
+    const forge = LOM.POI.forge.cell;
+    const bgKey = place?.bg || (state.mapX === forge[0] && state.mapY === forge[1] ? "smith" : TERRAIN_BG[terr]) || "city";
     setGameBg(bgKey);
     fillPlayerBox("town-player", {
       flashGear: state.flashGear,
       res: state.travel.energy,
       resMax: state.travel.energyMax,
-      resTip: "Výdrž na cestu (ne mana v boji) — krok −1. Ve městě se doplní.",
+      resTip: "Výdrž na cestu (ne mana v boji), krok −1. Ve městě se doplní.",
       resIcon: "🥾",
     });
     const ctx = $("town-context");
@@ -3981,7 +4267,7 @@ function endCombat(result) {
   c.result = result;
   state.hp = c.hp;
   state.clock = LOM.advanceClock(state.clock, LOM.TIME_COST.fight);
-  /* výsledek zůstane — hráč sám claimne / pokračuje (žádný auto-timeout) */
+  /* výsledek zůstane - hráč sám claimne / pokračuje (žádný auto-timeout) */
   if (result === "win" || result === "spare") {
     const rw = LOM.rewardsFor(c, c.rng);
     if (c.forceLoot) rw.loot = c.forceLoot;
@@ -3994,7 +4280,7 @@ function endCombat(result) {
     /* vyčištěné místo se obnoví další den */
     const spot = c.spotId && ensureSpots().find((x) => x.id === c.spotId);
     if (spot) spot.clearedDay = state.clock.day;
-    if (result === "win" && c.camp) kauzaState().facts.campClearedDay = state.clock.day;
+    /* dříve tábor zbojníků; hutě boj nevyžadují */
     const spareClaim = result === "spare" ? kauzaOnSpare(c.enemyId) : null;
     const pile = rw.loot
       .filter((id) => ITEM_BY[id])
@@ -4216,7 +4502,7 @@ function renderLootModal() {
           <header class="equip-pop-head"><h3>Opravdu odejít?</h3>
             <button type="button" class="panel-close" data-act="loot-leave-stay" aria-label="Zpět"></button>
           </header>
-          <p class="equip-confirm-line">Ještě tu leží: <strong>${leftList || "—"}</strong>.</p>
+          <p class="equip-confirm-line">Ještě tu leží: <strong>${leftList || "–"}</strong>.</p>
           <div class="equip-confirm-actions">
             <button type="button" class="btn btn-primary" data-act="loot-leave-stay">Vrátit se k lootu</button>
             <button type="button" class="btn btn-ghost" data-act="loot-leave-drop">Odejít</button>
@@ -4372,7 +4658,7 @@ function feedback(msg) {
 /** Koupě předmětu do batohu; bez místa nestrhne zlato. */
 function buyItem(itemId, price) {
   if (!bagCanFit(itemId)) {
-    feedback("Nemáš kam to dát — batoh je plný nebo moc těžký.");
+    feedback("Nemáš kam to dát: batoh je plný nebo moc těžký.");
     return false;
   }
   if (!spend(price)) return false;
@@ -4389,7 +4675,7 @@ function healTo(amount) {
 
 function runService(id) {
   const p = state.place;
-  const maker = (msg) => feedback(`${msg} (zatím bez účinku — nic jsi neplatil)`);
+  const maker = (msg) => feedback(`${msg} (zatím bez účinku, nic jsi neplatil)`);
   if (p === "healer") {
     if (id === "heal") {
       if (playerHp() >= statsNow().hpMax) feedback("Jsi zdráv jako řípa. Lidmila zavrtí hlavou.");
@@ -4417,7 +4703,6 @@ function runService(id) {
       return;
     }
     if (fee) feedback(`Poplatek ${STAT_BY.gold.icon}${fee}. Banka ti nevěří jako dřív.`);
-    if (id === "give_bell") kauzaVerdict("bank");
     if (id === "dep_all") {
       state.bank += state.gold;
       state.gold = 0;
@@ -4450,6 +4735,19 @@ function runService(id) {
     }
     if (id === "rumor" && spend(5))
       feedback(`Koupil jsi rundu. ${RUMORS[Math.floor(Math.random() * RUMORS.length)]}`);
+    if (id === "inspect_cask") {
+      const k = kauzaState();
+      const rec = k.claims.c1;
+      if (!rec) feedback("Nevíš, na co se dívat. Nejdřív se zeptej na drby.");
+      else if (rec.status === "verified" || rec.status === "refuted") feedback("Sud už jsi prohlédl.");
+      else {
+        const r = LOM.Kauza.verify(k, "c1", { via: "cask", day: state.clock.day });
+        if (r.ok) {
+          feedback({ scene: r.text, fresh: "scene" });
+          logSys(kzStatusLine("c1", r));
+        } else feedback(r.reason || "Tudy to ověřit nejde.");
+      }
+    }
     if (id === "stash") state.placeView = "stash";
     if (id === "ale") maker("Pivo U Podrazu chutná, ale nic nedělá.");
     if (id === "dice") maker("Kostky zůstaly v kapse.");
@@ -4529,7 +4827,11 @@ document.body.addEventListener("click", (e) => {
         state.originStep = 0;
         state.originReached = 0;
         state.prologDone = { class: false, race: false, origin: false };
+        state.prologStory = false;
         state.prologReact = null;
+        state.prologBridges = {};
+        state.prologReply = null;
+        state.prologCheek = 0;
       }
     }
     if (dest === "town") {
@@ -4572,6 +4874,10 @@ document.body.addEventListener("click", (e) => {
   if (t.dataset.originChoice !== undefined) {
     const step = ORIGIN_STEPS[state.originStep];
     const choice = step.choices[Number(t.dataset.originChoice)];
+    /* drzá odpověď: prolog jde dál bez povolání (neznámý poutník), Svatava to komentuje v dalším kroku */
+    if (choice.cheek) state.prologCheek += 1;
+    if (choice.cheek) state.prologDone.class = false; /* drzá odpověď po dřívější volbě živnosti: poutník bez živnosti */
+    state.prologReply = null;
     if (choice.class) {
       state.picks.class = choice.class;
       state.prologDone.class = true;
@@ -4580,13 +4886,19 @@ document.body.addEventListener("click", (e) => {
       state.picks.race = choice.race;
       state.prologDone.race = true;
     }
+    if (choice.origin) {
+      state.picks.origin = choice.origin;
+      state.prologDone.origin = true;
+    }
     if (choice.react) state.prologReact = choice.react;
+    state.prologBridges = { ...state.prologBridges, [state.originStep]: choice.bridge || "" };
     state.originReached = Math.max(state.originReached || 0, state.originStep);
     if (state.originStep < ORIGIN_STEPS.length - 1) {
       state.originStep += 1;
       state.originReached = Math.max(state.originReached, state.originStep);
       renderOrigins();
     } else {
+      state.prologStory = true;
       updateStatsPreview();
       setScreen("confirm");
     }
@@ -4596,22 +4908,29 @@ document.body.addEventListener("click", (e) => {
   const act = t.dataset.act;
   if (!act) return;
 
-  if (act === "dice-name") $("input-name").value = randomName();
-  if (act === "start-game") {
-    if (!state.prologDone.race || !state.prologDone.class || !state.prologDone.origin) {
-      toast("Nejdřív zvol rasu, povolání a původ.");
-      syncOriginAccordions(!state.prologDone.race ? "race" : !state.prologDone.class ? "class" : "origin");
+  if (act === "dice-name") {
+    $("input-name").value = randomName();
+    updateStartGate();
+  }
+  if (act === "start-back") closeStartModal();
+  if (act === "start-game" || act === "start-confirm") {
+    const missing = missingPicks();
+    if (act === "start-game" && missing.length) {
+      openStartModal(missing);
       return;
     }
+    closeStartModal();
     if (readSave() && !state.newGameOk) {
       state.newGameOk = true;
       toast("Uložená hra se přepíše. Klikni znovu na Vstoupit do hry.");
       return;
     }
-    const nm = $("input-name")?.value?.replace(/[<>&"']/g, "").trim().slice(0, 20) || randomName();
+    const nm = $("input-name")?.value?.replace(/[<>&"']/g, "").trim().slice(0, 20);
+    if (!nm) return;
     /* čistý start: nic z dřívější postavy (po Pokračovat → odhlášení) */
-    resetState({ picks: state.picks, prologDone: state.prologDone, originReached: state.originReached, guest: state.guest });
+    resetState({ picks: state.picks, prologDone: state.prologDone, prologReact: state.prologReact, originReached: state.originReached, guest: state.guest });
     state.name = nm;
+    if (PUBLIC_DEMO) state.noSave = true;
     const patch = LOM.Origin.apply(state, state.picks.origin);
     state.origin = patch.origin;
     state.standing = patch.standing || {};
@@ -4634,7 +4953,7 @@ document.body.addEventListener("click", (e) => {
       state.placeView = "hub";
       state.placeWho = "host";
       /* visits necháme 0: první goto-place po odchodu dostane uvítání z původu */
-      state.log = nbspCzech(`${patch.intro || ""} ${placeProse(state.place)}`);
+      state.log = nbspCzech(`${prologMorning()} ${patch.intro || ""} ${placeProse(state.place)}`);
       setScreen("town");
     } else if (patch.start && patch.start.cell) {
       const [x, y] = patch.start.cell;
@@ -4645,15 +4964,17 @@ document.body.addEventListener("click", (e) => {
       discoverCell(x, y);
       state.mode = "exits";
       state.place = null;
-      state.log = nbspCzech(patch.intro || TOWN_PROSE);
+      state.log = nbspCzech(`${prologMorning()} ${patch.intro || TOWN_PROSE}`);
       setScreen("town");
     } else {
       state.mode = "town";
       state.place = null;
-      state.log = TOWN_PROSE;
+      state.log = `${prologMorning()} ${TOWN_PROSE}`;
       setScreen("town");
     }
+    if (PUBLIC_DEMO) openDemoEnd(`${prologMorning()} ${patch.intro || ""}`.trim());
   }
+  if (act === "demo-restart") location.reload();
   if (act === "goto-place") {
     if (!isInTownZone()) {
       toast("Služby jen ve městě.");
@@ -4675,7 +4996,7 @@ document.body.addEventListener("click", (e) => {
       visitN(placeKey)
     );
     render();
-    /* pozdrav se zpožděním — jako dialog v boji */
+    /* pozdrav se zpožděním - jako dialog v boji */
     if (greet) {
       setTimeout(() => {
         if (state.mode !== "place" || state.place !== placeKey) return;
@@ -4756,7 +5077,7 @@ document.body.addEventListener("click", (e) => {
   }
   if (act === "back-town") {
     if (state.mode === "exits" && !isInTownZone()) {
-      toast("Nejdřív dojdi na městskou buňku — nebo rychlý návrat.");
+      toast("Nejdřív dojdi na městskou buňku, nebo rychlý návrat.");
       return;
     }
     state.mode = "town";
@@ -4811,7 +5132,7 @@ document.body.addEventListener("click", (e) => {
       townhall: "Police s listinami, razítka seřazená jako vojsko, hodiny, které jdou jinak než slunce.",
     };
     pushPlaceTurn({
-      scene: sayV(`look:${state.place}`, looks[state.place]) || "Rozhlížíš se — nic zvláštního.",
+      scene: sayV(`look:${state.place}`, looks[state.place]) || "Rozhlížíš se. Nic zvláštního.",
       fresh: "scene",
     });
     render();
@@ -4910,7 +5231,7 @@ document.body.addEventListener("click", (e) => {
   if (act === "quest-turnin") turnInQuest(t.dataset.quest, t.dataset.choice || null);
   if (act === "svc") runService(t.dataset.svc);
   if (act === "open-inv") {
-    /* v boji prohlížení OK — equip / spotřebu řeší Postava a akce Přežít */
+    /* v boji prohlížení OK - equip / spotřebu řeší Postava a akce Přežít */
     togglePanel("inventory");
   }
   if (act === "open-quests") togglePanel("quests");
@@ -4971,6 +5292,18 @@ document.body.addEventListener("click", (e) => {
     if (on) showFloatTip(t);
     else hideFloatTip();
   }
+  if (act === "prolog-again") {
+    state.originStep = 0;
+    state.originReached = 0;
+    state.prologDone = { class: false, race: false, origin: false };
+    state.picks.origin = null;
+    state.prologReact = null;
+    state.prologBridges = {};
+    state.prologReply = null;
+    state.prologCheek = 0;
+    state.prologStory = false;
+    setScreen("origins");
+  }
   if (act === "origin-back") {
     if (state.originStep > 0) {
       state.originStep -= 1;
@@ -4982,7 +5315,8 @@ document.body.addEventListener("click", (e) => {
       if (state.originStep < ORIGIN_STEPS.length - 1 && state.originStep < (state.originReached || 0)) {
         state.originStep += 1;
         renderOrigins();
-      } else if (state.originStep === ORIGIN_STEPS.length - 1) {
+      } else if (state.originStep === ORIGIN_STEPS.length - 1 && state.prologDone.origin) {
+        state.prologStory = true;
         updateStatsPreview();
         setScreen("confirm");
       }
@@ -5026,7 +5360,7 @@ document.body.addEventListener("click", (e) => {
     setScreen("landing");
   }
   if (act === "lang-cs") {
-    /* už CS — žádný toast při no-op */
+    /* už CS - žádný toast při no-op */
     if (state.prefs.lang !== "cs") {
       state.prefs.lang = "cs";
       savePrefs();
@@ -5070,7 +5404,7 @@ document.body.addEventListener("click", (e) => {
     if (idx != null && state.bag[idx]) {
       const item = ITEM_BY[state.bag[idx]];
       state.bag[idx] = null;
-      toast(`${item?.icon || ""} ${item?.name || "Předmět"} — hozeno`);
+      toast(`${item?.icon || ""} ${item?.name || "Předmět"}: hozeno`);
     }
     state.invDiscardIdx = null;
     refreshInvOrLoot();
@@ -5095,7 +5429,7 @@ document.body.addEventListener("click", (e) => {
     }
     flashChangedStats(before);
     updateStatsPreview();
-    /* mobil: nechat rasu otevřenou — bonusy zůstanou vidět */
+    /* mobil: nechat rasu otevřenou - bonusy zůstanou vidět */
     syncOriginAccordions("race");
   }
   if (act === "pick-class") {
@@ -5147,6 +5481,7 @@ document.body.addEventListener("click", (e) => {
     state.originStep = 0;
     state.originReached = 0;
     state.prologDone = { class: false, race: false, origin: false };
+    state.prologStory = false;
     setScreen("origins");
   }
   if (act === "auth-register") setAuth("register");
@@ -5226,13 +5561,13 @@ document.body.addEventListener("input", (e) => {
   if (t.dataset.act === "audio-music") {
     state.audio.music = Number(t.value);
     const em = t.parentElement?.querySelector("em");
-    if (em) em.textContent = state.audio.muted ? "—" : String(state.audio.music);
+    if (em) em.textContent = state.audio.muted ? "–" : String(state.audio.music);
     saveAudioPrefs();
   }
   if (t.dataset.act === "audio-sfx") {
     state.audio.sfx = Number(t.value);
     const em = t.parentElement?.querySelector("em");
-    if (em) em.textContent = state.audio.muted ? "—" : String(state.audio.sfx);
+    if (em) em.textContent = state.audio.muted ? "–" : String(state.audio.sfx);
     saveAudioPrefs();
   }
   if (t.dataset.act === "delete-type") {
@@ -5248,7 +5583,7 @@ window.addEventListener("orientationchange", () => setTimeout(syncDevPad, 50));
 syncDevPad();
 setAuth(state.auth);
 
-/** Tip v body — mimo backdrop-filter / overflow parentů */
+/** Tip v body - mimo backdrop-filter / overflow parentů */
 function floatTipEl() {
   let tip = $("float-tip");
   if (!tip) {
@@ -5285,6 +5620,24 @@ function formatTipHtml(text) {
     .join("")}</span>`;
 }
 
+/** Viditelná část prvku: průnik s viewportem a se všemi scrollovacími předky (tip nesmí viset mimo zobrazení). */
+function visibleRect(el) {
+  const r0 = el.getBoundingClientRect();
+  let top = Math.max(r0.top, 0);
+  let bottom = Math.min(r0.bottom, window.innerHeight);
+  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY;
+    if (oy !== "auto" && oy !== "scroll" && oy !== "hidden") continue;
+    const pr = p.getBoundingClientRect();
+    top = Math.max(top, pr.top);
+    bottom = Math.min(bottom, pr.bottom);
+  }
+  if (bottom < top) bottom = top;
+  return { left: r0.left, right: r0.right, width: r0.width, top, bottom };
+}
+
+let floatTipTimer = null;
+
 function showFloatTip(icon) {
   const text = icon.dataset.tip || (icon.dataset.kodex && LOM.Kodex.KODEX_BY[icon.dataset.kodex]?.short) || icon.querySelector(".tip-bubble")?.textContent;
   if (!text) return;
@@ -5292,8 +5645,11 @@ function showFloatTip(icon) {
   tip.innerHTML = formatTipHtml(text);
   tip.classList.add("show");
   tip.classList.remove("below");
-  const r = icon.getBoundingClientRect();
+  const r = visibleRect(icon);
   const pad = 8;
+  clearTimeout(floatTipTimer);
+  /* dotyk nemá hover, tip sám zmizí */
+  if (window.matchMedia("(hover: none)").matches) floatTipTimer = setTimeout(hideFloatTip, 4000);
   let left = r.left + r.width / 2;
   let top = r.top - 6;
   let below = top < 52;
@@ -5326,8 +5682,17 @@ function showFloatTip(icon) {
 }
 
 function hideFloatTip() {
+  clearTimeout(floatTipTimer);
   $("float-tip")?.classList.remove("show");
 }
+/* scroll i Esc tip schovají (tip by jinak zůstal viset na starém místě) */
+document.addEventListener("scroll", hideFloatTip, true);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    hideFloatTip();
+    closeStartModal();
+  }
+});
 
 /* Kodex: hover jen myší, na dotyku ťuknutí přepíná; ťuknutí jinam tip schová. */
 document.addEventListener("pointerover", (e) => {
@@ -5414,6 +5779,10 @@ let devKnobs = {};
  * Stejný scénář + stejné knoby = stejný stav (seed).
  */
 function applyScenario(id, knobs = devKnobs) {
+  /* Reset obnoví všechno, i náběhy textu */
+  lastOriginStep = -1;
+  lastRevealed = "";
+  landingQuoteShown = false;
   const base = LOM.SCENARIOS.find((x) => x.id === id);
   if (!base) return;
   const sc = { ...base };
@@ -5483,7 +5852,7 @@ function applyScenario(id, knobs = devKnobs) {
     (kz.heard || []).forEach((cid) => LOM.Kauza.hear(k, cid, { day: kz.startDay || 1 }));
     state.notebookNew = (kz.heard || []).length > 0; // ve scéně ukáž puntík
     (kz.verified || []).forEach((cid) => LOM.Kauza.verify(k, cid, { via: KZ.claims[cid].verify.via, day: kz.startDay || 1 }));
-    if (kz.campSeen) k.facts.campSeen = true;
+    if (kz.forgeSeen || kz.campSeen) k.facts.forgeSeen = true; /* campSeen = starý klíč scénářů */
     if (kz.trust) Object.assign(k.trust, kz.trust);
   }
   questRefresh();
@@ -5542,11 +5911,18 @@ function renderDevStatus() {
   st.innerHTML = `
     <p class="dev-total"><strong>Hotovost prototypu ≈ ${total} %</strong> <span>(hrubý odhad podle systémů)</span></p>
     <p class="dev-legend"><span class="sys-funguje">funguje</span> = skutečná pravidla, testy · <span class="sys-maketa">maketa</span> = UI je, efekt jen zčásti nebo vůbec · <span class="sys-chybí">chybí</span> = nic</p>
-    <ul>${list
-      .map(
-        (x) => `<li><span class="sys-${x.status}">${x.status}</span><strong>${x.name}</strong><i class="dev-bar"><b style="width:${x.pct}%"></b></i><em>${x.pct} % ${x.note ? "· " + x.note : ""}</em></li>`
-      )
-      .join("")}</ul>`;
+    ${["funguje", "maketa", "chybí"]
+      .map((stt) => {
+        const items = list.filter((x) => x.status === stt);
+        if (!items.length) return "";
+        return `<details class="dev-sec dev-sys-sec"${stt === "funguje" ? "" : " open"}><summary><span class="sys-${stt}">${stt}</span> ${items.length}</summary><ul>${items
+          .map(
+            (x) =>
+              `<li><strong>${x.name}${x.phase ? ` <span class="dev-phase">${x.phase}</span>` : ""}</strong><i class="dev-bar"><b style="width:${x.pct}%"></b></i><em>${x.pct} % ${x.note ? "· " + x.note : ""}</em></li>`
+          )
+          .join("")}</ul></details>`;
+      })
+      .join("")}`;
 }
 
 /** Popisek „(scéna: …)“ u knobu ukazuje, co nastavuje vybraná scéna; hodnota „“ = nechat ji. */
@@ -5558,7 +5934,7 @@ function syncKnobLabels() {
     if (!k) return;
     const v = k.from(base);
     const label = k.opts.find(([o]) => o === v)?.[1];
-    sel.options[0].textContent = label ? `scéna: ${label}` : "scéna: —";
+    sel.options[0].textContent = label ? `scéna: ${label}` : "scéna: –";
   });
 }
 
@@ -5611,10 +5987,6 @@ function initDevStorybook() {
     applyScenario(sel.value, {});
   });
   renderDevStatus();
-  $("dev-status-toggle")?.addEventListener("click", () => {
-    $("dev-status")?.classList.toggle("hidden");
-    syncDevPad();
-  });
   const togglesEl = $("dev-toggles");
   if (togglesEl) {
     LOM.TOGGLES.forEach((t) => {
@@ -5714,6 +6086,10 @@ document.addEventListener("keydown", (e) => {
   document.querySelector(`[data-act="${act}"]`)?.click();
 });
 
+document.addEventListener("input", (e) => {
+  if (e.target?.id === "input-name") updateStartGate();
+});
+
 document.addEventListener("click", (e) => {
   const icon = e.target.closest(".stat-icon");
   if (!icon) {
@@ -5738,24 +6114,21 @@ document.addEventListener(
 
 document.querySelectorAll(".origin-acc").forEach((el) => {
   el.addEventListener("toggle", () => {
-    const wide = window.matchMedia("(min-width: 720px)").matches;
-    if (wide) {
-      el.open = true;
-      return;
-    }
-    /* mobil: jen jedna sekce otevřená */
-    if (el.open) {
+    /* jen jedna sekce otevřená (v shrnutí po prologu jsou otevřené všechny) */
+    if (el.open && !state.prologStory) {
       document.querySelectorAll(".origin-acc").forEach((other) => {
         if (other !== el) other.open = false;
       });
     }
   });
 });
-window.matchMedia("(min-width: 720px)").addEventListener("change", () => syncOriginAccordions());
 
 (() => {
   const el = $("landing-version");
   if (el) el.textContent = `Verze ${APP_VERSION} · © ${APP_YEAR} Land of Machala · lowcash`;
 })();
 setAuth("register");
-setScreen("landing");
+if (PUBLIC_DEMO) {
+  state.guest = true;
+  setScreen("origins");
+} else setScreen("landing");

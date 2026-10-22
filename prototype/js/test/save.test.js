@@ -73,7 +73,7 @@ function sampleState(extra) {
     place: null,
     placeView: "hub",
     placeWho: "host",
-    /* UI — nesmí se dostat do uložených dat */
+    /* UI - nesmí se dostat do uložených dat */
     panelStack: ["inventory"],
     placeThread: [{ you: "ahoj" }],
     cellThread: [{ sys: "x" }],
@@ -153,7 +153,7 @@ test("poškozený JSON a neobjekt", () => {
 });
 
 test("chybějící pole se doplní výchozím", () => {
-  const text = JSON.stringify({ v: 1, savedAt: 1, data: { name: "A", seed: 9, gold: 5 } });
+  const text = JSON.stringify({ v: Save.SAVE_VERSION, savedAt: 1, data: { name: "A", seed: 9, gold: 5 } });
   const r = Save.deserialize(text);
   assert.equal(r.ok, true);
   assert.equal(r.state.name, "A");
@@ -172,15 +172,16 @@ test("neznámá verze se odmítne", () => {
     ok: false,
     reason: "version",
   });
-  assert.deepEqual(Save.migrate({ v: 99, data: {} }), { ok: false, reason: "version" });
-  assert.deepEqual(Save.migrate({ v: 0, data: {} }), { ok: false, reason: "version" });
+  for (const v of [0, 1, 2, 3]) {
+    assert.deepEqual(Save.deserialize(JSON.stringify({ v, savedAt: 1, data: {} })), { ok: false, reason: "version" }, `starší v${v} se tváří jako žádné`);
+  }
 });
 
 test("validate odmítne poškozená data, nevyhodí", () => {
   assert.equal(Save.validate(null).ok, false);
-  assert.equal(Save.validate({ v: 1, data: { bag: "x" } }).reason, "bag");
-  assert.equal(Save.validate({ v: 1, data: { seed: "x" } }).reason, "seed");
-  assert.equal(Save.validate({ v: 1, data: {} }).ok, true);
+  assert.equal(Save.validate({ v: Save.SAVE_VERSION, data: { bag: "x" } }).reason, "bag");
+  assert.equal(Save.validate({ v: Save.SAVE_VERSION, data: { seed: "x" } }).reason, "seed");
+  assert.equal(Save.validate({ v: Save.SAVE_VERSION, data: {} }).ok, true);
   assert.doesNotThrow(() => Save.validate(undefined));
   assert.doesNotThrow(() => Save.deserialize("not json"));
 });
@@ -224,37 +225,10 @@ test("velikost typického stavu < 100 kB", () => {
   assert.ok(Buffer.byteLength(text, "utf8") < 100 * 1024, `bytes=${Buffer.byteLength(text)}`);
 });
 
-test("migrate v1→4 řetěz; v2→4 NPC; v3→4 origin/standing; combat → town", () => {
-  const mig = Save.migrate({
-    v: 1,
-    savedAt: 1,
-    data: { picks: { class: "hunter", race: "dwarf" }, screen: "combat", seed: 1 },
-  });
-  assert.equal(mig.ok, true);
-  assert.equal(mig.value.v, 4);
-  assert.deepEqual(mig.value.data.picks, { class: "tracker", race: "saltfolk" });
-  assert.equal(mig.value.data.origin, null);
-  const v2 = Save.migrate({
-    v: 2,
-    savedAt: 1,
-    data: {
-      kauza: { trust: { uda: 1, banker: -1, klerk: 0, benes: 2 } },
-      flags: { uda_friend: 1, uda_haggled: 1, other: 1 },
-    },
-  });
-  assert.equal(v2.value.v, 4);
-  assert.deepEqual(v2.value.data.kauza.trust, { svatava: 1, gertruda: -1, gustav: 0, lidmila: 2 });
-  assert.deepEqual(v2.value.data.flags, { svatava_friend: 1, svatava_haggled: 1, other: 1 });
-  const r = Save.deserialize(JSON.stringify({ v: 1, savedAt: 1, data: { screen: "combat", mode: "town" } }));
-  assert.equal(r.ok, true);
-  assert.equal(r.state.screen, "town");
-});
-
 test("round-trip verze 4; neznámá verze odmítnutá", () => {
   const text = Save.serialize(sampleState(), { now: 2 });
   assert.equal(JSON.parse(text).v, 4);
   assert.equal(Save.deserialize(text).ok, true);
-  assert.deepEqual(Save.migrate({ v: 99, data: {} }), { ok: false, reason: "version" });
 });
 
 test("STORAGE_KEY a verze jsou exportované", () => {

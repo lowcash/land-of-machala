@@ -32,7 +32,7 @@ player-footer   ← full-bleed sourozenec (ne uvnitř max-width)
 ## Landing, auth, prolog, původ
 
 - Landing: brand + 1 tagline + auth (`landing-auth-only`), vertikálně na střed, bez boxů, kronik a citátů. Footer: Nastavení · FAQ · Podmínky (fullscreen); FAQ = exclusive accordion. Auth alt = `btn-ghost`.
-- `screenChrome()` pro auth („Účet“ + sub), prolog a Postavu; sub copy *Vytvoř svého hrdinu* / *Vítej zpět*. Flow track 4 segy; prolog = 3 kroky + obrazovka **Postava** (rasa, povolání, původ).
+- `screenChrome()` pro auth („Účet“ + sub), prolog a Postavu; sub copy *Vytvoř svého hrdinu* / *Vítej zpět*. Flow track 4 segy; prolog = 4 kroky (živnost, kraj, zvon, původ) + obrazovka **Postava**: po prologu jen shrnutí a jméno, „Projít prolog znovu“; ruční výběr (dlaždice) jen ze storybooku; „Přeskočit úvod“ zrušeno. Volba v prologu = gesto a/nebo řeč, každá jen to, co jí sedí.
 - Postava: dlaždice, klik znovu = odznačení; bez volby = PILGRIM; do hry až rasa + povolání + původ. 5 ras, 4 povolání, 5 původů; dlaždice se zalomí. Kostka jen jméno. Flash staty; u původu řádek efektů z dat.
 - Legal (indie): deaktivace účtu, 14 dnů obnovení, pak výmaz. Bez „stub“ úvodních tipů v legal/FAQ/původu.
 

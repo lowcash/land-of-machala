@@ -10,6 +10,7 @@ test("varianta ze seedu; varianta mění pravdu fám", () => {
   assert.equal(K.truthOf(kauza("C"), "c4"), "half");
   assert.equal(K.truthOf(kauza("C"), "c1"), "false");
   assert.equal(K.truthOf(kauza("A"), "c5"), "none");
+  assert.equal(K.truthOf(kauza("A"), "c2"), "true");
 });
 
 test("první zaslechnutí spustí lhůtu; podruhé nic nového", () => {
@@ -45,7 +46,7 @@ test("seed fáma (armDeadline:false): Zápisník ano, lhůta až při prvním he
 test("ověření: true/half → ověřeno, false → vyvráceno, none → otevřené (nikdy nerozhodnuto)", () => {
   const k = kauza("C");
   ["c1", "c4", "c5"].forEach((c) => K.hear(k, c, { day: 1 }));
-  assert.equal(K.verify(k, "c1", { via: "camp" }).status, "refuted");
+  assert.equal(K.verify(k, "c1", { via: "cask" }).status, "refuted");
   const half = K.verify(k, "c4", { via: "clerk" });
   assert.equal(half.status, "verified");
   assert.equal(half.truth, "half");
@@ -53,14 +54,14 @@ test("ověření: true/half → ověřeno, false → vyvráceno, none → otevř
   assert.equal(open.status, "open");
   assert.equal(K.verify(k, "c5", { via: "night" }).ok, true, "otevřenou jde zkoušet znovu");
   assert.equal(K.certainty(k, "c5").label, "nejasné");
-  assert.equal(K.verify(k, "c1", { via: "camp" }).ok, false, "vyřešené podruhé ne");
+  assert.equal(K.verify(k, "c1", { via: "cask" }).ok, false, "vyřešené podruhé ne");
 });
 
 test("ověřit jde jen zaslechnuté a správným způsobem", () => {
   const k = kauza("A");
   assert.equal(K.verify(k, "c4", { via: "clerk" }).ok, false);
   K.hear(k, "c4");
-  assert.equal(K.verify(k, "c4", { via: "camp" }).ok, false);
+  assert.equal(K.verify(k, "c4", { via: "cask" }).ok, false);
   assert.equal(K.verify(k, "c4", { via: "clerk" }).ok, true);
 });
 
@@ -86,7 +87,7 @@ test("jistota: shoda rasy +0,05, s povoláním se sčítá, strop 0,9", () => {
   assert.ok(Math.abs(withRace - (base + K.RACE_TAG_BONUS)) < 1e-9);
   const both = K.certainty(k, "c1", { int: 6, classId: "tracker", raceId: "woodfolk" }).p;
   assert.ok(Math.abs(both - (base + K.CLASS_TAG_BONUS + K.RACE_TAG_BONUS)) < 1e-9);
-  K.hear(k, "c4"); /* paper, bankéř rel 0.8 */
+  K.hear(k, "c4"); /* paper */
   const high = K.certainty(k, "c4", { int: 12, classId: "legist", raceId: "local" }).p;
   assert.equal(high, 0.9, "strop");
 });
@@ -99,12 +100,12 @@ test("zákoník čte paper", () => {
   assert.equal(K.certainty(k, "c4", { int: 6, classId: "tracker" }).p, base);
 });
 
-test("signály jsou deterministické a nikdy u pravdy nebo u poctivého bankéře", () => {
+test("signály jsou deterministické a nikdy u pravdy nebo u poctivé Gertrudy", () => {
   const a = kauza("A", 7);
   const b = kauza("A", 7);
   for (const c of Object.keys(K.def(a).claims)) assert.equal(K.signalFor(a, c), K.signalFor(b, c));
   assert.equal(K.signalFor(kauza("A"), "c4"), null);
-  assert.equal(K.signalFor(kauza("C"), "c4"), null, "bankéř jen vynechává");
+  assert.equal(K.signalFor(kauza("C"), "c4"), null, "Gertruda jen vynechává");
   const seen = new Set();
   for (let s = 0; s < 40; s++) seen.add(K.signalFor(kauza("A", s), "c1"));
   assert.ok(seen.has(null) && seen.size > 1, "někdy prozradí, někdy ne");
@@ -126,20 +127,19 @@ test("lhůta vynutí výchozí verdikt; nic se nezablokuje a verdikt je jen jede
 test("verdikty: podmínky místa, zvonu a zlata; důsledek přes důvěru → ceny a poplatek", () => {
   let k = kauza("A");
   assert.equal(K.canVerdict(k, "return", { at: "chapel", hasBell: false }), false);
-  assert.equal(K.canVerdict(k, "return", { at: "bank", hasBell: true }), false);
+  assert.equal(K.canVerdict(k, "return", { at: "forge", hasBell: true }), false);
   assert.equal(K.canVerdict(k, "pay", { at: "townhall", gold: 149 }), false);
   assert.equal(K.canVerdict(k, "auction", { at: "chapel", hasBell: true }), false, "výchozí verdikt si hráč nevybere");
   const r = K.chooseVerdict(k, "return", { at: "chapel", hasBell: true }, 3);
   assert.equal(r.effects.consumeBell, true);
   assert.ok(K.priceMod(k, "anicka") < 1);
   assert.ok(K.priceMod(k, "lidmila") < 1);
-  assert.equal(K.bankFee(k), 5, "banka dražší");
+  assert.ok(K.priceMod(k, "matej") > 1, "Matěj ztratil zakázku");
 
   k = kauza("A");
-  const b = K.chooseVerdict(k, "bank", { at: "bank", hasBell: true });
+  const b = K.chooseVerdict(k, "forge", { at: "forge", hasBell: true });
   assert.equal(b.effects.gold, 40);
-  assert.equal(K.bankFee(k), 0);
-  assert.ok(K.priceMod(k, "gertruda") < 1);
+  assert.ok(K.priceMod(k, "matej") < 1);
 
   k = kauza("A");
   const p = K.chooseVerdict(k, "pay", { at: "townhall", gold: 150 });
@@ -148,7 +148,7 @@ test("verdikty: podmínky místa, zvonu a zlata; důsledek přes důvěru → ce
 
   k = kauza("A");
   K.chooseVerdict(k, "keep", { at: "notebook", hasBell: true });
-  assert.ok(["anicka", "gertruda", "lidmila", "svatava"].every((n) => K.priceMod(k, n) > 1));
+  assert.ok(["anicka", "matej", "lidmila", "svatava"].every((n) => K.priceMod(k, n) > 1));
 });
 
 test("důvěra se ořízne na −2…+2 a ceny na ×0,7…×1,3", () => {
@@ -172,8 +172,8 @@ test("epilog podle varianty, otevřená otázka zůstává", () => {
 test("zkušenost Čtení: správný odhad při rozuzlení zvedá jistotu dalších fám, špatný ne", () => {
   const k = kauza("A");
   ["c1", "c2", "c4", "c3"].forEach((c) => K.hear(k, c));
-  const before = K.certainty(k, "c1", { int: 6 }).p; /* c1 s ničím nekoliduje */
-  K.answer(k, "c2", "doubt"); /* c2 je v A nepravda → správně */
+  const before = K.certainty(k, "c1", { int: 6 }).p; /* c1 s ničím nekoliduje dokud není c6 */
+  K.answer(k, "c2", "believe"); /* c2 je v A pravda → správně */
   K.answer(k, "c4", "doubt"); /* c4 je v A pravda → špatně */
   K.verify(k, "c2", { via: "clerk" });
   K.verify(k, "c4", { via: "clerk" });
@@ -225,25 +225,27 @@ test("názor z odpovědi se počítá do Čtení při rozuzlení", () => {
   const k = kauza("C"); /* c1 = nepravda */
   K.hear(k, "c1", { day: 1 });
   K.answer(k, "c1", "doubt", 1);
-  K.verify(k, "c1", { via: "camp" });
+  K.verify(k, "c1", { via: "cask" });
   assert.equal(K.readingExp(k), 1);
 });
 
 test("návrat k věci: varianta podle názoru a dopadu, jen po rozuzlení a jen jednou", () => {
-  const k = kauza("A"); /* A: c2 nepravda, c4 pravda, c3 napůl */
+  const k = kauza("A"); /* A: c2 pravda, c4 pravda, c3 napůl */
   ["c2", "c3", "c4", "c1"].forEach((c) => K.hear(k, c));
   K.answer(k, "c2", "believe");
   K.answer(k, "c4", "doubt");
   assert.equal(K.follow(k, "c2").available, false, "dokud není rozuzleno");
   assert.equal(K.followUp(k, "c2").ok, false);
-  ["c2", "c3", "c4"].forEach((c) => K.verify(k, c, { via: "clerk" }));
-  assert.deepEqual(["c2", "c3", "c4"].map((c) => K.follow(k, c).key), ["believe_false", "neutral", "doubt_true"]);
+  K.verify(k, "c2", { via: "clerk" });
+  K.verify(k, "c3", { via: "cart" });
+  K.verify(k, "c4", { via: "clerk" });
+  assert.deepEqual(["c2", "c3", "c4"].map((c) => K.follow(k, c).key), ["believe_true", "neutral", "doubt_true"]);
   const f = K.follow(k, "c2");
   assert.ok(f.you.length && f.hint && f.pool.length);
-  assert.equal(f.pool, K.def(k).npcs.petr.after.believe_false, "NPC má vlastní odpověď");
+  assert.equal(f.pool, K.def(k).npcs.petr.after.believe_true, "NPC má vlastní odpověď");
   const trust = JSON.stringify(k.trust);
   const r = K.followUp(k, "c2", 3);
-  assert.deepEqual([r.ok, r.key], [true, "believe_false"]);
+  assert.deepEqual([r.ok, r.key], [true, "believe_true"]);
   assert.equal(K.follow(k, "c2").available, false, "podruhé ne");
   assert.equal(K.followUp(k, "c2").ok, false);
   assert.equal(JSON.stringify(k.trust), trust, "žádný mechanický trest");
@@ -265,4 +267,15 @@ test("Zápisník po kauze: nerozuzlené první, rozuzlené zvlášť", () => {
   K.verify(k, "c2", { via: "clerk" });
   const nb = K.notebook(k);
   assert.deepEqual([nb.pending, nb.resolved], [["c1", "c3"], ["c2"]]);
+});
+
+test("mapa kauzy: hutě a vůz, ne tábor", () => {
+  const d = K.def(kauza("A"));
+  assert.deepEqual(d.forge.cell, [5, 6]);
+  assert.deepEqual(d.cart.cell, [4, 5]);
+  assert.equal(d.camp, undefined);
+  assert.ok(d.npcs.ondra && d.npcs.matej);
+  assert.equal(d.npcs.brigand, undefined);
+  assert.ok(d.verdicts.forge);
+  assert.equal(d.verdicts.bank, undefined);
 });

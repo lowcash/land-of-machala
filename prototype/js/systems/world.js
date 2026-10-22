@@ -136,7 +136,7 @@
 
   /**
    * Smrt: vše, co hráč má (batoh, vybavení, měšec), jde do corpse na místě smrti.
-   * Banka zůstává. Vrací { corpse, kit } — volající pak nahradí postavu základní výbavou.
+   * Banka zůstává. Vrací { corpse, kit } - volající pak nahradí postavu základní výbavou.
    */
   function buildCorpse({ bag, equipped, gold, x, y, day }) {
     return {

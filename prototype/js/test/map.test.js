@@ -53,8 +53,11 @@ test("mapa: POI leží na očekávaném terénu; cellLabel", () => {
 
 test("mapa: souřadnice v kauzy.js a quests.js odpovídají POI", () => {
   const z = KAUZY.zvon;
-  assert.deepEqual(z.camp.cell, M.POI.camp.cell);
+  assert.deepEqual(z.forge.cell, M.POI.forge.cell);
+  assert.deepEqual(z.cart.cell, M.POI.cart.cell);
   assert.deepEqual(z.chapel.cell, M.POI.chapel.cell);
+  assert.equal(M.cellLabel(...M.POI.forge.cell), "Hutě u Jezírka");
+  assert.equal(M.cellLabel(...M.POI.cart.cell), "Vůz na cestě");
   const letter = QUESTS.find((q) => q.id === "letter_to_lada");
   assert.deepEqual(letter.turnIn.cell, M.POI.village.cell);
   assert.ok(letter.objectives.some((o) => o.type === "arrive" && o.cell[0] === M.POI.village.cell[0] && o.cell[1] === M.POI.village.cell[1]));
@@ -65,5 +68,18 @@ test("mapa: klíče SPOT_TABLE mají terén v mapě", () => {
   for (let y = 0; y <= M.MAP_MAX; y++) for (let x = 0; x <= M.MAP_MAX; x++) onMap.add(M.terrainAt(x, y));
   for (const t of Object.keys(W.SPOT_TABLE)) {
     assert.ok(onMap.has(t), `SPOT_TABLE.${t} není na mapě`);
+  }
+});
+
+test("zóny: každé políčko má zónu; v bezpečné zóně nejsou bojová místa", () => {
+  for (let y = 0; y <= M.MAP_MAX; y++) {
+    for (let x = 0; x <= M.MAP_MAX; x++) assert.ok(M.ZONE_CS[M.zoneAt(x, y)], `zóna (${x},${y})`);
+  }
+  assert.equal(M.zoneAt(3, 3), "safe");
+  assert.equal(M.zoneAt(3, 0), "safe");
+  assert.equal(M.zoneAt(5, 6), "neutral");
+  assert.equal(M.zoneAt(-1, 0), null);
+  for (const seed of [1, 7, 42, 1234, 99999]) {
+    for (const s of W.buildSpots(seed, M.terrainAt)) assert.notEqual(M.zoneAt(s.x, s.y), "safe", `seed ${seed}: místo v bezpečné zóně (${s.x},${s.y})`);
   }
 });

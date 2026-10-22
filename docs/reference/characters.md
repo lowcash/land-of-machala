@@ -2,21 +2,9 @@
 
 Stav: skutečné (`prototype/js/data/characters.js`, `statsNow()` v `app.js`). Tabulky se generují (`node prototype/js/gen-docs.js`).
 
-## Klíče (migrace uložení)
+## Klíče
 
-`SAVE_VERSION` 1 → 2 přejmenuje `picks.class` / `picks.race`; 2 → 3 id NPC; 3 → 4 doplní `origin` a `standing`. Neznámý klíč zůstane; neplatný pádne na poutníka.
-
-| starý klíč | nový klíč | název |
-|---|---|---|
-| `warrior` | `mercenary` | Žoldák |
-| `hunter` | `tracker` | Stopař |
-| `mage` | `chanter` | Zaříkávač |
-| — | `legist` | Zákoník |
-| `human` | `local` | Zdejší |
-| `dwarf` | `saltfolk` | Solníci |
-| `elf` | `woodfolk` | Hvozdáci |
-| — | `riverfolk` | Brodáci |
-| — | `hillfolk` | Pasekáři |
+Uložení nemá migrace: jen aktuální `SAVE_VERSION`, starší se tváří jako žádné. Klíče povolání: `mercenary`, `tracker`, `chanter`, `legist`; kmeny / kraje: `local`, `saltfolk`, `woodfolk`, `riverfolk`, `hillfolk`.
 
 ## Odvozené hodnoty
 
@@ -42,7 +30,7 @@ Bez volby povolání/rasy platí **poutník** (6/6/6/6), rasa/povolání přičt
 | `legist` | 5 | 5 | 6 | 8 | energie | 12 |
 <!-- /gen:classes -->
 
-Speciál v boji: žoldák Úder štítem (ATK), stopař Přesná střela (DEX×1,45), zaříkávač Zaříkání (INT×1,3; text nepotvrzuje kouzlo), zákoník Důrazná výtka (INT×1,1). Povolání čtou typ fám (`classTag`): `people` / `tracks` / `omen` / `paper` — viz [kauza.md](kauza.md).
+Speciál v boji: pacholek Úder štítem (ATK), dřevorubec Přesná střela (DEX×1,45), bylinkář Zaříkání (INT×1,3; text nepotvrzuje kouzlo), písař Důrazná výtka (INT×1,1). Povolání čtou typ fám (`classTag`): `people` / `tracks` / `omen` / `paper` — viz [kauza.md](kauza.md).
 
 ## Rasy (5)
 
@@ -51,9 +39,9 @@ Speciál v boji: žoldák Úder štítem (ATK), stopař Přesná střela (DEX×1
 |---|---|---|---|---|
 | `local` Zdejší | 0 | 0 | 1 | 0 |
 | `saltfolk` Solníci | 1 | -1 | 1 | 0 |
-| `woodfolk` Hvozdáci | -1 | 1 | 0 | 1 |
+| `woodfolk` Slatiňané | -1 | 1 | 0 | 1 |
 | `riverfolk` Brodáci | 0 | 1 | 1 | -1 |
-| `hillfolk` Pasekáři | 1 | 1 | 0 | -1 |
+| `hillfolk` Pasečané | 1 | 1 | 0 | -1 |
 <!-- /gen:races -->
 
 Součet odchylek každé rasy = **+1**. Rasa přidává bonus k jistotě fámy (`raceTag`, +0,05), když typ fámy sedí — sčítá se s bonusem povolání (+0,12), strop 0,9.
@@ -70,6 +58,7 @@ Třetí volba na obrazovce **Postava**. Mění start (místo/zlato/vztahy), ne b
 | `watchman` | Bývalý strážný | místo `gate` | 70 | 0 | — | `petr` +2, `svatava` +1 | — |
 | `wayfarer` | Poutník z Brodu | buňka (3,2) | 100 | 0 | — | — | +2 |
 | `exile` | Vyhnanec | buňka (2,5) | 15 | 0 | — | `petr` -1, `brigand` +1 | — |
+| `native` | Rodák | místo `market` | 40 | 0 | — | `svatava` +1, `karel` +1, `gertruda` -1 | — |
 <!-- /gen:origins -->
 
 ## Postup

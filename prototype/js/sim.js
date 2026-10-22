@@ -1,4 +1,4 @@
-/* Simulace boje: node prototype/js/sim.js [N] — boti proti nepřátelům, tabulka metrik. */
+/* Simulace boje: node prototype/js/sim.js [N] - boti proti nepřátelům, tabulka metrik. */
 const { createRng } = require("./rng.js");
 const { createCombat, resolveTurn, availableActions } = require("./systems/combat.js");
 const { ENEMIES } = require("./data/enemies.js");
@@ -123,7 +123,7 @@ if (require.main === module) {
   for (const enemy of ["wolf", "boar", "bandit", "brigand"]) {
     for (const player of ["mercenary", "tracker", "chanter", "legist"]) table(enemy, player, n);
   }
-  console.log("\n######## Čtení záměru: vliv schopnosti (žoldák, bandita) ########");
+  console.log("\n######## Čtení záměru: vliv schopnosti (pacholek, bandita) ########");
   table("bandit", "mercenary", n, { label: "INT 4" });
   table("bandit", "mercenary", n, { player: { int: 10 }, familiarity: 0.15, label: "INT 10 + zkušenost" });
   table("bandit", "mercenary", n, { items: { foresight: 1 }, label: "INT 4 + odvar předtuchy" });

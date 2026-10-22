@@ -1,5 +1,5 @@
 /*
- * Kodex: annotace herního textu hesly. Čisté — bez DOMu a bez Math.random.
+ * Kodex: annotace herního textu hesly. Čisté - bez DOMu a bez Math.random.
  * annotate obalí první výskyt (i skloňování) do <abbr class="kodex" data-kodex="id">;
  * nikdy uvnitř tagů, atributů ani už obaleného hesla.
  */

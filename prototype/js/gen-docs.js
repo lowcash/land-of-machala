@@ -24,7 +24,7 @@ blocks.actions = md(
   [
     ["Rychlý (`quick`)", "0", `zásah ${pct(TUNE.quickHit)} + DEX·1 %, dmg ATK×${TUNE.quickDmg}+${TUNE.quickPlus}; vs těžký +10 % zásah a −40 % příchozí; vs obrana −3 dmg`],
     ["Těžký (`heavy`)", `−${COST.heavy}`, `zásah ${pct(TUNE.heavyHit)} + DEX·1 %, dmg ATK×${TUNE.heavyDmg}+${TUNE.heavyPlus}; vs rychlý +15 % zásah; vs obrana +4 dmg`],
-    ["Speciál (`special`)", `−${COST.special}`, `nemine, ignoruje obranu a DEF; dmg síla×${TUNE.specialDmg} (žoldák ATK, stopař DEX×1,45, zaříkávač INT×1,3, zákoník INT×1,1)`],
+    ["Speciál (`special`)", `−${COST.special}`, `nemine, ignoruje obranu a DEF; dmg síla×${TUNE.specialDmg} (pacholek ATK, dřevorubec DEX×1,45, bylinkář INT×1,3, písař INT×1,1)`],
     ["Obrana (`guard`)", `+${GAIN.guard}`, "příchozí poškození podle matice níže; vs těžký protiúder"],
     ["Úhyb (`evade`)", `+${GAIN.evade}`, "příchozí podle matice; vs rychlý protiúder; příští útěk +30 %"],
     ["Pozorování (`observe`)", `+${GAIN.observe}`, "příchozí ×0,85; příští indicie +50 % šance přečtení"],
@@ -58,13 +58,13 @@ blocks.tune = "```js\n" + JSON.stringify({ ...TUNE, costs: COST, gains: GAIN }, 
 const N = 1000;
 const bots = ["vždy-quick", "vždy-heavy", "vždy-special", "vždy-guard", "vždy-evade", "náhodný", "čtenář", "informovaný"];
 blocks.sim = md(
-  ["nepřítel (žoldák Lv1)", ...bots.map((b) => b.replace("vždy-", "vždy "))],
+  ["nepřítel (pacholek Lv1)", ...bots.map((b) => b.replace("vždy-", "vždy "))],
   ["wolf", "boar", "bandit", "brigand"].map((e) => [`\`${e}\``, ...bots.map((b) => run(b, e, PLAYERS.mercenary, N).win.toFixed(0) + " %")])
 ) + `\n\n_${N} bojů na bota, seedy 1…${N}. „čtenář“ věří indicii jen při jistotě „tuším/jistě“, jinak hraje těžký + obrana. „informovaný“ zná skutečný záměr._`;
 
 const ex = { player: { int: 10 }, familiarity: 0.15 };
 blocks.read = md(
-  ["podmínka (bandita, žoldák)", "čtenář výhry", "rozdíl proti INT 4"],
+  ["podmínka (bandita, pacholek)", "čtenář výhry", "rozdíl proti INT 4"],
   (() => {
     const base = run("čtenář", "bandit", PLAYERS.mercenary, N).win;
     const rows = [
@@ -178,7 +178,7 @@ const TOUR = [
   ["healer-hurt", "léčení, zlato"],
   ["fight-wolf", "boj: záměr, akce, zdroj"],
   ["zvon-tavern", "kauza: první fáma"],
-  ["zvon-camp-day", "kauza: tábor a zvon"],
+  ["zvon-forge", "kauza: hutě a zvon"],
   ["zvon-verdict", "kauza: verdikt a důvěra"],
   ["bag-shovel", "odložit a zakopat věc"],
   ["bag-full-stash", "plný batoh a úschovna"],
@@ -202,7 +202,7 @@ blocks.systems = md(
 
 /* Mapa 7×7 z js/data/map.js */
 blocks.map = (() => {
-  const { MAP_MAX, GRID, POI, TERRAIN_CS, terrainAt } = MapData;
+  const { MAP_MAX, GRID, POI, TERRAIN_CS, ZONE_CS, terrainAt, zoneAt } = MapData;
   const legend = Object.entries(TERRAIN_CS).map(([k, cs]) => `\`${k}\` ${cs}`).join(" · ");
   const head = ["y\\x", ...Array.from({ length: MAP_MAX + 1 }, (_, x) => String(x))];
   const rows = [];
@@ -211,13 +211,13 @@ blocks.map = (() => {
   }
   const grid = md(head, rows);
   const poi = md(
-    ["id", "název", "(x,y)", "terén"],
+    ["id", "název", "(x,y)", "terén", "zóna"],
     Object.entries(POI).map(([id, p]) => {
       const [x, y] = p.cell;
-      return [`\`${id}\``, p.label, `(${x},${y})`, `\`${terrainAt(x, y)}\``];
+      return [`\`${id}\``, p.label, `(${x},${y})`, `\`${terrainAt(x, y)}\``, ZONE_CS[zoneAt(x, y)]];
     })
   );
-  return `Velikost ${MAP_MAX + 1}×${MAP_MAX + 1}. Osa Y ↑ sever. Spawn = město.\n\n**Legenda:** ${legend}\n\n${grid}\n\n### Body zájmu (POI)\n\n${poi}`;
+  return `Velikost ${MAP_MAX + 1}×${MAP_MAX + 1}. Osa Y ↑ sever. Spawn = město.\n\n**Legenda:** ${legend}\n\n**Zóny:** ${Object.entries(ZONE_CS).map(([k, cs]) => `\`${k}\` ${cs}`).join(" · ")}; v bezpečné zóně (město, vesnice, kaple) nejsou bojová místa (hlídá test); neutrální (cesty, dílny) má jen vzácné lapky; nebezpečná (louky, les, kopce) divočinu a v noci víc. Zóna zatím nemění pravidla, jen pojmenovává stav.\n\n${grid}\n\n### Body zájmu (POI)\n\n${poi}`;
 })();
 
 /* Evidence nápadů: frontmatter v docs/ideas/*.md → rejstřík */

@@ -37,7 +37,7 @@
   /** Pravda fámy v této variantě: true | half | false | none. */
   const truthOf = (k, cid) => claimDef(k, cid).truth[k.variant];
 
-  /** Signál NPC (drobná prozrazující věc) — deterministicky ze seedu: stejná kauza, stejné signály. */
+  /** Signál NPC (drobná prozrazující věc) - deterministicky ze seedu: stejná kauza, stejné signály. */
   function signalFor(k, cid) {
     const c = claimDef(k, cid);
     const t = truthOf(k, cid);
@@ -54,7 +54,7 @@
   /**
    * Zaslechnutí fámy.
    * `armDeadline` (výchozí true): nastaví `startDay`, pokud ještě není.
-   * Seed z původu (Dlužník) volá `armDeadline: false` — fáma je v Zápisníku (`hasClaims`),
+   * Seed z původu (Dlužník) volá `armDeadline: false` - fáma je v Zápisníku (`hasClaims`),
    * ale lhůta a služby s `kauzaStarted()` čekají na první hear s `armDeadline` (i stejné cid znovu).
    */
   function hear(k, cid, { day = 1, via = null, armDeadline = true } = {}) {
@@ -97,7 +97,7 @@
   }
 
   /**
-   * Ověření: `via` musí odpovídat způsobu fámy (camp | clerk | night) a fáma musí být zaslechnutá.
+   * Ověření: `via` musí odpovídat způsobu fámy (cask | cart | forge | clerk | night) a fáma musí být zaslechnutá.
    * Výsledek podle pravdy ve variantě: true/half → ověřeno (half = „napůl“), false → vyvráceno, none → zůstává otevřené.
    * Vrací { ok, reason?, status, truth, text }.
    */
@@ -121,7 +121,7 @@
 
   /**
    * Hráčova odpověď na fámu v rozhovoru: believe | doubt nastaví názor (na rozdíl od setBelief nepřepíná zpět), neutral ho nechá být.
-   * Nikdy nezaslechne fámu znovu ani nespouští lhůtu. Vrací { ok, changed, pool } — pool = věty, ze kterých NPC zareaguje (nebo null).
+   * Nikdy nezaslechne fámu znovu ani nespouští lhůtu. Vrací { ok, changed, pool } - pool = věty, ze kterých NPC zareaguje (nebo null).
    */
   function answer(k, cid, stance, day = 1) {
     const rec = k.claims[cid];
@@ -186,7 +186,7 @@
     return v;
   };
 
-  /** Lze verdikt vydat tady? ctx = { at: "chapel"|"bank"|"townhall"|"notebook", hasBell, gold } */
+  /** Lze verdikt vydat tady? ctx = { at: "chapel"|"forge"|"townhall"|"notebook", hasBell, gold } */
   function canVerdict(k, id, ctx = {}) {
     const v = VDEF(k, id);
     if (k.verdict || v.auto) return false;

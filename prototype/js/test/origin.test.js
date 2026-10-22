@@ -39,7 +39,7 @@ test("apply: deterministický; null/neznámý nic nemění; plný batoh nespadne
   const a = Origin.apply(base, "apprentice");
   const b = Origin.apply(base, "apprentice");
   assert.deepEqual(a, b);
-  assert.equal(a.bag.filter((x) => x === "gloves").length, 0, "plný batoh — věc se nevešla");
+  assert.equal(a.bag.filter((x) => x === "gloves").length, 0, "plný batoh, věc se nevešla");
   const none = Origin.apply(base, null);
   assert.equal(none.origin, null);
   assert.equal(none.gold, undefined);
@@ -75,17 +75,12 @@ test("greetPool: původ jen při visits===0, jinak fallback", () => {
   assert.ok(first[0].includes("se zavřenýma"));
   assert.deepEqual(Origin.greetPool("smith", "apprentice", 1, fb), fb);
   assert.deepEqual(Origin.greetPool("smith", null, 0, fb), fb);
-  assert.deepEqual(Origin.greetPool("tavern", "apprentice", 0, fb), fb, "učeň nemá greet tavern");
+  assert.deepEqual(Origin.greetPool("bank", "apprentice", 0, fb), fb, "učeň nemá greet bank");
 });
 
-test("migrate 3→4 doplní origin a standing; round-trip; poškozený standing se vyčistí", () => {
-  const mig = Save.migrate({ v: 3, savedAt: 1, data: { standing: { petr: 9, bad: "x" }, gold: 1 } });
-  assert.equal(mig.ok, true);
-  assert.equal(mig.value.v, 4);
-  assert.equal(mig.value.data.origin, null);
-  assert.deepEqual(mig.value.data.standing, { petr: 2 });
+test("round-trip origin a standing", () => {
   const text = Save.serialize({ ...Save.DEFAULTS, name: "A", origin: "exile", standing: { petr: -1 } }, { now: 1 });
-  assert.equal(JSON.parse(text).v, 4);
+  assert.equal(JSON.parse(text).v, Save.SAVE_VERSION);
   const r = Save.deserialize(text);
   assert.equal(r.ok, true);
   assert.equal(r.state.origin, "exile");

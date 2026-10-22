@@ -25,7 +25,7 @@ Návrhové záměry a důvody: design/gameplay.md.
 |---|---|---|
 | Rychlý (`quick`) | 0 | zásah 75 % + DEX·1 %, dmg ATK×0.48+1; vs těžký +10 % zásah a −40 % příchozí; vs obrana −3 dmg |
 | Těžký (`heavy`) | −4 | zásah 56 % + DEX·1 %, dmg ATK×0.96+2; vs rychlý +15 % zásah; vs obrana +4 dmg |
-| Speciál (`special`) | −6 | nemine, ignoruje obranu a DEF; dmg síla×0.8 (žoldák ATK, stopař DEX×1,45, zaříkávač INT×1,3, zákoník INT×1,1) |
+| Speciál (`special`) | −6 | nemine, ignoruje obranu a DEF; dmg síla×0.8 (pacholek ATK, dřevorubec DEX×1,45, bylinkář INT×1,3, písař INT×1,1) |
 | Obrana (`guard`) | +2 | příchozí poškození podle matice níže; vs těžký protiúder |
 | Úhyb (`evade`) | +1 | příchozí podle matice; vs rychlý protiúder; příští útěk +30 % |
 | Pozorování (`observe`) | +1 | příchozí ×0,85; příští indicie +50 % šance přečtení |
@@ -60,7 +60,7 @@ Protiúder: obrana vs těžký a úhyb vs rychlý → hráč dá ⌊ATK×0,46⌋
 - Chybný odhad není náhodný trest: popisek říká, jak moc věřit.
 
 <!-- gen:read -->
-| podmínka (bandita, žoldák) | čtenář výhry | rozdíl proti INT 4 |
+| podmínka (bandita, pacholek) | čtenář výhry | rozdíl proti INT 4 |
 |---|---|---|
 | INT 4 | 66 % | +0 p. b. |
 | INT 10 + zkušenost 0,15 | 91 % | +25 p. b. |
@@ -129,7 +129,7 @@ Kde a kdy se nepřátelé objevují: [world.md](world.md) (setkání na cestě).
 ## Ověření: výhry podle strategie
 
 <!-- gen:sim -->
-| nepřítel (žoldák Lv1) | vždy quick | vždy heavy | vždy special | vždy guard | vždy evade | náhodný | čtenář | informovaný |
+| nepřítel (pacholek Lv1) | vždy quick | vždy heavy | vždy special | vždy guard | vždy evade | náhodný | čtenář | informovaný |
 |---|---|---|---|---|---|---|---|---|
 | `wolf` | 26 % | 70 % | 64 % | 0 % | 16 % | 39 % | 70 % | 100 % |
 | `boar` | 0 % | 43 % | 15 % | 0 % | 0 % | 7 % | 43 % | 95 % |
@@ -139,4 +139,4 @@ Kde a kdy se nepřátelé objevují: [world.md](world.md) (setkání na cestě).
 _1000 bojů na bota, seedy 1…1000. „čtenář“ věří indicii jen při jistotě „tuším/jistě“, jinak hraje těžký + obrana. „informovaný“ zná skutečný záměr._
 <!-- /gen:sim -->
 
-Cíl: žádná jednoduchá strategie nevítězí všude (nejlepší fixní ≤ ~70 %), znalost záměru se vyplatí. Stopař a zaříkávač jsou v čistém boji slabší než žoldák; zákoník je blízko zaříkávače (speciál INT×1,1).
+Cíl: žádná jednoduchá strategie nevítězí všude (nejlepší fixní ≤ ~70 %), znalost záměru se vyplatí. Dřevorubec a bylinkář jsou v čistém boji slabší než pacholek; písař je blízko bylinkáře (speciál INT×1,1).

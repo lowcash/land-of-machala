@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-<style>.o{stroke:#2a1a10;stroke-width:5;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a1a10;stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
-<path class="o" d="M60 238q-34-60-8-110 24-32 52-42l-14-28 36 14 36-14-14 28q28 10 52 42 26 50-8 110-68 12-132 0z" fill="#c9a86a"/>
-<path class="o" d="M86 88q42 20 84 0" fill="none" stroke-width="10" stroke="#8a6a3a"/>
-<path class="t" d="M86 88q42 20 84 0"/>
-<path class="t" opacity=".6" d="M84 150q24 30 8 70M170 150q-24 30-8 70"/>
-<path class="o" d="M100 58l-14-26 24 12 18-18 18 18 24-12-14 26" fill="#c9a86a"/>
-</svg>

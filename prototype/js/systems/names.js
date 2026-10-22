@@ -1,5 +1,5 @@
 /*
- * Generátor jmen a vedlejších lidí. Čisté: bez DOMu, bez Math.random — náhoda jen přes `rng`.
+ * Generátor jmen a vedlejších lidí. Čisté: bez DOMu, bez Math.random - náhoda jen přes `rng`.
  * makeName → { first, last, nick, full }; makeRegular → osobnost podle „Skládání z ničeho“.
  */
 (function (root, factory) {

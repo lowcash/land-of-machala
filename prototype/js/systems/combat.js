@@ -1,5 +1,5 @@
 /*
- * Boj 1v1 — pravidla bez DOMu a časovačů. `c` se mění na místě; náhoda jen přes `rng`.
+ * Boj 1v1 - pravidla bez DOMu a časovačů. `c` se mění na místě; náhoda jen přes `rng`.
  * Záměr nepřítele má 3 vrstvy: trueIntent (skutečný) · hint (co hráč vidí) · readChance (jak moc věřit).
  */
 (function (root, factory) {
@@ -21,7 +21,7 @@
   /* na co se nepřítel přizpůsobí, když hráč opakuje akci */
   const COUNTER = { heavy: "guard", quick: "heavy", guard: "quick", evade: "heavy", special: "guard" };
 
-  /* Ladicí konstanty — upravuje sim/tune; hodnoty ověřené `node js/sim.js`. */
+  /* Ladicí konstanty - upravuje sim/tune; hodnoty ověřené `node js/sim.js`. */
   const TUNE = {
     quickDmg: 0.48, quickPlus: 1, quickHit: 0.75,
     heavyDmg: 0.96, heavyPlus: 2, heavyHit: 0.56,
@@ -29,12 +29,12 @@
     enemyDmg: 1, enemyHp: 1,
     riposte: 0.46, // správná reakce (obrana vs těžký, úhyb vs rychlý) vrátí část úderu
     surrenderMinPlayerHp: 0.4, // nepřítel se vzdá, jen když má hráč aspoň tento podíl max. HP (jinak zuří)
-    desperateHeavy: 0.2, // váha těžkého úderu navíc u zuřícího nepřítele — ladit
+    desperateHeavy: 0.2, // váha těžkého úderu navíc u zuřícího nepřítele - ladit
   };
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  /* síla speciálu podle povolání: žoldák zbraň, stopař obratnost, zaříkávač intelekt, zákoník slabší intelekt */
+  /* síla speciálu podle povolání: pacholek zbraň, dřevorubec obratnost, bylinkář intelekt, písař slabší intelekt */
   function specialPower(p) {
     if (p.classId === "chanter") return Math.max(p.atk, p.int * 1.3);
     if (p.classId === "tracker") return Math.max(p.atk, p.dex * 1.45);

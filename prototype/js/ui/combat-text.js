@@ -13,7 +13,7 @@
   const SPECIAL = {
     mercenary: { name: "Úder štítem", hit: "Úder štítem" },
     tracker: { name: "Přesná střela", hit: "Přesná střela" },
-    chanter: { name: "Zaříkání", hit: "Zaříkání — protivník zaváhal: z víry, nebo ze strachu" },
+    chanter: { name: "Zaříkání", hit: "Zaříkání (protivník zaváhal z víry, nebo ze strachu)" },
     legist: { name: "Důrazná výtka", hit: "Důrazná výtka" },
   };
 
@@ -44,9 +44,9 @@
     for (const ev of events) {
       switch (ev.t) {
         case "hit":
-          if (ev.action === "special") you.push(`${(SPECIAL[c.p.classId] || SPECIAL.mercenary).hit} — jistý zásah ${ev.dmg}.`);
-          else if (ev.action === "quick") you.push(ev.intent === "heavy" ? `Rychlý výpad přeruší těžký úder — ${ev.dmg}.` : `Rychlý výpad — ${ev.dmg}.`);
-          else you.push(ev.intent === "guard" ? `Těžký úder proráží obranu — ${ev.dmg}.` : `Těžký úder — ${ev.dmg}.`);
+          if (ev.action === "special") you.push(`${(SPECIAL[c.p.classId] || SPECIAL.mercenary).hit}, jistý zásah ${ev.dmg}.`);
+          else if (ev.action === "quick") you.push(ev.intent === "heavy" ? `Rychlý výpad přeruší těžký úder: ${ev.dmg}.` : `Rychlý výpad: ${ev.dmg}.`);
+          else you.push(ev.intent === "guard" ? `Těžký úder proráží obranu: ${ev.dmg}.` : `Těžký úder: ${ev.dmg}.`);
           break;
         case "miss":
           you.push("Míjíš.");
@@ -55,32 +55,32 @@
           you.push("Zvedáš obranu.");
           break;
         case "evade":
-          you.push("Couváš a hledáš mezeru — příští útěk bude snazší.");
+          you.push("Couváš a hledáš mezeru, příští útěk bude snazší.");
           break;
         case "observe":
-          you.push("Pozoruješ nepřítele — příští tah ho přečteš líp.");
+          you.push("Pozoruješ nepřítele, příští tah ho přečteš líp.");
           break;
         case "heal":
           you.push(`Vypil jsi odvar. +${ev.amount} HP.`);
           break;
         case "foresight":
-          you.push("Odvar předtuchy — příštích pár tahů čteš nepřítele jasněji.");
+          you.push("Odvar předtuchy, příštích pár tahů čteš nepřítele jasněji.");
           break;
         case "flee_fail":
           you.push("Útěk selhal.");
           break;
         case "enemy_hit": {
           const tag = ev.reduced ? (ev.action === "evade" ? "uhýbáš" : "blokuješ") : "";
-          if (ev.intent === "guard") foe.push(`Brání se — slabý protiúder (${ev.dmg}).`);
-          else if (ev.intent === "heavy") foe.push(tag ? `Těžký úder — ${tag} na ${ev.dmg}.` : `Těžký úder — ${ev.dmg} dmg.`);
-          else foe.push(tag ? `Rychlý výpad — ${tag} na ${ev.dmg}.` : `Rychlý výpad — ${ev.dmg} dmg.`);
+          if (ev.intent === "guard") foe.push(`Brání se, slabý protiúder (${ev.dmg}).`);
+          else if (ev.intent === "heavy") foe.push(tag ? `Těžký úder: ${tag} na ${ev.dmg}.` : `Těžký úder: ${ev.dmg} dmg.`);
+          else foe.push(tag ? `Rychlý výpad: ${tag} na ${ev.dmg}.` : `Rychlý výpad: ${ev.dmg} dmg.`);
           break;
         }
         case "riposte":
           foe.push(`Tvůj protiúder ${ev.dmg}.`);
           break;
         case "surrender_offer":
-          meta = `${c.enemyName} zvedá ruce — chce se vzdát. Můžeš ho ušetřit.`;
+          meta = `${c.enemyName} zvedá ruce, chce se vzdát. Můžeš ho ušetřit.`;
           break;
         case "desperate":
           meta = `${c.enemyName} vidí, že už nemáš sílu, a tlačí na pilu.`;

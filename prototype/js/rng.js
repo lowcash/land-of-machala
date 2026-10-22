@@ -1,4 +1,4 @@
-/* Seedovaná náhoda (mulberry32). Pravidla berou `rng` jako parametr — žádné Math.random v systems/. */
+/* Seedovaná náhoda (mulberry32). Pravidla berou `rng` jako parametr - žádné Math.random v systems/. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;

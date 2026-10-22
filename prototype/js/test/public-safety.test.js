@@ -15,13 +15,17 @@ function tracked() {
   }
 }
 
-test("soukromý obsah není trackovaný a je v .gitignore", (t) => {
-  const files = tracked();
-  if (!files) return t.skip("není git repo");
-  assert.deepEqual(files.filter((f) => f.startsWith("content-private/")), []);
-  const ignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
-  assert.ok(ignore.split("\n").includes("content-private/"), ".gitignore musí obsahovat content-private/");
-  assert.ok(ignore.split("\n").includes("CONVERSATION.md"), ".gitignore musí obsahovat CONVERSATION.md");
+test("tajný obsah (docs/secret) nejde do veřejného exportu", () => {
+  const { ALLOW } = require("../../../tools/export-public.js");
+  assert.equal(ALLOW.some((a) => "docs/secret/x.md".startsWith(a + "/") || a === "docs/secret"), false, "docs/secret nesmí být v ALLOW");
+});
+
+test("deník autora (docs/CONVERSATION.md) a plánování nejdou do veřejného exportu", () => {
+  const { ALLOW } = require("../../../tools/export-public.js");
+  const covered = (f) => ALLOW.some((a) => f === a || f.startsWith(a + "/"));
+  for (const f of ["docs/CONVERSATION.md", "docs/PLANNING.md", "docs/ideas/README.md", "docs/tasks/README.md"]) {
+    assert.equal(covered(f), false, `${f} nesmí být v ALLOW exportu`);
+  }
 });
 
 test("žádný trackovaný soubor neobsahuje značku tajného textu ani klíče", (t) => {

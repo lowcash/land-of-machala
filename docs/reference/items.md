@@ -53,7 +53,7 @@ Limity: 11 výbavových slotů, batoh 16 slotů a max 28 váhy, bonusy jen `ATK`
 | `foresight` | Odvar předtuchy | consumable | — | — | 1 | uncommon | čtení záměru nepřítele |
 | `ration` | Suchý chléb | consumable | — | — | 1 | poor | cesta |
 
-### Ostatní (5)
+### Ostatní (6)
 
 | id | název | slot | ATK | DEF | váha | vzácnost | poznámka |
 |---|---|---|---|---|---|---|---|
@@ -62,5 +62,6 @@ Limity: 11 výbavových slotů, batoh 16 slotů a max 28 váhy, bonusy jen `ATK`
 | `shovel` | Lopata | misc | — | — | 3 | common | zakopat věci |
 | `letter` | Zapečetěný dopis | misc | — | — | 0.1 | rare | příběhový předmět |
 | `bell` | Zvon z kaple | misc | — | — | 14 | rare | těžký, unikátní; nezmizí z těla |
+| `cart_bell` | Vozový zvonek | misc | — | — | 1 | common | malý cechovní zvon; není z kaple |
 <!-- /gen:items -->
 

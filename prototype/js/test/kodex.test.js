@@ -33,7 +33,7 @@ test("kodex: skloňování najde tvar z forms", () => {
   assert.match(out, /data-kodex="tvrz"/);
 });
 
-test("kodex: vnořené HTML — obalí text, ne tagy", () => {
+test("kodex: vnořené HTML, obalí text, ne tagy", () => {
   const seen = new Set();
   const src = `<p class="line">Purkrabí hlídá <em>hrad</em>.</p>`;
   const out = annotate(src, seen);

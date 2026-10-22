@@ -34,13 +34,13 @@ Každý modul je UMD: `(function (root, factory) { … })` → v Node `module.ex
 - **příběh**: `quests` (log), `kauza` (vzniká líně v `kauzaState()` ze `seed`), `kzReply`, `notebookNew`.
 - **dialog**: `placeThread`, `cellThread` (vlákna logu), `placeWho`, `placeTalkPath`, `placeTalkDone`, `visits`, `vc` (čítače variant vět).
 - **dev**: `dev` (přepínače), `activeScenario`. `audio` a `prefs` jdou do `localStorage` (`lom.prefs`).
-- **uložená hra**: `js/systems/save.js` (`LOM.Save`) serializuje whitelist herních polí do JSON `{ v, savedAt, data }` (aktuálně `v: 4`). `migrate`: v1 klíče povolání/rasy; v2 id NPC; v3 doplní `origin: null`, `standing: {}`. Ukládá postavu, batoh/výbavu, zlato/banku, polohu a mapu, čas, HP, questy, kauzu, flagy, kills, piles, stash, corpses, seed, spots, dialogové čítače a vygenerované lidi. **Neukládá** UI (panely, vlákna logu, flash, potvrzení), `combat` (reload = konec boje), `audio`/`prefs` (zvlášť), `kodexSeen`/`kodexCache`, `dev`. `Set` (`usedNames`) → pole. Chybějící pole se při načtení doplní výchozími. Klíč: `lom.save`. Čtení/zápis `localStorage` a UI tlačítka patří do `app.js` (modul je čistý), viz [Ukládání](#ukládání-appjs).
+- **uložená hra**: `js/systems/save.js` (`LOM.Save`) serializuje whitelist herních polí do JSON `{ v, savedAt, data }` (aktuálně `v: 4`). Bez migrací: jiná verze než aktuální se tváří jako žádné uložení. Ukládá postavu, batoh/výbavu, zlato/banku, polohu a mapu, čas, HP, questy, kauzu, flagy, kills, piles, stash, corpses, seed, spots, dialogové čítače a vygenerované lidi. **Neukládá** UI (panely, vlákna logu, flash, potvrzení), `combat` (reload = konec boje), `audio`/`prefs` (zvlášť), `kodexSeen`/`kodexCache`, `dev`. `Set` (`usedNames`) → pole. Chybějící pole se při načtení doplní výchozími. Klíč: `lom.save`. Čtení/zápis `localStorage` a UI tlačítka patří do `app.js` (modul je čistý), viz [Ukládání](#ukládání-appjs).
 
 Pravidla mění `state` jen přes volající: `systems/*` dostanou kus stavu (`c`, `k`, `log`, `piles`) a mutují ho na místě, nebo vrací výsledek a `app.js` ho aplikuje (zlato, batoh, flagy).
 
 ## Scéna, seed, determinismus
 
-- `applyScenario(id, knobs)`: najde scénu, přepíše pole knoby, **zahodí celý `state`** a postaví nový z `makeState()` (zachová `audio`, `prefs`, `dev`). Pak postupně: `seed`, `picks`, `level`/`xp`, `gold`, `bank`, `bag`, `clock` (`day`, `phase`), poloha `at`, `strip`, `corpse`, `encounter`, `hpPct`, `bagAdd`, `spots`, `quests`, `piles`, `stash`, `kauza` (`variant`, `heard`, `verified`, `campSeen`, `trust`), `questRefresh()`, reset panelů a vlákna; nakonec větev podle `view` (boj, úvod, prolog, místo, mapa). Stejná scéna + stejné knoby = stejný stav.
+- `applyScenario(id, knobs)`: najde scénu, přepíše pole knoby, **zahodí celý `state`** a postaví nový z `makeState()` (zachová `audio`, `prefs`, `dev`). Pak postupně: `seed`, `picks`, `level`/`xp`, `gold`, `bank`, `bag`, `clock` (`day`, `phase`), poloha `at`, `strip`, `corpse`, `encounter`, `hpPct`, `bagAdd`, `spots`, `quests`, `piles`, `stash`, `kauza` (`variant`, `heard`, `verified`, `forgeSeen`, `trust`), `questRefresh()`, reset panelů a vlákna; nakonec větev podle `view` (boj, úvod, prolog, místo, mapa). Stejná scéna + stejné knoby = stejný stav.
 - Seed (`state.seed`) určuje: **místa setkání** (`cellSeed(seed,x,y)` → `buildSpots`), **souboj na místě** (`spotFightSeed(seed,spot,day)`: stejné místo ve stejný den = stejný souboj), **variantu kauzy** (`seed % 3`) a **signály NPC**, **rozkradení hromádek** (`rollFor(seed,pile)`), **varianty vět** (`Variants.pick(text,seed,klíč,n)`), **přítomnost osob** (`hash(seed,"here:…:den")`), **obcházení** (`worldRng()` = seed + počet hodů).
 - Pravidla v `systems/` nikdy nevolají `Math.random`; berou `rng`/seed. **Mimo determinismus** je jen `app.js`: výchozí seed (`Date.now`), seed boje bez místa (dev tlačítko Boj), `randomName`, drb v hospodě (`RUMORS`).
 
@@ -101,17 +101,17 @@ zvon = { id, title, brief, deadline: { days: 5, text },
   variants: { A: { label, epilog }, … },                       // varianta ze seedu
   claims: { c1: { by: "svatava", tag: "tracks", place: "tavern", text, line,
                   truth: { A: "half", B: "half", C: "false" },  // true | half | false | none
-                  verify: { via: "camp", where, texts: { half, false } }, contradicts: ["c6"] } },
+                  verify: { via: "cask", where, texts: { half, false } }, contradicts: ["c6"] } },
   replies, follow, afterDefault,                               // věty hráče a NPC po rozuzlení
   verdicts: { return: { label, at: "chapel", needs: { bell: true }, hint, effects: { trust: { anicka: 2 }, gold, flags }, consumeBell, epilogue } },
   open: "…" }
 ```
-`rel` = výchozí jistota zdroje, `tell` = šance signálu při `half`/`false`, `verify.via` = `camp` | `clerk` | `night`.
+`rel` = výchozí jistota zdroje, `tell` = šance signálu při `half`/`false`, `verify.via` = `cask` | `cart` | `forge` | `clerk` | `night`.
 
-**Scéna** (`js/dev/scenarios.js`): `{ id, group, label, note, seed, view, at: [x,y], phase, day, picks, level, xp, gold, bank, bag: "full" | [id…], bagAdd, hpPct, corpse, strip, encounter, fight: { enemy, enemyHpPct, loot }, spots: [{x,y,enemy,when}], quests, variant, kauza: { heard, verified, startDay, campSeen, trust }, piles, stash, placeView }`. Hlavička souboru popisuje pole.
+**Scéna** (`js/dev/scenarios.js`): `{ id, group, label, note, seed, view, at: [x,y], phase, day, picks, level, xp, gold, bank, bag: "full" | [id…], bagAdd, hpPct, corpse, strip, encounter, fight: { enemy, enemyHpPct, loot }, spots: [{x,y,enemy,when}], quests, variant, kauza: { heard, verified, startDay, forgeSeen, trust }, piles, stash, placeView }`. Hlavička souboru popisuje pole.
 **Knob**: `{ id, label, opts: [[hodnota, popisek]], from: (sc) => hodnota, apply: (sc, hodnota) => … }`; `apply` přepíše pole scény, změna postaví scénu znovu.
 
-**Mapa** (`js/data/map.js`): `MAP_SIZE` 7, `GRID` (řádky y=6…0), `POI` (town, village, chapel, camp), `TERRAIN_CS`, `TERRAIN_BG`, `terrainAt(x,y)`, `cellLabel(x,y)`. Pravda o terénu: [map.md](map.md).
+**Mapa** (`js/data/map.js`): `MAP_SIZE` 7, `GRID` (řádky y=6…0), `POI` (town, village, chapel, forge, cart), `TERRAIN_CS`, `TERRAIN_BG`, `terrainAt(x,y)`, `cellLabel(x,y)`. Pravda o terénu: [map.md](map.md).
 
 **Předmět** (`js/data/items.js`): `{ id, icon, name, tip, slot, atk?, def?, weight, rarity, quest? }`; kategorie plyne ze `slot`. `quest: true` = nikdy nezmizí z corpse, nerozkradne se.
 **Nepřítel** (`js/data/enemies.js`): `{ id, name, level, type, hp, def, dmg: { heavy, quick, guard }, tactics: { weights: {heavy, quick, guard}, adapt, feint }, surrenderAt?, reward: { gold: [lo,hi], xp, loot: [{ id, p }] } }`.
@@ -130,7 +130,7 @@ Po každé změně: `node --test prototype/js/test/*.test.js`, `node --check pro
 - **Místo**: záznam v `PLACE`; `PLACE_BEATS[id]`; `PLACE_ASK[id]`; `looks` v `place-look`; větev `if (p === "id")` v `runService`; `placeBtn("id")` v `renderTownActions` (náměstí); `PLACE_VIEWS` (`applyScenario`); `BG` + `resources/locations/placeholder/<bg>.svg`; volba v `KNOBS.view` (`scenarios.js`); scéna; řádek v [places.md](places.md).
 - **NPC (osoba na místě)**: objekt do `people` místa (`when`, `greeting`, `talk`). Bez dalších změn se objeví v „Rozhlédnout se po lidech“.
 - **Uzel dialogu**: položka v `PLACE_ASK[místo]` (nebo `children`); unikátní `id` v rámci místa. Chceš-li nabídnout quest, `id` musí sedět s `giver.after`.
-- **Fáma do Zvonu**: NPC do `npcs` (je-li nový); fáma do `claims` (`truth` pro A, B, C; `verify`); uzel s `claim` v `PLACE_ASK` místa fámy; ověření `clerk` = služba `lookup_*` na radnici + `LOOKUP_CLAIM` v `app.js`; `camp` a `night` mají pevné akce v `kauzaCellAct`. Tabulky v [kauza.md](kauza.md) se přegenerují. **Druhá kauza** vyžaduje změny v `app.js` (viz dluhy).
+- **Fáma do Zvonu**: NPC do `npcs` (je-li nový); fáma do `claims` (`truth` pro A, B, C; `verify`); uzel s `claim` v `PLACE_ASK` místa fámy; ověření `clerk` = služba `lookup_*` na radnici + `LOOKUP_CLAIM` v `app.js`; `cask` / `cart` / `forge` / `night` mají pevné akce v `kauzaCellAct` (nebo služba u Svatavy). Tabulky v [kauza.md](kauza.md) se přegenerují. **Druhá kauza** vyžaduje změny v `app.js` (viz dluhy).
 - **Quest**: záznam v `quests.js`, uzel `giver.after` v `PLACE_ASK`, případně `QUEST_PRESETS` ve scénáři, test v `quests.test.js`.
 - **Původ**: záznam v `origins.js` (po `gen-docs` je v [characters.md](characters.md)); scény `origin-*` v `scenarios.js`; test `origin.test.js`. UI: accordion na obrazovce Postava + `Origin.apply` při `start-game`.
 - **Předmět**: záznam v `items.js` (po `gen-docs` je v [items.md](items.md)); chceš-li ho prodávat, služba v `PLACE.services` a větev v `runService` (`buyItem(id, cena)`).
@@ -146,6 +146,18 @@ Po každé změně: `node --test prototype/js/test/*.test.js`, `node --check pro
 - **Pokračovat**: na úvodu `syncContinue` ukáže tlačítko (jméno, úroveň, povolání), je-li `readSave()` platné. `continueGame` složí `state` z `makeState()` + uložených polí (`resetState`), zahodí neznámá id předmětů a neexistující místo, nastaví `combat = null`, `placeView = "hub"`, vlákna logu prázdná a vstoupí do města (`placeProse`). UI (`kodexSeen`, panely, flash) začíná od nuly; `spots` se při `null` postaví líně ze `seed`.
 - **Nová hra** neničí uložení: první klik na „Vstoupit do hry“ při existujícím uložení jen upozorní (potvrzení), druhý klik začne čistou postavu (`resetState`) a první auto-save uložení přepíše.
 - **Smazat uloženou hru**: Nastavení → „Uložená hra“ (dvoustupňové potvrzení); smaže klíč, vrátí na úvod s čistým stavem.
+
+## Changelog hráče
+
+Tři oddělené věci: **interní** (git log), **veřejné** (`CHANGELOG-PLAYER.md`, jen vydané verze), **neveřejné** (poznámky k plánovanému obsahu; nikdy do veřejného souboru).
+
+```
+## 0.2.0 — 2026-11-02
+- Nové: Pevná místa setkání, stopy ve dne.
+- Změna: Těžký útok teď stojí energii.
+- Oprava: Koupený předmět se ukládá do batohu.
+```
+Typy: Nové · Změna · Oprava · Svět. Bez spoilerů: píše se co hráč může dělat, ne proč. Verze = `APP_VERSION`; veřejný záznam vzniká při promote `beta → main`.
 
 ## Ověření v prohlížeči
 

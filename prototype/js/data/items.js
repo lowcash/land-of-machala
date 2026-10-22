@@ -1,5 +1,5 @@
 /*
- * Katalog předmětů prototypu — jediný zdroj pravdy (docs/reference/items.md se z něj generuje).
+ * Katalog předmětů prototypu - jediný zdroj pravdy (docs/reference/items.md se z něj generuje).
  * atk/def = bonus ke statům · weight = nosnost batohu (equipped mimo batoh) · slot = výbavový slot.
  * quest: true = příběhový předmět (v corpse nikdy nezmizí). Kategorie vychází ze slotu (itemCategory).
  */
@@ -57,6 +57,7 @@
     { id: "shovel", icon: "⛏", name: "Lopata", tip: "zakopat věci", slot: "misc", weight: 3, rarity: "common" },
     { id: "letter", icon: "✉️", name: "Zapečetěný dopis", tip: "příběhový předmět", slot: "misc", weight: 0.1, rarity: "rare", quest: true },
     { id: "bell", icon: "🔔", name: "Zvon z kaple", tip: "těžký, unikátní; nezmizí z těla", slot: "misc", weight: 14, rarity: "rare", quest: true },
+    { id: "cart_bell", icon: "🔕", name: "Vozový zvonek", tip: "malý cechovní zvon; není z kaple", slot: "misc", weight: 1, rarity: "common", quest: true },
   ];
 
   const INVENTORY = [...WEAPONS, ...ARMOR, ...JEWELRY, ...CONSUMABLES, ...MISC];

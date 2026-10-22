@@ -1,5 +1,5 @@
 /*
- * Serializace uložené hry (prototyp, localStorage). Čisté — bez DOMu, bez Math.random.
+ * Serializace uložené hry (prototyp, localStorage). Čisté - bez DOMu, bez Math.random.
  * Obálka: { v, savedAt, data }. Jen whitelist herních polí; UI (panely, vlákna logu, dev, cache) ne.
  * Set/Map → pole / objekt; bag smí mít null. Nikdy nevyhodí výjimku ven.
  * Klíč úložiště (pro integraci): STORAGE_KEY. Samotné čtení/zápis localStorage dělá app.js.
@@ -194,8 +194,7 @@
   function validate(obj) {
     if (!isPlainObject(obj)) return { ok: false, reason: "shape" };
     if (typeof obj.v !== "number" || !Number.isFinite(obj.v)) return { ok: false, reason: "version" };
-    if (obj.v > SAVE_VERSION) return { ok: false, reason: "version" };
-    if (obj.v < 1) return { ok: false, reason: "version" };
+    if (obj.v !== SAVE_VERSION) return { ok: false, reason: "version" };
     if (!isPlainObject(obj.data)) return { ok: false, reason: "data" };
     const d = obj.data;
     if (d.bag !== undefined && !Array.isArray(d.bag)) return { ok: false, reason: "bag" };
@@ -215,73 +214,6 @@
     return { ok: true };
   }
 
-  /** Staré klíče povolání/rasy (SAVE_VERSION 1) → lore klíče. Neznámý klíč nechá být. */
-  const CLASS_MIGRATE = { warrior: "mercenary", hunter: "tracker", mage: "chanter" };
-  const RACE_MIGRATE = { human: "local", dwarf: "saltfolk", elf: "woodfolk" };
-  /** Stará id NPC (SAVE_VERSION 2) → postavy z lore. */
-  const NPC_MIGRATE = { uda: "svatava", banker: "gertruda", klerk: "gustav", benes: "lidmila" };
-  const FLAG_MIGRATE = { uda_friend: "svatava_friend", uda_haggled: "svatava_haggled" };
-
-  function renameKeys(obj, map) {
-    if (!isPlainObject(obj)) return obj;
-    const out = {};
-    for (const [k, v] of Object.entries(obj)) out[map[k] || k] = v;
-    return out;
-  }
-
-  /**
-   * Migrace obálky na aktuální verzi.
-   * Vrací { ok, value? } nebo { ok: false, reason }.
-   */
-  function migrate(obj) {
-    if (!isPlainObject(obj)) return { ok: false, reason: "shape" };
-    if (typeof obj.v !== "number") return { ok: false, reason: "version" };
-    if (obj.v > SAVE_VERSION) return { ok: false, reason: "version" };
-    if (obj.v < 1) return { ok: false, reason: "version" };
-
-    let cur = obj;
-    if (cur.v === 1) {
-      const data = isPlainObject(cur.data) ? { ...cur.data } : {};
-      if (isPlainObject(data.picks)) {
-        const picks = { ...data.picks };
-        if (CLASS_MIGRATE[picks.class]) picks.class = CLASS_MIGRATE[picks.class];
-        if (RACE_MIGRATE[picks.race]) picks.race = RACE_MIGRATE[picks.race];
-        data.picks = picks;
-      }
-      cur = { ...cur, v: 2, data };
-    }
-    if (cur.v === 2) {
-      const data = isPlainObject(cur.data) ? { ...cur.data } : {};
-      if (isPlainObject(data.kauza) && isPlainObject(data.kauza.trust)) {
-        data.kauza = { ...data.kauza, trust: renameKeys(data.kauza.trust, NPC_MIGRATE) };
-      }
-      if (isPlainObject(data.flags)) data.flags = renameKeys(data.flags, FLAG_MIGRATE);
-      cur = { ...cur, v: 3, data };
-    }
-    if (cur.v === 3) {
-      const data = isPlainObject(cur.data) ? { ...cur.data } : {};
-      if (data.origin === undefined) data.origin = null;
-      if (!isPlainObject(data.standing)) data.standing = {};
-      else {
-        const st = {};
-        for (const [k, v] of Object.entries(data.standing)) {
-          if (typeof v === "number" && Number.isFinite(v)) st[k] = Math.max(-2, Math.min(2, v | 0));
-        }
-        data.standing = st;
-      }
-      cur = { ...cur, v: 4, data };
-    }
-    if (cur.v === 4) {
-      /* starší v4 bez pole: výchozí false (fillDefaults při deserialize taky) */
-      const data = isPlainObject(cur.data) ? { ...cur.data } : {};
-      if (data.freeHealAfterDeath == null) data.freeHealAfterDeath = false;
-      else data.freeHealAfterDeath = !!data.freeHealAfterDeath;
-      return { ok: true, value: { ...cur, data } };
-    }
-
-    return { ok: false, reason: "version" };
-  }
-
   /** state → JSON řetězec. opts.now = ms (testy); výchozí Date.now(). */
   function serialize(state, opts) {
     const now = opts && typeof opts.now === "number" ? opts.now : Date.now();
@@ -299,11 +231,9 @@
       } catch (_) {
         return { ok: false, reason: "json" };
       }
-      const mig = migrate(raw);
-      if (!mig.ok) return { ok: false, reason: mig.reason };
-      const val = validate(mig.value);
+      const val = validate(raw);
       if (!val.ok) return { ok: false, reason: val.reason };
-      return { ok: true, state: revive(mig.value.data) };
+      return { ok: true, state: revive(raw.data) };
     } catch (_) {
       return { ok: false, reason: "error" };
     }
@@ -317,7 +247,6 @@
     DEFAULTS,
     serialize,
     deserialize,
-    migrate,
     validate,
     pickData,
     revive,

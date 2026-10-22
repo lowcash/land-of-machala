@@ -3,7 +3,7 @@
  * Pole: view (town|exits|healer|smith|bank|tavern|market|gate|townhall|combat|landing|origins|confirm) · at [x,y] · picks · level · xp ·
  *       gold · bank · bag (ids | "full") · bagAdd · hpPct · phase (morning|noon|afternoon|evening|night) · corpse · encounter ·
  *       fight { enemy, enemyHpPct, loot } · spots [{x,y,enemy,when}] (přepíše vygenerovaná místa) · quests { id: {status,progress} } ·
- *       day · variant (A|B|C) · kauza { heard[], verified[], startDay, campSeen, trust } ·
+ *       day · variant (A|B|C) · kauza { heard[], verified[], startDay, forgeSeen, trust } ·
  *       piles [{ x, y, kind: open|buried, items[], day, tick }] · stash [{ id, day }] · placeView (hub|talk|services|stash|people) · log (věta do logu města) · note.
  * Scéna nastaví vše; KNOBS pak libovolné pole přepíšou (každý knob = jedno pole scény, `from` ukáže hodnotu scény,
  * `apply` ji přepíše). Změna knobu postaví celou scénu znovu. TOGGLES = přepínače dev režimu (nemění scénu).
@@ -34,28 +34,29 @@
     { name: "Postava: rasa, povolání, původ", status: "funguje", pct: 85, note: "" },
     { name: "Žebříčky", status: "maketa", pct: 5, note: "" },
     { name: "Ukládání v prohlížeči", status: "funguje", pct: 80, note: "localStorage: auto-save, Pokračovat, smazání; boj se neobnovuje; jedno uložení na prohlížeč" },
-    { name: "Účet a server", status: "maketa", pct: 5, note: "" },
+    { name: "Účet a server", status: "maketa", pct: 5, note: "", phase: "server" },
+    { name: "Jedna verze uložení (bez migrací)", status: "funguje", pct: 100, note: "starší verze uložení se zahodí", phase: "FP1" },
+    { name: "Úvodní scéna prologu (Svatava, atmosféra)", status: "funguje", pct: 100, note: "hostinec, zvon, mezivěty mezi kroky", phase: "FP1" },
   ];
 
   const SCENARIOS = [
     { id: "start-landing", group: "Start", label: "Úvod (přihlášení, host)", view: "landing", note: "Úvodní obrazovka: registrace, přihlášení, host, případně Pokračovat." },
-    { id: "start-origins", group: "Start", label: "Prolog (volby před Postavou)", view: "origins", note: "Tři kroky prologu, pak Postava (rasa, povolání, původ)." },
+    { id: "start-origins", group: "Start", label: "Prolog (volby před Postavou)", view: "origins", note: "Čtyři kroky prologu (živnost, kraj, zvon, původ), pak Postava (shrnutí a jméno)." },
     { id: "start-confirm", group: "Start", label: "Postava (rasa, povolání, původ)", view: "confirm", note: "Výběr rasy, povolání a původu a vstup do hry." },
-    { id: "start-fresh", group: "Start", label: "Hra od nuly (průchod celou smyčkou)", view: "town", note: "Čerstvá postava ve městě bez fixtures: projdi hospodu, cestu, boj, kauzu Zvon do verdiktu a reload (Pokračovat). Dev scény neukládají." },
     { id: "origin-apprentice", group: "Start", label: "Původ: učeň v kovárně", view: "smith", picks: { class: "mercenary", race: "local", origin: "apprentice" }, seed: 50, note: "Karel dává slevu (standing +2). Zkontroluj ceny mečů." },
     { id: "origin-exile", group: "Start", label: "Původ: vyhnanec před městem", view: "exits", at: [2, 5], picks: { class: "mercenary", race: "local", origin: "exile" }, spots: [], seed: 51, note: "Okraj lesa, málo zlata; u brány napomenutí." },
     { id: "kodex-words", group: "Svět", label: "Kodex: hesla v textu", view: "town", seed: 40, note: "", log: "Na rynku se šeptá, že zeman z hvozdu prodal půdu." },
     { id: "town-start", group: "Město", label: "Čerstvá postava v Machale", view: "town", note: "Základ: služby, banka, mapa." },
     { id: "market-full-bag", group: "Město", label: "Tržiště s plným batohem", view: "market", bag: "full", gold: 100, seed: 12, note: "Zkus koupit odvar: nevejde se a zlato se nestrhne. Chléb (+8 HP) funguje bez místa." },
-    { id: "healer-hurt", group: "Město", label: "Léčitel — zraněný hrdina", view: "healer", hpPct: 0.3, gold: 80, seed: 13, note: "" },
-    { id: "fight-wolf", group: "Boj", label: "Vlk — plné HP (baseline)", fight: { enemy: "wolf" }, seed: 1, note: "Vlk je rychlý (většinou výpad). Zkus: výpad → úhyb, těžký → obrana." },
-    { id: "fight-wolf-low-hp", group: "Boj", label: "Vlk — nízké HP", fight: { enemy: "wolf" }, hpPct: 0.2, seed: 2, note: "Pij odvar, braň se (obnoví zdroj) nebo uteč. Prohra = smrt s corpse." },
-    { id: "fight-boar", group: "Boj", label: "Divočák — těžké údery", fight: { enemy: "boar" }, seed: 3, note: "Často těžký úder: obrana a protiúder se vyplatí." },
-    { id: "fight-bandit", group: "Boj", label: "Bandita — přizpůsobí se", fight: { enemy: "bandit" }, seed: 4, note: "Zahraj třikrát stejnou akci a sleduj změnu." },
-    { id: "fight-bandit-hurt", group: "Boj", label: "Bandita — skoro poražený", fight: { enemy: "bandit", enemyHpPct: 0.24 }, seed: 5, note: "Nabídne vzdání. Ušetřit = méně zlata, bez kořisti." },
-    { id: "fight-brigand", group: "Boj", label: "Zbojník — elita, klame", fight: { enemy: "brigand" }, seed: 6, bag: ["potion", "potion", "foresight", "ration"], note: "Indicie často lže. Pozoruj, zkus odvar předtuchy." },
+    { id: "healer-hurt", group: "Město", label: "Léčitel: zraněný hrdina", view: "healer", hpPct: 0.3, gold: 80, seed: 13, note: "" },
+    { id: "fight-wolf", group: "Boj", label: "Vlk, plné HP (baseline)", fight: { enemy: "wolf" }, seed: 1, note: "Vlk je rychlý (většinou výpad). Zkus: výpad → úhyb, těžký → obrana." },
+    { id: "fight-wolf-low-hp", group: "Boj", label: "Vlk, nízké HP", fight: { enemy: "wolf" }, hpPct: 0.2, seed: 2, note: "Pij odvar, braň se (obnoví zdroj) nebo uteč. Prohra = smrt s corpse." },
+    { id: "fight-boar", group: "Boj", label: "Divočák, těžké údery", fight: { enemy: "boar" }, seed: 3, note: "Často těžký úder: obrana a protiúder se vyplatí." },
+    { id: "fight-bandit", group: "Boj", label: "Bandita, přizpůsobí se", fight: { enemy: "bandit" }, seed: 4, note: "Zahraj třikrát stejnou akci a sleduj změnu." },
+    { id: "fight-bandit-hurt", group: "Boj", label: "Bandita, skoro poražený", fight: { enemy: "bandit", enemyHpPct: 0.24 }, seed: 5, note: "Nabídne vzdání. Ušetřit = méně zlata, bez kořisti." },
+    { id: "fight-brigand", group: "Boj", label: "Zbojník, elita, klame", fight: { enemy: "brigand" }, seed: 6, bag: ["potion", "potion", "foresight", "ration"], note: "Indicie často lže. Pozoruj, zkus odvar předtuchy." },
     { id: "fight-foresight", group: "Čtení záměru", label: "Bandita + odvar předtuchy", fight: { enemy: "bandit" }, seed: 7, bag: ["potion", "foresight", "foresight"], note: "Vypij odvar (stojí tah) a sleduj jistotu indicie." },
-    { id: "fight-chanter-reader", group: "Čtení záměru", label: "Zaříkávač (vysoké INT) vs. bandita", picks: { class: "chanter", race: "woodfolk" }, fight: { enemy: "bandit" }, seed: 8, note: "Vyšší INT = jistější indicie." },
+    { id: "fight-chanter-reader", group: "Čtení záměru", label: "Bylinkář (vysoké INT) vs. bandita", picks: { class: "chanter", race: "woodfolk" }, fight: { enemy: "bandit" }, seed: 8, note: "Vyšší INT = jistější indicie." },
     { id: "loot-bag-full", group: "Kořist", label: "Plný batoh + vítězství", fight: { enemy: "wolf", enemyHpPct: 0.06, loot: ["wolf-tooth"] }, bag: "full", seed: 9, note: "Dokonči vlka; kořist se nevejde." },
     { id: "levelup-near", group: "Postup", label: "Skoro nová úroveň", fight: { enemy: "wolf", enemyHpPct: 0.05 }, xp: 45, seed: 14, note: "Dobij vlka: +XP přeteče do Lv 2 a staty vzrostou." },
     { id: "road-travel", group: "Cesta", label: "Stopy před tebou (den)", view: "exits", at: [3, 2], phase: "noon", spots: [{ x: 3, y: 1, enemy: "bandit" }], seed: 10, note: "Ve dne vidíš ⚠ na sousedním políčku. Můžeš ho obejít, nebo jít schválně. Vyčištěné místo se další den obnoví." },
@@ -68,14 +69,14 @@
     { id: "quest-bread", group: "Questy", label: "Chléb pro Svatavu: volba", view: "tavern", bag: ["ration"], quests: { bread_for_uda: { status: "active" } }, seed: 23, note: "Dvě volby, dva následky: cena noclehu u Svatavy se pak liší (10 / 25 místo 20)." },
     { id: "quest-letter-road", group: "Questy", label: "Dopis do Lady: cesta", view: "exits", at: [3, 2], phase: "noon", spots: [], bagAdd: ["letter"], quests: { letter_to_lada: { status: "active" } }, seed: 24, note: "" },
     { id: "quest-letter-lost", group: "Questy", label: "Dopis leží v mém těle", view: "exits", at: [2, 4], phase: "noon", picks: { class: "mercenary", race: "local" }, spots: [], corpse: { x: 2, y: 5, gold: 40, items: ["letter", "axe"], equipped: { weapon: "ladle" } }, strip: true, quests: { letter_to_lada: { status: "active" } }, seed: 25, note: "Úkol zůstal aktivní, dopis chybí. Úkoly i Mapa ukazují, kde leží. Znovu se nevydává." },
-    { id: "zvon-tavern", group: "Kauza Zvon", label: "Hospoda: první fáma", view: "tavern", seed: 3, note: "Rozhovor → „drby“ → fáma od Svatavy se zapíše do Zápisníku (📜 Úkoly dole). Signál (drobná prozrazující věc) se objeví jen někdy; zkus více seedů přes Reset a knob Varianta." },
-    { id: "zvon-clerk", group: "Kauza Zvon", label: "Radnice: ověřit z listin", view: "townhall", gold: 100, seed: 4, variant: "C", kauza: { heard: ["c2", "c3", "c4"] }, note: "Služby: nahlédnutí do knih za 5 🪙 ověří nebo vyvrátí fámy podle varianty. U C je bankéř pravdivý jen napůl: nelže, vynechává." },
-    { id: "zvon-gate", group: "Kauza Zvon", label: "Brána: dva Petrové", view: "gate", phase: "night", seed: 5, note: "Večer a v noci stojí na bráně „druhý“ Petr: skoro stejný, jen s dýmkou. Řekne totéž." },
-    { id: "zvon-camp-day", group: "Kauza Zvon", label: "Tábor v kopcích (den)", view: "exits", at: [5, 6], phase: "noon", spots: [], seed: 6, variant: "A", kauza: { heard: ["c1", "c6"] }, note: "Výchozí výbava (~5 kg). Prohlédnout tábor ověří Honzu i kasičku. Pak Vzít zvon (14 kg se vejde). Zvon je kauzová věc: z těla nezmizí, nevydá se podruhé a nikdo ho z hromádky nerozkrade." },
-    { id: "zvon-camp-night", group: "Kauza Zvon", label: "Tábor v kopcích (noc)", view: "exits", at: [5, 6], phase: "night", spots: [], seed: 7, kauza: { heard: ["c1"] }, bag: ["potion", "foresight", "ration"], note: "V noci tu sedí zbojník: souboj. Po vítězství jde tábor tu noc prohlédnout. Ušetřený zbojník (při ≤ 25 % HP bandity) vydá další fámu." },
-    { id: "zvon-chapel-night", group: "Kauza Zvon", label: "Kaple v noci (zaříkávač)", view: "exits", at: [4, 4], phase: "night", picks: { class: "chanter", race: "woodfolk" }, spots: [], seed: 8, kauza: { heard: ["c5", "c3"] }, note: "Naslouchat znamením: fáma Lidmily se nikdy nerozhodne (nejasné). Bez ní hráč jen cítí chlad." },
-    { id: "zvon-verdict", group: "Kauza Zvon", label: "Zvon v batohu: verdikt", view: "exits", at: [4, 4], phase: "noon", spots: [], bag: ["potion", "ration"], bagAdd: ["bell"], seed: 9, variant: "B", kauza: { heard: ["c1", "c3", "c4"], campSeen: true }, note: "Vrátit zvon do kaple (zde), odevzdat Zástavě, splatit dluh (Radnice) nebo nechat si (Zápisník). Každý verdikt změní důvěru: ceny u Lidmily/Svatavy, poplatek Zástavy." },
-    { id: "zvon-deadline", group: "Kauza Zvon", label: "Lhůta vypršela", view: "town", day: 6, phase: "noon", seed: 10, kauza: { heard: ["c1", "c2"], startDay: 1 }, note: "Dražba proběhla bez tebe: svět rozhodl, nic se nezablokovalo. Zápisník ukáže „co se stalo“." },
+    { id: "zvon-tavern", group: "Kauza Zvon", label: "Hospoda: první fáma", view: "tavern", seed: 3, note: "Rozhovor → „drby“ → fáma od Svatavy (sud / farní dar). Služba „Prohlédnout sud“ ověří c1. Signál se objeví jen někdy." },
+    { id: "zvon-clerk", group: "Kauza Zvon", label: "Radnice: ověřit z listin", view: "townhall", gold: 100, seed: 4, variant: "C", kauza: { heard: ["c2", "c4"] }, note: "Farní kniha a kupní listina za 5 🪙. U C je Gertruda napůl: pečeť bez nápisu." },
+    { id: "zvon-gate", group: "Kauza Zvon", label: "Brána: dva Petrové", view: "gate", phase: "night", seed: 5, note: "Večer a v noci stojí na bráně „druhý“ Petr: skoro stejný, jen s dýmkou. Řekne totéž (farář prodal)." },
+    { id: "zvon-cart", group: "Kauza Zvon", label: "Vůz na cestě (falešná stopa)", view: "exits", at: [4, 5], phase: "noon", spots: [], seed: 6, variant: "A", kauza: { heard: ["c3"] }, note: "" },
+    { id: "zvon-forge", group: "Kauza Zvon", label: "Hutě u Jezírka", view: "exits", at: [5, 6], phase: "noon", spots: [], seed: 7, variant: "A", kauza: { heard: ["c1", "c6"] }, note: "Ondra od vozu (fáma c6). Prohlédnout hutě ověří a ukáže zvon. Vzít zvon (14 kg). Lhůta 5 dní do přelití." },
+    { id: "zvon-chapel-night", group: "Kauza Zvon", label: "Kaple v noci (bylinkář)", view: "exits", at: [4, 4], phase: "night", picks: { class: "chanter", race: "woodfolk" }, spots: [], seed: 8, kauza: { heard: ["c5", "c3"] }, note: "Naslouchat znamením: fáma Lidmily se nikdy nerozhodne (nejasné). Bez ní hráč jen cítí chlad." },
+    { id: "zvon-verdict", group: "Kauza Zvon", label: "Zvon v batohu: verdikt", view: "exits", at: [4, 4], phase: "noon", spots: [], bag: ["potion", "ration"], bagAdd: ["bell"], seed: 9, variant: "B", kauza: { heard: ["c1", "c3", "c4"], forgeSeen: true }, note: "Vrátit Aničce (zde), nechat Matějovi (hutě 5,6), doplatit střechu (Radnice) nebo nechat si (Zápisník)." },
+    { id: "zvon-deadline", group: "Kauza Zvon", label: "Lhůta vypršela", view: "town", day: 6, phase: "noon", seed: 10, kauza: { heard: ["c1", "c2"], startDay: 1 }, note: "Zvon přelit bez tebe: svět rozhodl, nic se nezablokovalo. Zápisník ukáže „co se stalo“." },
   ];
 
   /* Batoh: úschovna, odložení, zakopání (pravidla js/systems/stash.js) */
@@ -116,9 +117,9 @@
       from: (sc) => sc.view || (sc.fight ? "combat" : "town"), apply: (sc, v) => { sc.view = v; sc._view = true; } },
     { id: "at", label: "Poloha", opts: [["town", "Machala (3,3)"], ["road", "Cesta u města (3,2)"], ["north", "Cesta na sever (3,1)"], ["lada", "Lada (3,0)"], ["plains", "Louky (1,4)"], ["forest_edge", "Kraj lesa (2,4)"], ["forest", "Les (2,5)"], ["hills", "Kopce (0,6)"], ["chapel", "Kaple (4,4)"], ["camp", "Tábor (5,6)"]],
       from: (sc) => atKey(sc.at), apply: (sc, v) => { sc.at = AT[v]; toMap(sc); } },
-    { id: "class", label: "Povolání", opts: [["mercenary", "Žoldák"], ["tracker", "Stopař"], ["chanter", "Zaříkávač"], ["legist", "Zákoník"]],
+    { id: "class", label: "Povolání", opts: [["mercenary", "Pacholek"], ["tracker", "Dřevorubec"], ["chanter", "Bylinkář"], ["legist", "Písař"]],
       from: (sc) => sc.picks?.class || "mercenary", apply: (sc, v) => { sc.picks = { ...(sc.picks || {}), class: v }; } },
-    { id: "race", label: "Rasa", opts: [["local", "Zdejší"], ["saltfolk", "Solníci"], ["woodfolk", "Hvozdáci"], ["riverfolk", "Brodáci"], ["hillfolk", "Pasekáři"]],
+    { id: "race", label: "Rasa", opts: [["local", "Zdejší"], ["saltfolk", "Solníci"], ["woodfolk", "Slatiňané"], ["riverfolk", "Brodáci"], ["hillfolk", "Pasečané"]],
       from: (sc) => sc.picks?.race || "local", apply: (sc, v) => { sc.picks = { ...(sc.picks || {}), race: v }; } },
     { id: "enemy", label: "Nepřítel v boji", opts: [["wolf", "Vlk"], ["boar", "Divočák"], ["bandit", "Bandita"], ["brigand", "Zbojník"]],
       from: (sc) => sc.fight?.enemy || "", apply: (sc, v) => { sc.fight = { ...(sc.fight || {}), enemy: v }; if (!sc._view) sc.view = "combat"; } },
@@ -154,7 +155,7 @@
       from: questKey, apply: (sc, v) => { const p = QUEST_PRESETS[v]; sc.quests = p.quests; if (p.bagAdd) sc.bagAdd = p.bagAdd; } },
   ];
 
-  /* Přepínače dev režimu — krátký popisek + dlouhý tooltip. Další přidávej sem. */
+  /* Přepínače dev režimu - krátký popisek + dlouhý tooltip. Další přidávej sem. */
   const TOGGLES = [
     { id: "reveal", label: "Skutečný záměr v boji", default: true,
       tip: "V boji ukáže pod indicií i to, co nepřítel opravdu udělá, jestli se indicie mýlí a s jakou pravděpodobností sedí. V ostré hře to ví jen server a hráč dostane jen vágní indicii." },

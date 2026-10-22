@@ -17,7 +17,7 @@
   };
 
   /**
-   * Přijetí u zadavatele. ctx.hasAnywhere(itemId) → true, když věc existuje (batoh / výbava / corpse) — nevydá se znovu.
+   * Přijetí u zadavatele. ctx.hasAnywhere(itemId) → true, když věc existuje (batoh / výbava / corpse) - nevydá se znovu.
    * Vrací { ok, reason?, give: [itemId] }; věci do batohu vkládá volající.
    */
   function accept(log, id, ctx = {}) {

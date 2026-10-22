@@ -1,5 +1,5 @@
 /*
- * Původ: startovní patch postavy. Čisté — bez DOMu, bez Math.random.
+ * Původ: startovní patch postavy. Čisté - bez DOMu, bez Math.random.
  * apply(state, originId) vrátí patch (gold, bank, bag, standing, travel, start, intro, hearClaim…).
  * null / neznámý id = žádné efekty (staré uložené hry).
  */

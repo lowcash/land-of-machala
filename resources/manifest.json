@@ -195,22 +195,6 @@
       "source": "hand-svg"
     },
     {
-      "id": "props-placeholder-crate",
-      "kind": "prop",
-      "path": "resources/props/placeholder/crate.svg",
-      "size": "256x256",
-      "status": "placeholder",
-      "source": "hand-svg"
-    },
-    {
-      "id": "props-placeholder-dug-earth",
-      "kind": "prop",
-      "path": "resources/props/placeholder/dug-earth.svg",
-      "size": "256x256",
-      "status": "placeholder",
-      "source": "hand-svg"
-    },
-    {
       "id": "props-placeholder-grave-marker",
       "kind": "prop",
       "path": "resources/props/placeholder/grave-marker.svg",
@@ -230,14 +214,6 @@
       "id": "props-placeholder-pile",
       "kind": "prop",
       "path": "resources/props/placeholder/pile.svg",
-      "size": "256x256",
-      "status": "placeholder",
-      "source": "hand-svg"
-    },
-    {
-      "id": "props-placeholder-sack",
-      "kind": "prop",
-      "path": "resources/props/placeholder/sack.svg",
       "size": "256x256",
       "status": "placeholder",
       "source": "hand-svg"

@@ -4,6 +4,8 @@
 
 Play it in a browser tab: **https://lowcash.github.io/land-of-machala/** (the same files, hosted on GitHub Pages). No build, no server, no dependencies; locally just open `prototype/index.html`.
 
+**This public build is a prologue demo:** it starts at the tavern, walks you through the four prologue steps, asks for a name and ends the next morning. The rest of the game (including everything below) lives in the development version.
+
 ## What makes it interesting
 
 - **Enemies telegraph, and the hint can lie.** Every turn you see what the enemy seems to be preparing, labelled *sure / I think so / unclear*. The label is the real probability that the hint is right. Your INT, your experience with that kind of enemy and a potion of foresight change it; elites bluff.

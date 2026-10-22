@@ -3,34 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Land of Machala — prototyp</title>
+  <title>Land of Machala · prototyp</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- DEV — skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
+  <!-- DEV - skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
   <header class="proto-bar is-collapsed" data-dev-only hidden aria-label="Vývojářský storybook">
     <div class="dev-row">
-      <label class="dev-knob dev-main">Scéna <select id="dev-scenario" aria-label="Scéna (nastaví vše)"></select></label>
+      <div class="dev-knob dev-main">
+        <button type="button" class="dev-toggle" id="dev-detail" aria-expanded="false" aria-controls="dev-detail-panel" title="Knoby a přepínače"><i class="chev" aria-hidden="true"></i>Scéna</button>
+        <select id="dev-scenario" aria-label="Scéna (nastaví vše)"></select>
+      </div>
       <button type="button" class="dev-btn" id="dev-reset" title="Postaví scénu znovu, stejný seed">↺ Reset</button>
-      <button type="button" class="dev-btn" id="dev-detail" aria-expanded="false" aria-controls="dev-detail-panel" title="Knoby a přepínače">Detail ▾</button>
-      <button type="button" class="dev-btn" id="dev-status-toggle" title="Co funguje, co je maketa a co chybí">Stav systémů</button>
     </div>
     <div id="dev-detail-panel" class="dev-detail" hidden>
+      <p class="dev-group">Nastavení scény</p>
       <details class="dev-sec" data-sec="postava"><summary>Postava</summary><div class="dev-row dev-knobs" data-knob-sec="postava"></div></details>
       <details class="dev-sec" data-sec="svet"><summary>Svět</summary><div class="dev-row dev-knobs" data-knob-sec="svet"></div></details>
       <details class="dev-sec" data-sec="boj"><summary>Boj</summary><div class="dev-row dev-knobs" data-knob-sec="boj"></div></details>
-      <details class="dev-sec" data-sec="ladeni"><summary>Ladění</summary><div class="dev-row dev-toggles" id="dev-toggles" role="group" aria-label="Přepínače dev režimu"></div></details>
+      <p class="dev-group">Vývojářské</p>
+      <details class="dev-sec" data-sec="ladeni"><summary>Odhalení</summary><div class="dev-row dev-toggles" id="dev-toggles" role="group" aria-label="Odhalení pravdy (dev režim)"></div></details>
+      <p class="dev-group">Přehledy</p>
+      <details class="dev-sec" data-sec="stav"><summary>Stav systémů</summary><div id="dev-status" class="dev-status"></div></details>
     </div>
     <p id="dev-note" class="dev-note hidden"></p>
-    <div id="dev-status" class="dev-status hidden"></div>
   </header>
 
-  <!-- LANDING — brand + auth (bez boxů / kronik / citátů) -->
+  <!-- LANDING - brand, tagline, citát z města, auth -->
   <main data-screen="landing" class="view-full landing-screen">
     <div class="landing-bg" aria-hidden="true"></div>
     <div class="landing-frame landing-auth-only">
       <p class="brand">Land of Machala</p>
       <p class="landing-tagline">Textová poutnická RPG v zemi Machala.</p>
+      <figure class="landing-quote">
+        <blockquote id="landing-quote"></blockquote>
+        <figcaption id="landing-quote-by"></figcaption>
+      </figure>
       <section class="auth-card">
         <div id="auth-chrome"></div>
         <div id="auth-continue" class="auth-continue hidden"></div>
@@ -84,32 +92,34 @@
   <main data-screen="confirm" class="view-full landing-screen hidden">
     <div class="landing-bg" aria-hidden="true"></div>
     <div class="landing-frame narrow origin-frame">
-      <section class="auth-card grow-card">
+      <section class="auth-card grow-card" id="screen-confirm-box">
         <div id="origin-chrome"></div>
         <div class="origin-layout">
           <div class="origin-name">
             <label>Jméno hrdiny
               <span class="name-row">
                 <input id="input-name" type="text" maxlength="20" placeholder="Zadej jméno…" />
-                <button type="button" class="dice-btn has-tip" data-act="dice-name" data-tip="Náhodné jméno (rasu, povolání a původ zvol ty)" aria-label="Náhodné jméno" title="Náhodné jméno">🎲</button>
+                <button type="button" class="dice-btn has-tip" data-act="dice-name" data-tip="Náhodné jméno" aria-label="Náhodné jméno" title="Náhodné jméno">🎲</button>
               </span>
             </label>
           </div>
+          <div class="origin-scroll">
+          <div class="origin-cols">
           <details class="origin-acc origin-col" id="origin-race">
-            <summary class="col-label">Vyber svou rasu</summary>
+            <summary class="col-label">Vyber svůj kraj</summary>
             <div class="origin-acc-body">
               <div class="pick-grid" id="race-grid"></div>
               <p class="blurb-box" id="race-blurb"></p>
-              <p class="bonus-label">Bonusy rasy</p>
+              <p class="bonus-label">Bonusy kraje</p>
               <div id="race-bonus"></div>
             </div>
           </details>
           <details class="origin-acc origin-col" id="origin-class">
-            <summary class="col-label">Vyber své povolání</summary>
+            <summary class="col-label">Vyber svou živnost</summary>
             <div class="origin-acc-body">
               <div class="pick-grid" id="class-grid"></div>
               <p class="blurb-box" id="class-blurb"></p>
-              <p class="bonus-label">Bonusy povolání</p>
+              <p class="bonus-label">Bonusy živnosti</p>
               <div id="class-bonus"></div>
             </div>
           </details>
@@ -122,13 +132,17 @@
               <div id="origin-effects" class="blurb-box"></div>
             </div>
           </details>
+          </div>
           <aside class="stats-preview">
             <h3 class="col-label">Tvé statistiky</h3>
             <div class="stat-icons" id="confirm-stats"></div>
           </aside>
+          </div>
         </div>
         <div class="actions origin-cta">
-          <button type="button" class="btn btn-primary" data-act="start-game" disabled title="Nejdřív zvol rasu, povolání a původ">Vstoupit do hry</button>
+          <button type="button" class="btn btn-ghost" id="prolog-again" data-act="prolog-again" hidden>Projít prolog znovu</button>
+          <button type="button" class="btn btn-primary" data-act="start-game">Vstoupit do hry</button>
+          <p class="tip origin-cta-note" id="origin-cta-note"></p>
         </div>
       </section>
     </div>
@@ -171,11 +185,11 @@
       </div>
     </div>
     <footer class="player-footer" id="combat-player-actions" aria-label="Rychlé volby">
-      <button type="button" class="dock-ico" data-act="open-char" title="Postava — klávesa 1" aria-label="Postava"><span aria-hidden="true">👤</span><em>Postava</em><kbd>1</kbd></button>
-      <button type="button" class="dock-ico" data-act="open-inv" title="Inventář — klávesa 2" aria-label="Inventář"><span aria-hidden="true">🎒</span><em>Inventář</em><kbd>2</kbd></button>
-      <button type="button" class="dock-ico" data-act="open-quests" title="Úkoly — klávesa 3" aria-label="Úkoly"><span aria-hidden="true">📜</span><em>Úkoly</em><kbd>3</kbd></button>
-      <button type="button" class="dock-ico" data-act="open-map" title="Mapa — klávesa 4" aria-label="Mapa"><span aria-hidden="true">🗺</span><em>Mapa</em><kbd>4</kbd></button>
-      <button type="button" class="dock-ico" data-act="open-settings" title="Nastavení — klávesa 5" aria-label="Nastavení"><span aria-hidden="true">⚙</span><em>Nastavení</em><kbd>5</kbd></button>
+      <button type="button" class="dock-ico" data-act="open-char" title="Postava, klávesa 1" aria-label="Postava"><span aria-hidden="true">👤</span><em>Postava</em><kbd>1</kbd></button>
+      <button type="button" class="dock-ico" data-act="open-inv" title="Inventář, klávesa 2" aria-label="Inventář"><span aria-hidden="true">🎒</span><em>Inventář</em><kbd>2</kbd></button>
+      <button type="button" class="dock-ico" data-act="open-quests" title="Úkoly, klávesa 3" aria-label="Úkoly"><span aria-hidden="true">📜</span><em>Úkoly</em><kbd>3</kbd></button>
+      <button type="button" class="dock-ico" data-act="open-map" title="Mapa, klávesa 4" aria-label="Mapa"><span aria-hidden="true">🗺</span><em>Mapa</em><kbd>4</kbd></button>
+      <button type="button" class="dock-ico" data-act="open-settings" title="Nastavení, klávesa 5" aria-label="Nastavení"><span aria-hidden="true">⚙</span><em>Nastavení</em><kbd>5</kbd></button>
     </footer>
   </main>
 

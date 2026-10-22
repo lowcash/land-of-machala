@@ -1,5 +1,5 @@
 /*
- * Questy prototypu — jediný zdroj pravdy (docs/reference/quests.md se z něj generuje).
+ * Questy prototypu - jediný zdroj pravdy (docs/reference/quests.md se z něj generuje).
  * giver: kde se nabídnou (místo + otázka v rozhovoru, po které se objeví „Přijmout“) · turnIn: kde se odevzdává
  * (place = místo ve městě, cell = políčko mapy) · objectives: kill (druh + terén), have (předmět v batohu), arrive (políčko)
  * reward.flags / choices[].flags: drobné následky voleb (např. cena noclehu).

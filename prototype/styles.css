@@ -7,7 +7,7 @@ button, input, select, textarea { font: inherit; color: inherit; margin: 0; }
 img, svg { display: block; max-width: 100%; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* scrollbary — tenké, bez systémové bílé desky */
+/* scrollbary - tenké, bez systémové bílé desky */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(185, 168, 148, 0.4) transparent;
@@ -51,7 +51,7 @@ img, svg { display: block; max-width: 100%; }
   --font-display: "Palatino Linotype", Palatino, Georgia, serif;
   --font-ui: "Palatino Linotype", Palatino, Georgia, serif;
   --radius: 4px;
-  /* spacing palette — jen tyto; žadné ad-hoc rem u margin/padding/gap */
+  /* spacing palette - jen tyto; žadné ad-hoc rem u margin/padding/gap */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -59,13 +59,13 @@ img, svg { display: block; max-width: 100%; }
   --space-5: 1.5rem;
   --gap: var(--space-3);   /* default uvnitř komponent */
   --stack: var(--space-4); /* mezi většími bloky */
-  --content-max: 72rem; /* ~1150px — herní shell i landing */
-  --game-min: 20rem; /* 320px — nejmenší podporovaný telefon */
+  --content-max: 72rem; /* ~1150px - herní shell i landing */
+  --game-min: 20rem; /* 320px - nejmenší podporovaný telefon */
   --shell-w: min(100%, 38rem); /* šířka akčního docku */
   --col-w: min(100%, calc(var(--shell-w) + 2rem)); /* společná šířka boxů + logu + docku */
   --footer-h: calc(3.4rem + var(--safe-b));
   --bag-cell: 3.1rem; /* čtvercová buňka inventář + loot */
-  /* rarity (WoW-like) — barva jména / okraje itemu */
+  /* rarity (WoW-like) - barva jména / okraje itemu */
   --rarity-poor: #9d9d9d;
   --rarity-common: #f3e6d4;
   --rarity-uncommon: #1eff00;
@@ -80,7 +80,7 @@ h1, h2, h3, h4, p, ul, ol, li, blockquote, figure, dl, dt, dd, pre {
 }
 h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; }
 p, li { line-height: 1.45; }
-/* optické ořezání inkoustu (kde browser umí) — méně „vzduchu“ kolem titulků */
+/* optické ořezání inkoustu (kde browser umí) - méně „vzduchu“ kolem titulků */
 .brand,
 .progress-label,
 .col-label,
@@ -153,14 +153,30 @@ body:not(.has-dev) .proto-bar,
 .dev-chk { display: inline-flex; gap: 0.25rem; align-items: center; white-space: nowrap; cursor: help; }
 .dev-toggles { gap: 0.2rem 1rem; }
 .dev-detail { display: flex; flex-direction: column; gap: 0.25rem; }
-.dev-sec { border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.35rem; background: rgba(0,0,0,0.25); }
-.dev-sec > summary { cursor: pointer; font-size: 0.7rem; color: var(--fg); list-style: none; }
+.dev-sec { padding: 0; }
+.dev-sec > summary { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg); list-style: none; padding: 0.2rem 0.1rem; }
 .dev-sec > summary::-webkit-details-marker { display: none; }
+.dev-sec > summary::before { content: ""; }
 .dev-sec[open] > summary { margin-bottom: 0.25rem; }
+/* jedna šipka pro hlavní panel i kategorie */
+.chev, .dev-sec > summary::before {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+  margin: 0 0.1rem;
+}
+.dev-toggle { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.1rem; border: 0; background: none; color: var(--fg); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.dev-toggle[aria-expanded="true"] .chev,
+.dev-sec[open] > summary::before { transform: rotate(45deg); }
 .dev-note { margin: 0; color: var(--muted); }
-.dev-status { margin: 0; max-height: 40vh; overflow: auto; }
+.dev-status { margin: 0; max-height: 60vh; overflow: auto; }
 .dev-status ul { margin: 0.3rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; }
-.dev-status li { display: grid; grid-template-columns: 4.2rem minmax(9rem, 14rem) 5rem 1fr; gap: 0.5rem; align-items: center; }
+.dev-status li { display: grid; grid-template-columns: minmax(9rem, 14rem) 5rem 1fr; gap: 0.5rem; align-items: center; }
 .dev-status em { opacity: 0.7; font-style: normal; }
 .dev-total, .dev-legend { margin: 0.2rem 0; }
 .dev-bar { display: block; height: 0.4rem; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
@@ -202,10 +218,14 @@ button,
     color: #1a1210;
   }
   .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled),
-  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) {
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) {
     background: #e8c57a;
     color: #1a1210;
   }
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) .hl,
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) .btn-hint,
   .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
   .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
   .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) .hl,
@@ -220,7 +240,7 @@ button,
   .player-footer .dock-ico:hover:not(:disabled):not(.locked) {
     background: rgba(212, 168, 83, 0.1);
   }
-  /* stat ikony — tip ano, „klikací“ fill ne */
+  /* stat ikony - tip ano, „klikací“ fill ne */
   .stat-icon:hover {
     border-color: rgba(212, 168, 83, 0.35);
     background: rgba(0, 0, 0, 0.3);
@@ -256,7 +276,7 @@ button.linkish,
   text-decoration: underline;
   background: none;
 }
-/* krátká věta pod názvem — dock / volby */
+/* krátká věta pod názvem - dock / volby */
 .btn-action {
   display: flex;
   flex-direction: column;
@@ -308,7 +328,7 @@ body.has-dev .landing-frame {
   padding-top: calc(var(--dev-pad) + var(--space-2));
 }
 body.has-dev .game-frame {
-  /* lišta + vzduch — nepřepisovat celý padding na nulu */
+  /* lišta + vzduch - nepřepisovat celý padding na nulu */
   padding-top: calc(var(--dev-pad) + clamp(1.25rem, 4vh, 2.25rem));
 }
 
@@ -329,7 +349,7 @@ body.has-dev .game-frame {
   background-size: cover;
   background-position: center;
 }
-/* landing — bg vidět, formulář pořád čitelný */
+/* landing - bg vidět, formulář pořád čitelný */
 .landing-screen:not(.game-screen) .landing-bg {
   filter: brightness(0.62) saturate(0.82) contrast(1.04);
 }
@@ -340,7 +360,7 @@ body.has-dev .game-frame {
   background: rgba(10, 6, 4, 0.32);
   pointer-events: none;
 }
-/* herní scény — lehčí filtr, ať bg není černá deska */
+/* herní scény - lehčí filtr, ať bg není černá deska */
 .game-screen .landing-bg {
   filter: brightness(0.88) saturate(0.92) contrast(1.02);
 }
@@ -361,7 +381,7 @@ body.has-dev .game-frame {
   max-width: var(--content-max);
   width: 100%;
   margin: 0 auto;
-  /* minimální odsazení — safe/dev-pad řeší lištu; žádný dekorativní top padding navíc */
+  /* minimální odsazení - safe/dev-pad řeší lištu; žádný dekorativní top padding navíc */
   padding: var(--space-3) 1rem 1rem;
   min-height: 100%;
 }
@@ -396,7 +416,7 @@ body.has-dev .game-frame {
   gap: 0.45rem;
   justify-items: center;
 }
-/* prolog + původ — kompaktnější (ne obří) */
+/* prolog + původ - kompaktnější (ne obří) */
 .landing-frame.narrow.origin-frame,
 .landing-frame.prolog-frame {
   max-width: min(28rem, 100%);
@@ -449,7 +469,7 @@ body.has-dev .game-frame {
   text-align: center;
   font-size: 0.78rem;
 }
-/* secondary pod primary — viditelná mezera před alt */
+/* secondary pod primary - viditelná mezera před alt */
 .auth-alt {
   display: flex;
   flex-direction: column;
@@ -552,16 +572,24 @@ body.has-dev .game-frame {
 .origin-frame .grow-card {
   min-height: 0;
 }
-/* prolog: stabilní výška mezi kroky (kratší texty neskáčou) */
+/* prolog: pevná výška (nejvyšší krok = 5 voleb), nic neskáče; uvnitř scrolluje jen seznam voleb */
 .prolog-frame #origins-box {
-  min-height: min(26rem, 72dvh);
+  height: min(42rem, calc(100dvh - var(--dev-pad) - 4rem));
+  min-height: 22rem;
 }
-.prolog-frame #origins-box .origin-text {
+.prolog-frame #origins-box .origin-body {
+  flex: 0 0 auto;
   min-height: 5.25rem;
 }
 .prolog-frame #origins-box .choice-stack {
-  min-height: 10.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
+.prolog-frame #origins-box .skip-link { flex: 0 0 auto; }
+.prolog-frame #origins-box .choice.btn-action { padding: 0.5rem 0.7rem; }
 .origin-top {
   display: flex;
   justify-content: flex-start;
@@ -573,7 +601,7 @@ body.has-dev .game-frame {
   width: fit-content;
   justify-self: start;
 }
-/* .acc-picked — viz blurb sekce (jen mobil) */
+/* .acc-picked - viz blurb sekce (jen mobil) */
 .choice-letter {
   display: inline-block;
   min-width: 1.1em;
@@ -608,7 +636,7 @@ label.check input {
   height: 1rem;
   cursor: pointer;
 }
-/* rezervovaný řádek — registrace i přihlášení stejná výška */
+/* rezervovaný řádek - registrace i přihlášení stejná výška */
 .auth-consent-slot {
   min-height: 1.5rem;
   display: grid;
@@ -705,7 +733,7 @@ input, select {
   padding: 0.65rem 0.75rem;
   background: rgba(0,0,0,0.35);
 }
-/* beat / prolog / chrome sub — jedna typografie */
+/* beat / prolog / chrome sub - jedna typografie */
 .prose-beat,
 .origin-text {
   margin: 0;
@@ -717,6 +745,20 @@ input, select {
   text-wrap: pretty;
 }
 .choice-stack .choice { letter-spacing: 0.02em; }
+.origin-body { display: grid; gap: 0.6rem; }
+/* Postava po prologu = shrnutí: výběr dlaždic se skryje, zůstane zvolené, popis a bonusy */
+.confirm-summary .pick-grid { display: none; }
+.confirm-summary .origin-acc-body { padding-top: 0.25rem; }
+.confirm-summary .blurb-box { min-height: 0; margin: 0.2rem 0 0.35rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; line-height: 1.35; }
+.confirm-summary .bonus-label, .confirm-summary #class-bonus:empty { display: none; }
+.confirm-summary .origin-acc { margin-bottom: 0.35rem; }
+.confirm-summary .origin-acc > summary { pointer-events: none; }
+.confirm-summary .origin-acc > summary::before { display: none; }
+#prolog-again[hidden], .bonus-label[hidden] { display: none; }
+.choice-act { font-style: italic; font-weight: 400; color: var(--muted); }
+.fade-top { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem); mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem); }
+.fade-bottom { -webkit-mask-image: linear-gradient(to top, transparent 0, #000 1.6rem); mask-image: linear-gradient(to top, transparent 0, #000 1.6rem); }
+.fade-top.fade-bottom { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem, #000 calc(100% - 1.6rem), transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem, #000 calc(100% - 1.6rem), transparent 100%); }
 .skip-link {
   display: block;
   text-align: center;
@@ -758,7 +800,7 @@ input, select {
   padding: 0;
 }
 .enemy-stage {
-  /* bez stínového obdélníku — jen sprite (jako městský minimalistický log) */
+  /* bez stínového obdélníku - jen sprite (jako městský minimalistický log) */
   display: none;
   position: absolute;
   inset: 0;
@@ -779,7 +821,7 @@ input, select {
   opacity: 1;
   transition: opacity 0.55s ease, filter 0.55s ease, transform 0.55s ease;
 }
-/* po boji sprite zmizí — fokus na loot / odchod */
+/* po boji sprite zmizí - fokus na loot / odchod */
 .enemy-stage.is-over img {
   opacity: 0;
   filter: grayscale(0.4) drop-shadow(0 4px 12px rgba(0,0,0,0.35));
@@ -868,7 +910,7 @@ input, select {
 .box-foot { margin: 0; font-size: 0.8rem; color: var(--muted); }
 .stat-strip { font-size: 0.78rem; color: var(--muted); margin: 0; }
 .muted { color: var(--muted); }
-/* telegraph — viz níže u combat FX */
+/* telegraph - viz níže u combat FX */
 .bar {
   display: grid;
   grid-template-columns: 1.4rem 1fr auto;
@@ -905,14 +947,14 @@ input, select {
 }
 .bar.hp i::after { background: var(--hp); }
 .bar.mp i::after { background: var(--mp); }
-/* dummy řádek — vyrovná box bez energie (vlk) */
+/* dummy řádek - vyrovná box bez energie (vlk) */
 .bar.bar-ghost {
   opacity: 0.35;
   pointer-events: none;
 }
 .bar.bar-ghost i::after { background: transparent; }
 .bar.bar-ghost em { visibility: hidden; }
-/* XP / Lv — delší label než ikona HP */
+/* XP / Lv - delší label než ikona HP */
 .bar.bar-xp {
   grid-template-columns: 2.6rem 1fr auto;
 }
@@ -937,7 +979,7 @@ input, select {
 }
 
 .log {
-  /* město i boj — průhledný shell, vidět pozadí (jako boj) */
+  /* město i boj - průhledný shell, vidět pozadí (jako boj) */
   position: relative;
   z-index: 1;
   border: none;
@@ -955,7 +997,7 @@ input, select {
   font-size: 0.92rem;
   backdrop-filter: none;
   -webkit-overflow-scrolling: touch;
-  /* fade shora/zdola — úzký, ať neukrajuje padding */
+  /* fade shora/zdola - úzký, ať neukrajuje padding */
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,
@@ -997,7 +1039,7 @@ input, select {
   opacity: 0.85;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
-/* neutrální děj — přes celou šířku; dialog oddělen mezerou */
+/* neutrální děj - přes celou šířku; dialog oddělen mezerou */
 .log-bubble.scene {
   align-self: stretch;
   max-width: 100%;
@@ -1057,7 +1099,7 @@ input, select {
   background: rgba(18, 22, 18, 0.55);
   border-style: dashed;
 }
-/* systémová / příběhová událost (fáma, ověření, verdikt, úkol, úroveň, lhůta) — trvalá řádka, ne toast */
+/* systémová / příběhová událost (fáma, ověření, verdikt, úkol, úroveň, lhůta) - trvalá řádka, ne toast */
 .log-bubble.sys {
   align-self: stretch;
   max-width: 100%;
@@ -1099,7 +1141,7 @@ input, select {
 }
 
 .dock-stack {
-  /* bez tmavého rámu — jen prostor pro action-panel */
+  /* bez tmavého rámu - jen prostor pro action-panel */
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1313,7 +1355,7 @@ input, select {
 .stat-icon[data-stat="dex"] .si { color: #c9b45a; }
 .stat-icon[data-stat="vit"] .si { color: #6a9e8a; }
 .stat-icon[data-stat="int"] .si { color: #8a7ec8; }
-/* inline bubble skrytý — tip jde do #float-tip (mimo backdrop-filter) */
+/* inline bubble skrytý - tip jde do #float-tip (mimo backdrop-filter) */
 .stat-icon .tip-bubble { display: none !important; }
 .float-tip {
   display: none;
@@ -1371,7 +1413,7 @@ abbr.kodex {
   font-size: 0.75rem;
   line-height: 1;
 }
-/* stejný obal jako .stat-icon — konzistence všude */
+/* stejný obal jako .stat-icon - konzistence všude */
 .stat-chip {
   position: relative;
   display: inline-flex;
@@ -1392,7 +1434,7 @@ abbr.kodex {
   background: rgba(0,0,0,0.25);
   color: var(--muted);
   font-size: 0.9rem;
-  /* stabilní výška — přepínání rasy/povolání neposkakuje layout */
+  /* stabilní výška - přepínání rasy/povolání neposkakuje layout */
   min-height: 4.75rem;
   max-height: 4.75rem;
   overflow-y: auto;
@@ -1404,16 +1446,12 @@ abbr.kodex {
   min-height: 0;
 }
 .acc-picked {
-  display: none;
-}
-@media (max-width: 719px) {
-  .acc-picked {
-    display: inline;
-    font-style: normal;
-    color: var(--accent);
-    font-weight: 600;
-    margin-left: 0.35rem;
-  }
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 0.35rem;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .col-label,
 .bonus-label {
@@ -1426,22 +1464,22 @@ abbr.kodex {
 }
 .pick-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
   gap: var(--space-2);
   align-items: stretch;
 }
+/* volba postavy = kompaktní řádek (ikona + název); inventář zůstává čtvercový grid */
 .pick-tile {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  aspect-ratio: 1;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: 0.4rem 0.55rem;
   width: 100%;
-  min-height: 0;
+  min-height: 2.5rem;
   height: auto;
-  text-align: center;
+  text-align: left;
   background: rgba(0,0,0,0.35);
   position: relative;
   box-sizing: border-box;
@@ -1455,7 +1493,7 @@ abbr.kodex {
 .pick-tile.selected .pick-ico {
   color: var(--fg);
 }
-.pick-ico { font-size: 1.35rem; line-height: 1; }
+.pick-ico { font-size: 1.15rem; line-height: 1; flex-shrink: 0; }
 .pick-label { font-size: 0.82rem; }
 .pick-tag {
   position: absolute;
@@ -1476,73 +1514,66 @@ abbr.kodex {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.origin-layout {
-  display: grid;
-  gap: var(--gap);
+/* Postava: stejná šířka a pevná výška jako prolog; scrolluje jen střed (sekce + staty), hlavička a tlačítko stojí */
+.origin-frame .auth-card {
+  display: flex;
+  flex-direction: column;
+  height: min(40rem, calc(100dvh - var(--dev-pad) - 4rem));
+  min-height: 24rem;
 }
-.origin-layout > div,
+.origin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.origin-name { flex: 0 0 auto; }
+.origin-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.15rem;
+}
 .origin-col,
 .origin-acc {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   min-height: 0;
+  flex: 0 0 auto;
 }
 .origin-acc > summary {
   list-style: none;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 .origin-acc > summary::-webkit-details-marker { display: none; }
+.origin-acc > summary::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  margin: 0 0.1rem;
+}
+.origin-acc[open] > summary::before { transform: rotate(45deg); }
 .origin-acc-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
-.landing-frame.origin-frame {
-  max-width: min(var(--content-max), 52rem);
-}
-@media (min-width: 720px) {
-  .origin-layout {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--stack);
-    align-items: start;
-  }
-  .origin-layout .origin-name { grid-column: 1 / -1; }
-  .origin-layout .stats-preview { grid-column: 1 / -1; }
-  .origin-acc {
-    height: 15rem;
-    max-height: 15rem;
-  }
-  .origin-acc[open] {
-    display: flex;
-  }
-  .origin-acc > summary {
-    pointer-events: none;
-    cursor: default;
-  }
-  .origin-acc-body {
-    flex: 1 1 auto;
-  }
-}
-@media (max-width: 719px) {
-  .origin-acc > summary::before {
-    content: "▸ ";
-    color: var(--accent);
-  }
-  .origin-acc[open] > summary::before { content: "▾ "; }
-  .origin-acc[open] {
-    max-height: min(55vh, 22rem);
-  }
-  .origin-acc[open] .origin-acc-body {
-    max-height: min(42vh, 16rem);
-  }
-}
+.origin-scroll .blurb-box { max-height: none; }
 .choice.picked {
   border-color: var(--accent);
   background: rgba(212, 168, 83, 0.2);
@@ -1571,6 +1602,7 @@ abbr.kodex {
   flex-wrap: wrap;
 }
 .origin-cta {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1676,7 +1708,7 @@ button.locked,
   flex: 1 1 auto;
   height: 100%;
 }
-/* jedno okno — sticky mimo scroll (neprosvítá obsah) */
+/* jedno okno - sticky mimo scroll (neprosvítá obsah) */
 .action-panel,
 .lane-panel {
   display: flex;
@@ -1745,7 +1777,7 @@ button.locked,
   overflow: visible;
   padding: 0.65rem 0 0.55rem;
 }
-/* labely Město/Boj/Léčitel skryté — aria-label zůstává pro a11y */
+/* labely Město/Boj/Léčitel skryté - aria-label zůstává pro a11y */
 .dock-city::before,
 .dock-combat::before {
   content: none;
@@ -1832,7 +1864,7 @@ button.locked,
   max-width: none;
   width: 100%;
 }
-/* větné volby — delší text, méně „tlačítkový“ */
+/* větné volby - delší text, méně „tlačítkový“ */
 .dock-city .btn-action.btn-story,
 .dock-combat .btn-action.btn-story {
   flex-shrink: 0;
@@ -1873,7 +1905,7 @@ button.locked,
 .btn-action .act-ico {
   margin-right: 0.15rem;
 }
-/* primary story (loot claim) — ne tmavý text jako ghost story */
+/* primary story (loot claim) - ne tmavý text jako ghost story */
 .dock-combat .btn-action.btn-story.btn-primary,
 .dock-city .btn-action.btn-story.btn-primary {
   background: var(--accent);
@@ -1905,7 +1937,7 @@ button.locked,
 .dock-city[data-empty="1"] {
   display: none;
 }
-/* rychlé volby — full-bleed viewport (mimo .game-frame max-width), ikony centrované */
+/* rychlé volby - full-bleed viewport (mimo .game-frame max-width), ikony centrované */
 .player-footer {
   position: relative;
   z-index: 20;
@@ -1955,7 +1987,7 @@ button.locked,
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(212, 168, 83, 0.35);
   border-radius: 0.2rem;
-  /* vždy zabírá místo — is-off jen schová inkoust */
+  /* vždy zabírá místo - is-off jen schová inkoust */
   min-height: 1em;
 }
 .player-footer .dock-ico kbd.is-off {
@@ -1976,10 +2008,10 @@ button.locked,
 .game-topbar {
   display: none;
 }
-/* In-game header ne — status row stačí; nastavení = ☰ */
+/* In-game header ne - status row stačí; nastavení = ☰ */
 
 .panel-overlay {
-  /* končí nad footerem — jde překlikávat Postava/Inv/Úkoly */
+  /* končí nad footerem - jde překlikávat Postava/Inv/Úkoly */
   position: fixed;
   top: var(--safe-t);
   left: var(--safe-l);
@@ -1994,7 +2026,7 @@ button.locked,
   padding-top: calc(0.5rem + var(--dev-pad));
   z-index: 15;
 }
-/* nested underlay: absolute — neovlivní layout aktivního sheetu (žádný posun) */
+/* nested underlay: absolute - neovlivní layout aktivního sheetu (žádný posun) */
 .panel-sheet.panel-under {
   position: absolute;
   left: 50%;
@@ -2026,7 +2058,7 @@ button.locked,
     transform: translate(-50%, -50%);
   }
 }
-/* landing / prolog / původ — bez player-footer → full viewport */
+/* landing / prolog / původ - bez player-footer → full viewport */
 .panel-overlay.is-fullscreen {
   bottom: 0;
   place-items: center;
@@ -2041,7 +2073,7 @@ button.locked,
   position: relative;
   width: min(640px, 100%);
   max-height: calc(100dvh - var(--safe-t) - var(--footer-h) - var(--dev-pad) - 0.75rem);
-  /* scroll jen v .panel-scroll — ne dvojitý overflow sheet+body */
+  /* scroll jen v .panel-scroll - ne dvojitý overflow sheet+body */
   overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -2069,7 +2101,7 @@ button.locked,
     align-items: start;
   }
 }
-/* equip popover — blur postavy pod výběrem */
+/* equip popover - blur postavy pod výběrem */
 .equip-pop-layer {
   position: absolute;
   inset: 0;
@@ -2122,7 +2154,7 @@ button.locked,
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
 }
-/* mapa — fog / discovered / here */
+/* mapa - fog / discovered / here */
 .map-wrap {
   display: grid;
   gap: var(--space-2);
@@ -2248,7 +2280,7 @@ button.locked,
 .list li:last-child {
   border-bottom: none;
 }
-/* jediný oddělovač před danger — ne border-bottom + border-top */
+/* jediný oddělovač před danger - ne border-bottom + border-top */
 .list li:has(+ .settings-danger) {
   border-bottom: none;
 }
@@ -2304,7 +2336,7 @@ button.locked,
   position: sticky;
   top: 0;
   z-index: 3;
-  /* neprůhledné — scroll obsah neprosvítá pod sticky */
+  /* neprůhledné - scroll obsah neprosvítá pod sticky */
   background: var(--panel);
   box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.55);
 }
@@ -2330,7 +2362,7 @@ button.locked,
   text-transform: uppercase;
   color: var(--accent);
   text-align: left;
-  /* ne sticky — scrolluje se s obsahem; sticky = jen .panel-head */
+  /* ne sticky - scrolluje se s obsahem; sticky = jen .panel-head */
   position: static;
   padding: 0.15rem 0;
 }
@@ -2354,7 +2386,7 @@ button.locked,
   color: inherit;
   font: inherit;
 }
-/* picker / obecné dlaždice — bez aspect-ratio (to dělalo obří čtverce) */
+/* picker / obecné dlaždice - bez aspect-ratio (to dělalo obří čtverce) */
 .inv-tile.inv-cell {
   position: relative;
   align-items: center;
@@ -2696,9 +2728,9 @@ button,
 .inv-grid-flat {
   grid-template-columns: repeat(auto-fill, minmax(3.25rem, 1fr));
 }
-/* kompaktní batoh — stejná buňka v inventáři i loot modalu */
+/* kompaktní batoh - stejná buňka v inventáři i loot modalu */
 .inv-grid-bag {
-  /* 4×4 čtverce (16 slotů) — ne široké obdélníky */
+  /* 4×4 čtverce (16 slotů) - ne široké obdélníky */
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.2rem;
 }
@@ -3103,7 +3135,6 @@ button,
     flex-basis: clamp(14rem, 52dvh, 22rem);
     max-height: 58dvh;
   }
-  .pick-grid { grid-template-columns: repeat(3, 1fr); }
   .player-footer .dock-ico em { font-size: 0.58rem; }
 }
 @media (max-width: 400px) {
@@ -3175,3 +3206,64 @@ button,
 .map-ico.warn { filter: drop-shadow(0 0 3px rgba(212, 154, 74, 0.8)); }
 .map-ico.corner { position: absolute; right: 1px; top: 0; font-size: 0.7rem; }
 .map-notes { margin: 0.4rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+
+/* zalamování: žádná osiřelá slova, centrované věty vyvážené */
+.origin-text, .prose-beat, .landing-tagline, .chrome-sub, .landing-quote blockquote { text-wrap: balance; }
+.blurb-box, .btn-hint, .choice strong, .tip, .faq-item p, .auth-card p { text-wrap: pretty; }
+.landing-quote { margin: 0 auto; display: grid; gap: 0.25rem; width: fit-content; max-width: 100%; }
+.landing-quote blockquote { margin: 0; text-align: center; font-size: 1.05rem; line-height: 1.4; color: var(--fg); }
+.landing-quote figcaption { text-align: right; font-style: italic; font-size: 0.8rem; color: var(--muted); }
+.confirm-sheet { width: min(24rem, 100%); gap: 0.75rem; padding: 1rem; }
+.confirm-sheet p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--muted); }
+.confirm-sheet strong:first-child { color: var(--accent); }
+/* desktop: Postava je širší, staty vpravo stojí vedle sekcí; prolog zůstává úzký (čte se) */
+@media (min-width: 880px) {
+  .landing-frame.narrow.origin-frame { max-width: min(46rem, 100%); }
+  .origin-scroll { flex-direction: row; align-items: flex-start; gap: var(--stack); }
+  .origin-cols { flex: 1 1 auto; min-width: 0; }
+  .origin-scroll > .stats-preview { flex: 0 0 13rem; position: sticky; top: 0; }
+}
+.origin-cols { display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* náběh textu (revealText) a rozbalení voleb jako arch; reduced-motion vypne */
+.w { opacity: 0; animation: word-in 0.32s ease forwards; animation-delay: var(--d, 0ms); }
+@keyframes word-in { to { opacity: 1; } }
+.step-in .choice-stack .choice {
+  animation: sheet-in 0.6s ease-out both;
+  animation-delay: calc(0.45s + var(--i, 0) * 0.12s);
+}
+@keyframes sheet-in {
+  from { clip-path: inset(0 0 100% 0); opacity: 0; transform: translateY(-0.4rem); }
+  to { clip-path: inset(0 0 0 0); opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w { opacity: 1; animation: none; }
+  .step-in .choice-stack .choice { animation: none; }
+}
+.dev-group { margin: 0.25rem 0 0; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* hover žlutého (primary) tlačítka: zůstává plné a jen zesvětlí, text tmavý; tmavé (secondary) se jen přibarví */
+@media (hover: hover) {
+  button.btn-primary:hover:not(:disabled):not(.locked):not(.stat-icon),
+  .btn.btn-primary:hover:not(:disabled):not(.locked):not(.stat-icon),
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) {
+    background: #e8c57a;
+    border-color: #e8c57a;
+    color: var(--accent-text);
+  }
+  button.btn-primary:hover:not(:disabled) strong,
+  button.btn-primary:hover:not(:disabled) .hl,
+  button.btn-primary:hover:not(:disabled) .btn-hint,
+  button.btn-primary:hover:not(:disabled) .choice-letter,
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint),
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint) {
+    color: var(--accent-text);
+  }
+}
+/* Stav systémů: rozbalí lištu na celou výšku okna */
+.proto-bar:has(.dev-sec[data-sec="stav"][open]) { max-height: 92dvh; }
+.dev-status { max-height: none; }
+.origin-reply { margin: 0.25rem 0 0.5rem; font-style: italic; color: var(--muted); }
