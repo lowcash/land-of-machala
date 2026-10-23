@@ -17,7 +17,7 @@
 
   /** Rasy: součet odchylek vždy +1. */
   const RACE_MOD = {
-    local: { str: 0, dex: 0, vit: 1, int: 0, label: "Machalští" },
+    local: { str: 0, dex: 0, vit: 1, int: 0, label: "Zdejší" },
     saltfolk: { str: 1, dex: -1, vit: 1, int: 0, label: "Solníci" },
     woodfolk: { str: -1, dex: 1, vit: 0, int: 1, label: "Slatiňané" },
     riverfolk: { str: 0, dex: 1, vit: 1, int: -1, label: "Brodáci" },
@@ -37,9 +37,9 @@
 
   const RACE_INFO = {
     local: {
-      label: "Machalští",
-      icon: "👤",
-      blurb: "Lid z kraje Machala: pole, vesnice, trhy. Zvyky kraje jim nejsou cizí.",
+      label: "Zdejší",
+      icon: "⌂", /* vesnice — skrytý náznak, že Zdejší = místo i lid */
+      blurb: "Lid ze vsi Zdejší v Machale (název vsi = označení lidí): pole, náves, trh. ≠ Rodák (známost jménem).",
       bonuses: bonusesFrom(RACE_MOD.local, { str: 0, dex: 0, vit: 0, int: 0 }),
     },
     saltfolk: {

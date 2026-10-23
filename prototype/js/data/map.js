@@ -1,6 +1,6 @@
 /*
  * Mapa 7×7 - jediný zdroj pravdy (docs/reference/map.md se z něj generuje).
- * GRID: řádky y=6 … y=0 (sever nahoře). POI: město, Lada, kaple, hutě, vůz (kauza Zvon).
+ * GRID: řádky y=6 … y=0 (sever nahoře). POI: město, Zdejší, kaple, hutě, vůz (kauza Zvon).
  */
 (function (root, factory) {
   const api = factory();
@@ -22,8 +22,9 @@
   ];
 
   const POI = {
-    town: { cell: [3, 3], label: "Machala" },
-    village: { cell: [3, 0], label: "Lada" },
+    /* Machala = oblast (záhada jména); Ostrožná = městečko; Zdejší = ves i lid. */
+    town: { cell: [3, 3], label: "Ostrožná" },
+    village: { cell: [3, 0], label: "Zdejší" },
     chapel: { cell: [4, 4], label: "Kaple u cesty" },
     forge: { cell: [5, 6], label: "Hutě u Jezírka" },
     cart: { cell: [4, 5], label: "Vůz na cestě" },

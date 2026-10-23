@@ -9,7 +9,7 @@
       id: "debtor",
       label: "Dlužník",
       icon: "⛓",
-      blurb: "Dlužíš Zástavě a znáš lidi z kopců. Začínáš v hostinci s málem a s poplatkem v bance.",
+      blurb: "Dlužíš Zástavě a znáš lidi z kopců. Začínáš v hostinci s málem a s poplatkem u Gertrudy.",
       start: { place: "tavern" },
       gold: 30,
       bank: 0,

@@ -302,10 +302,10 @@
       kind: "lore",
     },
     {
-      id: "lada",
-      term: "Lada",
-      forms: ["Lada", "Lady", "Ladě", "Ladu", "Ladou"],
-      short: "Ves za hradbami. Klidnější než město, dokud nepřijdou vlci nebo fámy.",
+      id: "zdejsi",
+      term: "Zdejší",
+      forms: ["Zdejší", "Zdejších", "Zdejším", "Zdejšími"],
+      short: "Ves za hradbami. Klidnější než město, dokud nepřijdou vlci nebo fámy. Ves i lid.",
       kind: "place",
     },
     {

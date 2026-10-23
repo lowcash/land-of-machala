@@ -46,8 +46,8 @@ test("mapa: POI leží na očekávaném terénu; cellLabel", () => {
   assert.equal(M.terrainAt(tx, ty), "town");
   assert.equal(M.terrainAt(vx, vy), "village");
   assert.equal(M.terrainAt(cx, cy), "chapel");
-  assert.equal(M.cellLabel(tx, ty), "Machala");
-  assert.equal(M.cellLabel(vx, vy), "Lada");
+  assert.equal(M.cellLabel(tx, ty), "Ostrožná");
+  assert.equal(M.cellLabel(vx, vy), "Zdejší");
   assert.equal(M.cellLabel(cx, cy), "Kaple u cesty");
 });
 

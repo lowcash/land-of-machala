@@ -1,13 +1,14 @@
 {
-  "note": "status: placeholder = jednotná provizorní sada (ruční SVG), legacy = starší AI obrázky, v kódu se nepoužívají (resources/legacy/), final = schválený pro výrobu. source: ai | hand-svg; u final doplnit nástroj a licenci.",
+  "note": "status: placeholder = ruční SVG v kódu (jediná sada; legacy smazáno 2026-10-23). Jen použité assety.",
   "assets": [
     {
-      "id": "locations-placeholder-bank",
+      "id": "locations-placeholder-zastava",
       "kind": "background",
-      "path": "resources/locations/placeholder/bank.svg",
+      "path": "resources/locations/placeholder/zastava.svg",
       "size": "1600x900",
       "status": "placeholder",
-      "source": "hand-svg"
+      "source": "hand-svg",
+      "note": "Zástava = chalupa/úschova; id místa v kódu stále bank"
     },
     {
       "id": "locations-placeholder-camp",
@@ -74,25 +75,9 @@
       "source": "hand-svg"
     },
     {
-      "id": "locations-placeholder-landing",
-      "kind": "background",
-      "path": "resources/locations/placeholder/landing.svg",
-      "size": "1600x900",
-      "status": "placeholder",
-      "source": "hand-svg"
-    },
-    {
       "id": "locations-placeholder-market",
       "kind": "background",
       "path": "resources/locations/placeholder/market.svg",
-      "size": "1600x900",
-      "status": "placeholder",
-      "source": "hand-svg"
-    },
-    {
-      "id": "locations-placeholder-mountains",
-      "kind": "background",
-      "path": "resources/locations/placeholder/mountains.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -184,7 +169,7 @@
       "size": "128x128",
       "status": "placeholder",
       "source": "hand-svg",
-      "note": "stejný soubor jako items-bell; rekvizita zvonu"
+      "note": "stejný soubor jako items-bell"
     },
     {
       "id": "props-placeholder-barrel",

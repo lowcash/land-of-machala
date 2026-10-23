@@ -11,11 +11,11 @@ function randomName() {
   return LOM.Names.makeName(rng, { pool, gender, withNick: false }).first;
 }
 
-/** Vstup jména: bez mezer a interpunkce (přízviska později z mechanik, ne z pole). */
+/** Jednoslovné jméno: mezery a NBSP smaž (i při obcházení pole); přízviska později z mechanik. */
 function sanitizeHeroName(raw) {
   return String(raw || "")
     .replace(/[<>&"']/g, "")
-    .replace(/\s+/g, "")
+    .replace(/[\s\u00A0\u2000-\u200B\uFEFF]+/g, "")
     .slice(0, 20);
 }
 
@@ -34,14 +34,14 @@ const classLabelNow = () => CLASS_LABEL[pickedClass()] || "Povaleč";
 
 const STAT_META = [
   { key: "hp", icon: "♥", label: "HP", title: "Život: když dojde na 0, padáš." },
-  { key: "res", icon: "✦", label: "Res", title: "Zdroj v boji (energie; u bylinkáře mana). Mimo boj výdrž na cestu." },
-  { key: "str", icon: "⚔", label: "STR", title: "Síla: fyzické poškození." },
-  { key: "dex", icon: "◎", label: "DEX", title: "Obratnost: zásah a útěk." },
-  { key: "vit", icon: "⬡", label: "VIT", title: "Vitalita: max HP a odolnost." },
-  { key: "int", icon: "✧", label: "INT", title: "Intelekt: čtení záměru a jistota fám (ne kouzla)." },
-  { key: "atk", icon: "⚔", label: "ATK", title: "Útok: poškození zbraní a síly." },
-  { key: "def", icon: "⬡", label: "DEF", title: "Obrana: snižuje přijaté poškození." },
-  { key: "gold", icon: "🪙", label: "Zlato", title: "Měšec: zlato u sebe (banka je jinde)." },
+  { key: "res", icon: "✦", label: "Dech", title: "Zdroj v boji (dech, důraz). Mimo boj výdrž na cestu." },
+  { key: "str", icon: "⚔", label: "Síla", title: "Síla těla: fyzické poškození." },
+  { key: "dex", icon: "◎", label: "Obrat", title: "Obratnost: zásah a útěk." },
+  { key: "vit", icon: "⬡", label: "Tělo", title: "Tělesná výdrž: max život a odolnost." },
+  { key: "int", icon: "✧", label: "Důvtip", title: "Důvtip: čtení lidí a fám." },
+  { key: "atk", icon: "⚔", label: "Útok", title: "Útok: poškození zbraní a síly." },
+  { key: "def", icon: "⬡", label: "Krytí", title: "Krytí: snižuje přijaté rány." },
+  { key: "gold", icon: "🪙", label: "Zlato", title: "Měšec: zlato u sebe (Zástava je jinde)." },
 ];
 
 const STAT_BY = Object.fromEntries(STAT_META.map((m) => [m.key, m]));
@@ -187,7 +187,7 @@ function itemTileHtml(item, opts = {}) {
 const ORIGIN_STEPS = [
   {
     pick: "class",
-    text: "Jsi v krčmě. Dusno od kouře, je cítit pečená cibule a zatuchlina ze starých sudů. Na stole v rohu chrápe pijan a jinak je tu prázdno. Ve vsi se proslýchá, že z kaple zmizel zvon.\nSvatava před tebe postaví korbel: „Platíš hned? Na sekeru mám Karla z kovárny. Čím se živíš?“",
+    text: "Jsi v krčmě. Dusno od kouře, je cítit pečená cibule a zatuchlina ze starých sudů. Na stole v rohu chrápe pijan a jinak je tu prázdno. Ve vsi se proslýchá, že z kaple zmizel zvon.\nSvatava před tebe postaví korbel: „Platíš hned? Na sekeru mám Karla z kovárny. Co teď vlastně děláš?“",
     /* volba: say = řeč (v uvozovkách), act = gesto (kurzíva), actAfter = gesto až po řeči; použij jen to, co k volbě přirozeně patří */
     choices: [
       { say: "Dělám, co se komu hodí. Platí to líp než pole.", act: "Pokrčíš rameny, ruka na pásu.", hint: "pacholek", class: "mercenary" },
@@ -209,7 +209,7 @@ const ORIGIN_STEPS = [
     text: "Pijan zvedne hlavu ze stolu a dívá se kamsi vedle tebe.\n„Hej, kdo tam? Odkud seš, co se u vás pije?“",
     choices: [
       /* znak kraje (pití/jídlo doma) — bez vysvětlení místa; hráč si znaky spojí sám */
-      { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "Machalští", race: "local", bridge: "„To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
+      { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "Zdejší", race: "local", bridge: "„To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
       { say: "Slanou polévku po šichtě.", hint: "Solníci", race: "saltfolk", bridge: "„Z dolů. To je pak žízeň,“ zakašle pijan." },
       { say: "Kyselý kvas.", hint: "Slatiňané", race: "woodfolk", bridge: "„Kvas. To je ze slatí, ne?“ řekne pijan. „Tam prý stezky chodí, kam se jim zachce. Jako já.“" },
       { say: "Víno a pečeného kapra.", hint: "Brodáci", race: "riverfolk", bridge: "„Od vody. Tam prý chlap chytí rybu dřív, než si sundá boty,“ řekne pijan." },
@@ -260,7 +260,7 @@ function nbspCzech(input, opts = {}) {
 }
 
 const TOWN_PROSE = nbspCzech(
-  `Nacházíš se v centru města ${hl("Machala")}. Na náměstí voní čerstvý chléb, od studny se nese smích a někde v průjezdu štěká pes. Nad výhní žhne štít, u léčitele voní byliny. Město žije svým tempem.`
+  `Nacházíš se na návsi. Voní čerstvý chléb, od studny se nese smích a někde za plotem štěká pes. U výhně žhne štít, u bylinářky voní sušené snopy. Ves žije svým tempem.`
 );
 
 /** Akční tlačítko: název + krátká věta (story = větná volba) */
@@ -294,11 +294,12 @@ function actionBtn({
   </button>`;
 }
 
-/* jednotná provizorní sada ručních SVG (resources/locations/placeholder/); starší AI obrázky jsou v resources/legacy/ */
+/* jednotná provizorní sada ručních SVG (resources/locations/placeholder/); AI legacy smazáno */
 const BG_DIR = "../resources/locations/placeholder/";
 const BG = Object.fromEntries(
-  ["city", "healer", "smith", "bank", "forest", "plains", "hills", "mountains", "road", "village", "chapel", "tavern", "townhall", "gate", "market", "camp", "default", "landing"].map((k) => [k, `${BG_DIR}${k}.svg`])
+  ["city", "healer", "smith", "zastava", "forest", "plains", "hills", "road", "village", "chapel", "tavern", "townhall", "gate", "market", "camp", "default"].map((k) => [k, `${BG_DIR}${k}.svg`])
 );
+BG.bank = BG.zastava; /* starý klíč místa `bank` → stejné SVG */
 
 /* nepřátelé: provizorní SVG podle id, jinak vlk */
 const enemyImg = (id) => `../resources/enemies/placeholder/${["wolf", "boar", "bandit", "brigand"].includes(id) ? id : "wolf"}.svg`;
@@ -324,18 +325,18 @@ function isInTownZone(x = state.mapX, y = state.mapY) {
 
 const PLACE = {
   healer: {
-    title: "Léčitelka",
+    title: "Bylinářka",
     npc: "Lidmila",
-    line: `Nabízí se tedy zajít k ${hl("Lidmile")}, až budeš potřebovat záplatu`,
-    hint: "navštívit léčitelku",
+    line: `Nabízí se tedy zajít k ${hl("Lidmile")}, až budeš potřebovat záplatu nebo odvar`,
+    hint: "navštívit bylinářku",
     bg: "healer",
     /* scéna (full) + greeting (foe vpravo) - ne jedna smíchaná věta. Text smí být pole variant (viz variants.js). */
     prose: [
-      `Voní bylinky. V rohu suší snopy, na stole leží čisté obvazy. Na polici visí obrázek paní z pohraničí.`,
-      `Ve vzduchu visí kouř z kadidla. Na polici cinkají lahvičky; Lidmila právě drtila kořeny.`,
-      `U okna se suší svazky heřmánku a v hrnci něco tiše bublá. Obrázek paní z pohraničí se dívá z police.`,
+      `Chalupa voní bylinami. V trámech suší snopy, na stole čisté hadry a hliněné misky. Lahvičky jsou spíš na odvary než na zázraky.`,
+      `U ohniště bublá odvar. Lidmila drtí kořeny v misce; obvaz a lektvar jsou u ní jedna práce.`,
+      `U okna heřmánek, na polici hrnky s mastí. Léčí, co jde rukama a bylinou — ne dvorská medicína.`,
     ],
-    greeting: [`„Posaď se. Kde to bolí?“`, `„Ukaž. A klidně to řekni dvakrát.“`, `„Zase ty? Ruce mám od bylin, ale poslouchám.“`],
+    greeting: [`„Posaď se. Kde to bolí?“`, `„Ukaž. Odvar, nebo obvaz?“`, `„Zase ty? Ruce mám od bylin, ale poslouchám.“`],
     /* priority: heal → protijed → buffy */
     services: [
       { id: "heal", name: "Ošetření", descHtml: () => statChipBtn("hp", null), price: 50 },
@@ -364,10 +365,10 @@ const PLACE = {
   bank: {
     title: "Zástava",
     npc: "Gertruda",
-    line: `Do ${hl("Zástavy")} si můžeš uložit zlato; trezor drží víc než měšec`,
-    hint: "otevřít účet",
-    bg: "bank",
-    prose: `Ticho trezoru. Tlusté dveře, zápach vosku a kovu. Na pultě leží zástavní lístky s lhůtami.`,
+    line: `Do ${hl("Zástavy")} si můžeš dát zlato do úschovy; truhla drží víc než měšec`,
+    hint: "chalupa Zástavy",
+    bg: "zastava",
+    prose: `Chalupa Zástavy: silná truhla, vosk a lístky s lhůtami. Gertruda půjčuje proti zástavě a hlídá cizí měšce — úschova, ne městská banka.`,
     greeting: [`„Uložit, nebo vybrat?“`, `„Vše podle smlouvy. Smlouva ovšem také.“`, `„Lhůta běží. Co potřebujete?“`],
     /* priority: uložit → vybrat */
     services: [
@@ -451,12 +452,12 @@ const PLACE = {
     ],
   },
   market: {
-    title: "Tržiště",
+    title: "Trh",
     npc: "Hanuš z Brodu",
-    line: `Na ${hl("tržišti")} Hanuš mává a smlouvá, dokud máš co nabídnout`,
-    hint: "projít stánky",
+    line: `Na ${hl("trhu")} Hanuš mává a smlouvá, dokud máš co nabídnout`,
+    hint: "projít stánky na návsi",
     bg: "market",
-    prose: `Stánky a hluk. Vůně chleba a ryb se mísí s křikem cen.`,
+    prose: `Na návsi pár stolů a plachet, ne městská tržnice. Chléb, vejce, suché ryby; ceny se křičí stejně nahlas.`,
     greeting: [`„Naposledy! Jenom pro vás! A pro příští zákazníky taky naposledy.“`, `„Levně! Dnes, a zítra taky.“`, `„Vzorek všeho. A nic právě teď.“`],
     /* priority: prodat → jídlo → potion */
     services: [
@@ -908,7 +909,7 @@ function continueGame() {
   setScreen("town");
 }
 
-/** Úvod: tlačítko Pokračovat s jménem a úrovní, je-li platné uložení. */
+/** Úvod: pokračování z lokálního uložení (≠ účet „Přihlášení“). Jméno hrdiny na tlačítku. */
 function syncContinue() {
   const box = $("auth-continue");
   if (!box) return;
@@ -919,8 +920,12 @@ function syncContinue() {
     return;
   }
   const d = r.state;
-  box.innerHTML = `<button type="button" class="btn btn-primary wide" data-act="continue-game">Pokračovat</button>
-    <span class="tip">${escapeHtml(d.name || "Poutník")} · úroveň ${d.level} · ${(d.prologDone?.class && CLASS_LABEL[d.picks.class]) || "Povaleč"}</span>`;
+  const who = escapeHtml(sanitizeHeroName(d.name) || "Poutník");
+  const job = (d.prologDone?.class && CLASS_LABEL[d.picks.class]) || "Povaleč";
+  const lvl = Math.max(1, Number(d.level) || 1);
+  /* stejný vzor jako jinde: hlavní řádek + menší tip pod ním */
+  box.innerHTML = `<button type="button" class="btn btn-primary wide" data-act="continue-game">Pokračovat jako ${who}</button>
+    <span class="tip">${escapeHtml(job)} · úroveň ${lvl}</span>`;
 }
 
 const FLOW_SEGS = ORIGIN_STEPS.length + 1; /* prolog kroky + Původ */
@@ -964,20 +969,30 @@ const MORNING_NOORDER = "Šel ses vyspat do seníku za krčmou, když už ses ni
 const prologMorning = () =>
   (state.prologDone.class ? MORNING_BASE[state.picks.origin] || MORNING_BASE.default : MORNING_NOORDER) + (MORNING_REACT[state.prologReact] || "");
 
-/** Konec ukázky: ráno po prologu a tečka, hra dál nepokračuje. */
-function openDemoEnd(text) {
+/** Ráno po prologu: beat před hubem. Demo = konec ukázky; jinak „Vstát“ do hry. */
+function openMorningBeat(text, { demo = false } = {}) {
+  document.querySelector(".loot-overlay[data-morning]")?.remove();
   const el = document.createElement("aside");
   el.className = "loot-overlay";
+  el.dataset.morning = "1";
   el.setAttribute("role", "dialog");
-  el.setAttribute("aria-label", "Konec ukázky");
+  el.setAttribute("aria-label", demo ? "Konec ukázky" : "Ráno");
   el.innerHTML = `<div class="loot-sheet confirm-sheet">
       <strong>Ráno</strong>
       <p>${nbspCzech(text)}</p>
-      <p class="muted">Tím ukázka prologu končí. Hra dál pokračuje jen ve vývojové verzi.</p>
-      <div class="loot-actions"><button type="button" class="btn btn-primary" data-act="demo-restart">Zkusit prolog znovu</button></div>
+      ${demo ? `<p class="muted">Tím ukázka prologu končí. Hra dál pokračuje jen ve vývojové verzi.</p>` : ""}
+      <div class="loot-actions">${
+        demo
+          ? `<button type="button" class="btn btn-primary" data-act="demo-restart">Zkusit prolog znovu</button>`
+          : `<button type="button" class="btn btn-primary" data-act="morning-continue">Vstát</button>`
+      }</div>
     </div>`;
   document.body.appendChild(el);
+  el.querySelector("button")?.focus();
 }
+
+/** @deprecated alias: veřejné demo i scéna Ráno */
+const openDemoEnd = (text) => openMorningBeat(text, { demo: true });
 
 const DEV_BAR_KEY = "lom.devBarCollapsed";
 const DEV_VIS_KEY = "lom.dev";
@@ -1103,6 +1118,17 @@ function setGameBg(key) {
   const url = BG[key] || BG.default;
   document.querySelectorAll(".game-screen .landing-bg").forEach((el) => {
     el.style.backgroundImage = `linear-gradient(90deg, rgba(10,6,4,0.62), rgba(10,6,4,0.22) 42%, rgba(10,6,4,0.58)), url("${url}")`;
+  });
+}
+
+/** Úvod: běžné lokace (bez hradu). Session-stable, aby citát a bg neblikaly. */
+const LANDING_BGS = ["village", "plains", "road", "hills", "forest", "chapel", "tavern", "market"];
+let landingBgKey = null;
+function setLandingBg() {
+  if (!landingBgKey) landingBgKey = LANDING_BGS[Math.floor(Math.random() * LANDING_BGS.length)];
+  const url = BG[landingBgKey] || BG.village;
+  document.querySelectorAll('.landing-screen:not(.game-screen) .landing-bg').forEach((el) => {
+    el.style.backgroundImage = `linear-gradient(90deg, rgba(18,10,6,0.55), rgba(18,10,6,0.22) 42%, rgba(18,10,6,0.5)), url("${url}")`;
   });
 }
 
@@ -1376,6 +1402,7 @@ function renderConfirmPicks() {
   }
   const chrome = $("origin-chrome");
   if (chrome) {
+    /* výběr je v sekcích; header jen „Postava“ (ne duplicita živnost · kraj · původ) */
     chrome.innerHTML = screenChrome({
       label: "Postava",
       backGoto: "origins",
@@ -1386,6 +1413,8 @@ function renderConfirmPicks() {
       sub: state.prologStory ? "Tvůj příběh začíná" : "Vytvoř svého hrdinu",
     });
   }
+  const nameIn = $("input-name");
+  if (nameIn && !nameIn.value && state.name) nameIn.value = sanitizeHeroName(state.name);
   const box = $("confirm-stats");
   if (box) {
     box.innerHTML = statIconsHtml(statsNow(), state.flashKeys || []);
@@ -1679,9 +1708,10 @@ function setAuth(mode) {
   $("auth-signin")?.classList.toggle("hidden", mode !== "signin");
   const chrome = $("auth-chrome");
   if (chrome) {
+    /* Přihlášení = účet (zatím maketa). Pokračovat z uložení = syncContinue, jiné tlačítko. */
     chrome.innerHTML = screenChrome({
-      label: mode === "signin" ? "Přihlášení" : "Registrace",
-      sub: mode === "signin" ? "Vítej zpět" : "Vytvoř svého hrdinu",
+      label: mode === "signin" ? "Účet — přihlášení" : "Účet — registrace",
+      sub: mode === "signin" ? "E-mail a fráze (cloud později)" : "Nový účet, nebo hraj jako host",
     });
   }
 }
@@ -1748,6 +1778,8 @@ function setScreen(name) {
       (!btn.dataset.auth || btn.dataset.auth === state.auth || name !== "landing");
     btn.classList.toggle("active", match || (name === "landing" && btn.dataset.auth === state.auth));
   });
+  if (name === "landing") setLandingBg();
+  if (name === "origins" || name === "confirm") setGameBg("tavern");
   if (name === "confirm") updateStatsPreview();
   render();
   if (reveal) showLandingQuote();
@@ -2386,7 +2418,7 @@ function openPanel(kind, opts = {}) {
         html: `<div class="faq-acc">
             <details class="faq-item" name="faq">
               <summary>Co když zemřu?</summary>
-              <p>Respawn ve městě; zlato v bance zůstane.</p>
+              <p>Respawn ve vsi; zlato v Zástavě zůstane.</p>
             </details>
             <details class="faq-item" name="faq">
               <summary>Host vs účet?</summary>
@@ -2403,7 +2435,7 @@ function openPanel(kind, opts = {}) {
             <details class="faq-item" name="faq">
               <summary>Atributy (STR / DEX / VIT / INT)</summary>
               <p>Ikony u rasy a povolání = stejné chipy jako ve hře. Tip na chipu = krátký popis.</p>
-              <p>STR → fyzické poškození · DEX → zásah a útěk · VIT → max HP a DEF · INT → čtení záměru a jistota fám. Zdroj (Res) = energie v boji; bylinkář má mana.</p>
+              <p>Síla → poškození · Obrat → zásah a útěk · Tělo → max život a krytí · Důvtip → čtení lidí a fám. Dech = zdroj v boji (i u bylinkáře).</p>
             </details>
             <details class="faq-item" name="faq">
               <summary>Jak se počítá ATK / DEF?</summary>
@@ -2789,7 +2821,7 @@ const PLACE_ASK = {
       title: `Zeptat se na ${hl("poštu")}`,
       hint: "možný úkol",
       ask: `„Nemáte něco k doručení?“`,
-      ans: `„Zapečetěný dopis do vsi Lada. Cesta na jih je klidná. Doručíš?“`,
+      ans: `„Zapečetěný dopis do vsi Zdejší. Cesta na jih je klidná. Doručíš?“`,
     },
     {
       id: "bell",
@@ -2866,9 +2898,9 @@ const PLACE_ASK = {
     },
     {
       id: "lady",
-      title: `Zeptat se na cestu do ${hl("Lady")}`,
+      title: `Zeptat se na cestu do ${hl("Zdejší")}`,
       hint: "mapa · tip",
-      ask: `„Která cesta do Lady je klidnější?“`,
+      ask: `„Která cesta do Zdejší je klidnější?“`,
       ans: `„Jižní. Petr u brány má dopis.“`,
     },
   ],
@@ -3469,7 +3501,7 @@ function questRefresh() {
   LOM.Quests.evaluate(state.quests, questCtx()).forEach((id) => {
     if (LOM.Quests.statusOf(state.quests, id) === "ready") {
       const t = QUEST_DEF[id].turnIn;
-      logSys(`Úkol splněn: <strong>${QUEST_DEF[id].title}</strong>. Odevzdej ${t.cell ? `v Ladě (${t.cell})` : `u ${t.npc}`}.`, "❓");
+      logSys(`Úkol splněn: <strong>${QUEST_DEF[id].title}</strong>. Odevzdej ${t.cell ? `ve Zdejší (${t.cell})` : `u ${t.npc}`}.`, "❓");
     }
   });
 }
@@ -4054,9 +4086,8 @@ function renderTownActions() {
     /* bez „Machala“ / „Kam dál“ - kontext box + sticky stačí */
     const parts = [];
     if (onTown) {
-      parts.push(
-        [placeBtn("healer"), placeBtn("smith"), placeBtn("bank"), placeBtn("tavern"), placeBtn("market"), placeBtn("gate"), placeBtn("townhall")].join("")
-      );
+      /* vesnice napřed: brána a radnice až s městem (místa v datech zůstávají pro původ Strážný / kauzy) */
+      parts.push([placeBtn("healer"), placeBtn("smith"), placeBtn("bank"), placeBtn("tavern"), placeBtn("market")].join(""));
     }
     bar.innerHTML = dockMain("", parts.join(""), { stickyHtml: exploreSticky });
   }
@@ -4223,7 +4254,7 @@ function render() {
       flashGear: state.flashGear,
       res: state.travel.energy,
       resMax: state.travel.energyMax,
-      resTip: "Výdrž na cestu (ne mana v boji), krok −1. Ve městě se doplní.",
+      resTip: "Výdrž na cestu (ne dech v boji), krok −1. Ve městě se doplní.",
       resIcon: "🥾",
     });
     const ctx = $("town-context");
@@ -4235,7 +4266,7 @@ function render() {
       ].join("");
       const bankLine =
         state.place === "bank"
-          ? `<div class="gear-strip">${statChipBtn("gold", String(state.bank), { tip: "Účet v bance" })}</div>`
+          ? `<div class="gear-strip">${statChipBtn("gold", String(state.bank), { tip: "Úschova v Zástavě" })}</div>`
           : `<div class="world-meta muted"><span>(${state.mapX},${state.mapY}) · ${TERRAIN_CS[terr] || ""}</span>${
               clockChips ? `<span class="gear-strip">${clockChips}</span>` : ""
             }</div>`;
@@ -4582,7 +4613,7 @@ function leaveCombat() {
   setScreen("town");
 }
 
-/** Smrt: vše (batoh, vybavení, měšec) zůstane v corpse; banka ne. Probuzení u léčitele se základní výbavou. */
+/** Smrt: vše (batoh, vybavení, měšec) zůstane v corpse; Zástava ne. Probuzení u bylinářky se základní výbavou. */
 function dieAndRespawn() {
   const { corpse, kit } = LOM.buildCorpse({
     bag: state.bag,
@@ -4723,17 +4754,17 @@ function runService(id) {
       render();
       return;
     }
-    if (fee) feedback(`Poplatek ${STAT_BY.gold.icon}${fee}. Banka ti nevěří jako dřív.`);
+    if (fee) feedback(`Poplatek ${STAT_BY.gold.icon}${fee}. Zástava ti nevěří jako dřív.`);
     if (id === "dep_all") {
       state.bank += state.gold;
       state.gold = 0;
-      feedback(`Vše uloženo. V bance teď ${STAT_BY.gold.icon}${state.bank}.`);
+      feedback(`Vše uloženo. V Zástavě teď ${STAT_BY.gold.icon}${state.bank}.`);
     }
     if (id === "dep_50") {
       const n = Math.min(50, state.gold);
       state.gold -= n;
       state.bank += n;
-      feedback(`Uloženo ${STAT_BY.gold.icon}${n}. Banka ${STAT_BY.gold.icon}${state.bank}.`);
+      feedback(`Uloženo ${STAT_BY.gold.icon}${n}. Zástava ${STAT_BY.gold.icon}${state.bank}.`);
     }
     if (id === "wd_50") {
       const n = Math.min(50, state.bank);
@@ -4936,7 +4967,14 @@ document.body.addEventListener("click", (e) => {
   if (act === "pick-gender") {
     const g = t.value === "f" ? "f" : "m";
     state.gender = g;
+    /* kostka vždy podle pohlaví; ručně napsané jméno necháme (hráč smí i „špatné“), jen prázdné doplníme */
+    const inp = $("input-name");
+    if (inp && !sanitizeHeroName(inp.value)) inp.value = randomName();
     updateStartGate();
+  }
+  if (act === "morning-continue") {
+    document.querySelector(".loot-overlay[data-morning]")?.remove();
+    return;
   }
   if (act === "start-back") closeStartModal();
   if (act === "start-game" || act === "start-confirm") {
@@ -5012,7 +5050,8 @@ document.body.addEventListener("click", (e) => {
       state.log = `${prologMorning()} ${TOWN_PROSE}`;
       setScreen("town");
     }
-    if (PUBLIC_DEMO) openDemoEnd(`${prologMorning()} ${patch.intro || ""}`.trim());
+    const morningText = `${prologMorning()} ${patch.intro || ""}`.trim();
+    openMorningBeat(morningText, { demo: PUBLIC_DEMO });
   }
   if (act === "demo-restart") location.reload();
   if (act === "goto-place") {
@@ -5819,6 +5858,7 @@ function applyScenario(id, knobs = devKnobs) {
   lastOriginStep = -1;
   lastRevealed = "";
   landingQuoteShown = false;
+  landingBgKey = null; /* nová scéna = nové pozadí úvodu */
   const base = LOM.SCENARIOS.find((x) => x.id === id);
   if (!base) return;
   const sc = { ...base };
@@ -5991,13 +6031,40 @@ function allDevKnobSelects() {
   return [...document.querySelectorAll("select[data-knob]")];
 }
 
+/** Název scény Postava = právě navolené živnost · kraj · původ (ne „shrnutí, jméno, kostka“). */
+function scenarioOptionLabel(sc, knobs = {}) {
+  if (!sc) return "";
+  if (sc.id !== "start-confirm") return sc.label;
+  const picks = {
+    class: knobs.class || sc.picks?.class,
+    race: knobs.race || sc.picks?.race,
+    origin: knobs.origin || sc.picks?.origin,
+  };
+  const c = LOM.CLASS_INFO?.[picks.class]?.label || CLASS_LABEL[picks.class] || "—";
+  const r = LOM.RACE_INFO?.[picks.race]?.label || "—";
+  const o = LOM.ORIGINS?.[picks.origin]?.label || "—";
+  return `Postava: ${c} · ${r} · ${o}`;
+}
+
+function refreshScenarioOptionLabels(knobs = {}) {
+  const sel = $("dev-scenario");
+  if (!sel || !window.LOM?.SCENARIOS) return;
+  [...sel.options].forEach((opt) => {
+    const sc = LOM.SCENARIOS.find((x) => x.id === opt.value);
+    if (sc) opt.textContent = scenarioOptionLabel(sc, sc.id === "start-confirm" ? knobs : {});
+  });
+}
+
 function initDevStorybook() {
   const sel = $("dev-scenario");
   if (!sel || !window.LOM?.SCENARIOS) return;
   const groups = {};
   LOM.SCENARIOS.forEach((sc) => (groups[sc.group] = groups[sc.group] || []).push(sc));
   sel.innerHTML = Object.entries(groups)
-    .map(([g, list]) => `<optgroup label="${LOM.GROUPS.indexOf(g) + 1} ${g}">${list.map((sc) => `<option value="${sc.id}">${sc.label}</option>`).join("")}</optgroup>`)
+    .map(
+      ([g, list]) =>
+        `<optgroup label="${LOM.GROUPS.indexOf(g) + 1} ${g}">${list.map((sc) => `<option value="${sc.id}">${scenarioOptionLabel(sc)}</option>`).join("")}</optgroup>`
+    )
     .join("");
 
   const bySec = { postava: [], svet: [], boj: [] };
@@ -6018,6 +6085,7 @@ function initDevStorybook() {
   const onKnobChange = (e) => {
     if (!e.target.dataset?.knob) return;
     devKnobs = Object.fromEntries(allDevKnobSelects().filter((n) => n.value).map((n) => [n.dataset.knob, n.value]));
+    refreshScenarioOptionLabels(devKnobs);
     applyScenario(sel.value, devKnobs);
   };
   document.querySelectorAll("[data-knob-sec]").forEach((el) => el.addEventListener("change", onKnobChange));

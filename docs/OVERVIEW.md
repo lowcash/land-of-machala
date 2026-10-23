@@ -28,4 +28,4 @@ Plain `<script>` tags, no build. Modules are UMD (Node + browser).
 
 1. [architecture.md](architecture.md) — code map and data shapes  
 2. `prototype/js/systems/combat.js` and its test — cleanest pure-rules example  
-3. [AGENTS.md](../AGENTS.md) — how to change things safely  
+

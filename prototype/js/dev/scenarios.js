@@ -15,7 +15,7 @@
     { name: "Boj 1v1 (akce, zdroj, AI)", status: "funguje", pct: 100, note: "js/systems/combat.js, simulace + testy" },
     { name: "Čtení záměru", status: "funguje", pct: 100, note: "INT, zkušenost, pozorování, odvar předtuchy" },
     { name: "Inventář, výbava, váha", status: "funguje", pct: 100, note: "" },
-    { name: "Banka", status: "funguje", pct: 100, note: "" },
+    { name: "Zástava (úschova)", status: "funguje", pct: 100, note: "" },
     { name: "Mapa a pohyb", status: "funguje", pct: 100, note: "" },
     { name: "Setkání na cestě (pevná místa)", status: "funguje", pct: 80, note: "stopy ve dne, obnova po dni" },
     { name: "Smrt a corpse", status: "funguje", pct: 90, note: "" },
@@ -33,15 +33,21 @@
   ];
 
   const SCENARIOS = [
-    { id: "start-landing", group: "Prolog", label: "Landing (přihlášení)", view: "landing", note: "Jen soukromá verze; veřejné demo landing přeskočí." },
+    {
+      id: "start-landing",
+      group: "Prolog",
+      label: "Landing (účet / pokračovat)",
+      view: "landing",
+      note: "Účet = registrace/přihlášení (maketa). Je-li localStorage save, nahoře „Pokračovat jako <jméno>“ — to není účet. Veřejné demo landing přeskočí.",
+    },
     { id: "start-origins", group: "Prolog", label: "Prolog (volby)", view: "origins", note: "Kroky: živnost → kraj → zvon → původ; počet se může měnit." },
     {
       id: "start-confirm",
       group: "Prolog",
-      label: "Postava: shrnutí, jméno, kostka",
+      label: "Postava", /* zobrazený text skládá app.js z picks (živnost · kraj · původ) */
       view: "confirm",
       picks: { class: "mercenary", race: "local", origin: "native" },
-      note: "Po prologu: kraj / živnost / původ, jméno (kostka), pohlaví, Vstoupit.",
+      note: "Po prologu: shrnutí; pohlaví → jméno; Vstoupit = sheet Ráno → hub.",
     },
     {
       id: "start-morning",
@@ -104,7 +110,7 @@
       id: "at",
       label: "Poloha",
       opts: [
-        ["town", "Machala (3,3)"],
+        ["town", "Ostrožná (3,3)"],
         ["road", "Cesta (3,2)"],
         ["forest", "Les (2,5)"],
       ],
@@ -132,7 +138,7 @@
       id: "race",
       label: "Kraj",
       opts: [
-        ["local", "Machalští"],
+        ["local", "Zdejší"],
         ["saltfolk", "Solníci"],
         ["woodfolk", "Slatiňané"],
         ["riverfolk", "Brodáci"],

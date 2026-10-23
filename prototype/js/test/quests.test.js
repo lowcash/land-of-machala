@@ -47,7 +47,7 @@ test("have: ztráta věci vrátí quest z ready do active; volba odevzdání dá
   assert.deepEqual(r.consume, ["ration"]);
 });
 
-test("dopis: vydá se jednou, ztracený v corpse se znovu nevydá; odevzdání jen v Ladě", () => {
+test("dopis: vydá se jednou, ztracený v corpse se znovu nevydá; odevzdání jen ve Zdejší", () => {
   const log = Q.newLog();
   assert.deepEqual(Q.accept(log, "letter_to_lada", { hasAnywhere: () => false }).give, ["letter"]);
   Q.onArrive(log, 3, 0);

@@ -34,14 +34,14 @@
     },
     {
       id: "letter_to_lada",
-      title: "Dopis do Lady",
+      title: "Dopis do Zdejší",
       giver: { place: "bank", after: "letter", npc: "Gertruda" },
-      turnIn: { cell: [3, 0], npc: "písař v Ladě" },
-      brief: "Gertruda posílá zapečetěný dopis do vsi Lada. Cesta je na jih a je klidná.",
+      turnIn: { cell: [3, 0], npc: "písař ve Zdejší" },
+      brief: "Gertruda posílá zapečetěný dopis do vsi Zdejší. Cesta je na jih a je klidná.",
       giveItems: ["letter"],
       objectives: [
         { id: "carry", type: "have", item: "letter", count: 1, text: "Měj u sebe dopis" },
-        { id: "arrive", type: "arrive", cell: [3, 0], text: "Dojdi do vsi Lada" },
+        { id: "arrive", type: "arrive", cell: [3, 0], text: "Dojdi do vsi Zdejší" },
       ],
       consume: ["letter"],
       reward: { xp: 30, gold: 30 },

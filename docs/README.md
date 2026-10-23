@@ -8,6 +8,6 @@ Short English map for visitors and contributors. Numbers live in code and tests.
 | Code layout and how to add data | [architecture.md](architecture.md) |
 | UI conventions (intent) | [ui.md](ui.md) |
 
-Contributor rules: [../AGENTS.md](../AGENTS.md). If docs and code disagree, the code wins.
+If docs and code disagree, the code wins.
 
 **Play:** [GitHub Pages demo](https://lowcash.github.io/land-of-machala/).

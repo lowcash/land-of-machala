@@ -39,10 +39,12 @@
       { first: "Vlasta", gender: "f" },
       { first: "Boleslav", gender: "m" },
       { first: "Zbyhněva", gender: "f" },
+      { first: "Zikmund", gender: "m" },
     ],
     nemecka: [
       { first: "Johannes", gender: "m" },
       { first: "Konrád", gender: "m" },
+      { first: "Herbert", gender: "m" },
       { first: "Walther", gender: "m" },
       { first: "Gertruda", gender: "f" },
       { first: "Albrecht", gender: "m" },
@@ -60,7 +62,6 @@
       { first: "Eliška", gender: "f" },
       { first: "Ruprecht", gender: "m" },
       { first: "Dorota", gender: "f" },
-      { first: "Sigmund", gender: "m" },
       { first: "Magdaléna", gender: "f" },
       { first: "Berthold", gender: "m" },
       { first: "Klára", gender: "f" },
@@ -141,6 +142,7 @@
     ],
     cirkevni: [
       { first: "Benedikt", gender: "m" },
+      { first: "Jeroným", gender: "m" },
       { first: "Cyril", gender: "m" },
       { first: "Scholastika", gender: "f" },
       { first: "Metoděj", gender: "m" },
