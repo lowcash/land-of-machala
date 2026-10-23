@@ -107,7 +107,7 @@
       id: "native",
       label: "Rodák",
       icon: "🏠",
-      blurb: "Tady tě znají jménem — i to, co bys rád zapomněl. Začínáš na tržišti.",
+      blurb: "Tady tě znají jménem – i to, co bys rád zapomněl. Začínáš na tržišti.",
       start: { place: "market" },
       gold: 40,
       bank: 0,

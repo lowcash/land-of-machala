@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a9ab8"/><stop offset="1" stop-color="#c8b896"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<path class="o" d="M-20 620q280-80 560-20t560-40q280-60 520 40v280h-1640z" fill="#5a7a3a"/>
+<path class="o" d="M-20 720q300-40 600 10t640-10v200h-1240z" fill="#4a6830"/>
+<!-- seník: dYevná stodola, seno -->
+<path class="o" d="M380 700V340l420-160 420 160v360z" fill="#8a5a30"/>
+<path class="o" d="M380 340l420-160 420 160-420 90z" fill="#6b4220"/>
+<path class="t" d="M800 180v550"/>
+<g class="t" opacity=".55"><path d="M480 400h640M480 480h640M480 560h640M480 640h640"/></g>
+<!-- dveYe -->
+<path class="o" d="M700 700V480q0-20 20-20h160q20 0 20 20v220z" fill="#4a2e16"/>
+<path class="t" d="M800 460v240"/>
+<!-- seno -->
+<path class="o" d="M420 700q40-80 120-60 60 40 40 80z" fill="#c9a84a"/>
+<path class="o" d="M1080 700q30-70 100-50 50 30 30 70z" fill="#d4b45a"/>
+<circle cx="1280" cy="200" r="70" fill="#f0e0a8" opacity=".85"/>
+</svg>

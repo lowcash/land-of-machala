@@ -38,7 +38,7 @@
   const RACE_INFO = {
     local: {
       label: "Zdejší",
-      icon: "⌂", /* vesnice — skrytý náznak, že Zdejší = místo i lid */
+      icon: "⌂", /* vesnice – skrytý náznak, že Zdejší = místo i lid */
       blurb: "Lid ze vsi Zdejší v Machale (název vsi = označení lidí): pole, náves, trh. ≠ Rodák (známost jménem).",
       bonuses: bonusesFrom(RACE_MOD.local, { str: 0, dex: 0, vit: 0, int: 0 }),
     },

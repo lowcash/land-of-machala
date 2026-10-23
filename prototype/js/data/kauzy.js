@@ -76,7 +76,7 @@
     variants: {
       A: { label: "Omyl", epilog: "Kaple zvon prodala Matějovi na přelití (střecha). Posel Ondra od vozu peníze utratil u Svatavy; ona za ně koupila sud, který praskl. Nikdo neznal celý řetěz, dokud jsi ho nespojil." },
       B: { label: "Ostuda", epilog: "Kaplan Ondřej věděl o prodeji i o ztrátě peněz (Ondra se přiznal) a mlčel studem. Svatava tušila, odkud měšec je. Sud a zvon seděly, jen se o tom nemluvilo." },
-      C: { label: "Pečeť", epilog: "Prodej zprostředkoval písař; na kupní listině je pečeť bez nápisu. Sud vedl k Matějovi. Kdo pečeť drží, zůstává ve stínu — na tohle jsi neměl dost." },
+      C: { label: "Pečeť", epilog: "Prodej zprostředkoval písař; na kupní listině je pečeť bez nápisu. Sud vedl k Matějovi. Kdo pečeť drží, zůstává ve stínu – na tohle jsi neměl dost." },
     },
 
     claims: {
@@ -86,8 +86,8 @@
         line: "„Ten sud? Platili z farnosti, za starou hostinu. Říkali od faráře. Sedněte, ať neděláte průvan.“",
         truth: { A: "half", B: "half", C: "false" },
         verify: { via: "cask", where: "prasklý sud ve sklepě", texts: {
-          half: "Ve dně sudu je zašlý lístek s jménem banky — neuměl ho číst, kdo peníze nechal. Nebyl to dar za hostinu; byl to měšec na cestě.",
-          false: "Na obruči je značka pocestného prodejce, ne farní. Peníze nepřišly od faráře — někdo jiný tu nechal měšec a odešel.",
+          half: "Ve dně sudu je zašlý lístek s jménem banky – neuměl ho číst, kdo peníze nechal. Nebyl to dar za hostinu; byl to měšec na cestě.",
+          false: "Na obruči je značka pocestného prodejce, ne farní. Peníze nepřišly od faráře – někdo jiný tu nechal měšec a odešel.",
         } },
         contradicts: ["c6"],
       },
@@ -98,17 +98,17 @@
         truth: { A: "true", B: "true", C: "half" },
         verify: { via: "clerk", ask: "lookup_priest", where: "farní kniha na radnici", texts: {
           true: "Ve farní knize je zápis o prodeji zvonu na opravu střechy. Peníze měly jít do banky; o doručení není ani řádek.",
-          half: "Prodej je zapsaný, ale podpis zprostředkovatele je cizí — písař, ne farář. Farnost kývla, cestu zařídil někdo jiný.",
+          half: "Prodej je zapsaný, ale podpis zprostředkovatele je cizí – písař, ne farář. Farnost kývla, cestu zařídil někdo jiný.",
         } },
         contradicts: ["c3"],
       },
       c3: {
         by: "anicka", tag: "people", place: "chapel",
         text: "Zvon odvezli úředníci vozem nedovolenou cestou.",
-        line: "„Přišel vůz a odvezli ho. Jářku, jako úředníci — jenže bez pečeti na dveřích!“",
+        line: "„Přišel vůz a odvezli ho. Jářku, jako úředníci – jenže bez pečeti na dveřích!“",
         truth: { A: "half", B: "half", C: "half" },
         verify: { via: "cart", where: "vůz na cestě k hutím", texts: {
-          half: "Na voze visí malý vozový zvon — zní skoro jako ten z kaple, ale je to jiný. Velký zvon tudy nejel; tenhle zvonek jen ohlašuje cech.",
+          half: "Na voze visí malý vozový zvon – zní skoro jako ten z kaple, ale je to jiný. Velký zvon tudy nejel; tenhle zvonek jen ohlašuje cech.",
         } },
         contradicts: ["c2", "c4"],
       },
@@ -118,7 +118,7 @@
         line: "„Zástava na zvon neběží. Hotovost z prodeje měla dojít sem. Smlouva ovšem čeká na mince, které nepřišly.“",
         truth: { A: "true", B: "true", C: "half" },
         verify: { via: "clerk", ask: "lookup_deed", where: "kupní listina a kniha vkladů na radnici", texts: {
-          true: "Kupní listina sedí: Matěj od pece, cena na střechu. V knize vkladů nic — peníze do banky nedorazily.",
+          true: "Kupní listina sedí: Matěj od pece, cena na střechu. V knize vkladů nic – peníze do banky nedorazily.",
           half: "Listina sedí, ale pečeť zprostředkovatele nemá nápis. Vklad chybí. Někdo cestu zařídil potichu.",
         } },
         contradicts: ["c3"],
@@ -133,11 +133,11 @@
       c6: {
         by: "ondra", tag: "people", place: "forge",
         text: "Ondra nesl měšec do banky, zastavil se na jedno a peníze nechal u Svatavy.",
-        line: "„Nesl jsem to do banky. Lístek jsem nepřečetl — jméno jo, písmena ne. Zastavil jsem se na jedno. Řekl jsem, že je to od Ondřeje. Měšec… zůstal.“",
+        line: "„Nesl jsem to do banky. Lístek jsem nepřečetl – jméno jo, písmena ne. Zastavil jsem se na jedno. Řekl jsem, že je to od Ondřeje. Měšec… zůstal.“",
         truth: { A: "half", B: "true", C: "true" },
         verify: { via: "forge", where: "Hutě u Jezírka", texts: {
-          half: "Ondra si pamatuje hospodu a „od Ondřeje“. Kam peníze šly dál, neví — byl opilý. U pece leží velký zvon z kaple, ještě nepřelitý.",
-          true: "Ondra se přiznává: měšec nechal u Svatavy. Matěj ukáže zvon — koupil ho na přelití, lhůta běží.",
+          half: "Ondra si pamatuje hospodu a „od Ondřeje“. Kam peníze šly dál, neví – byl opilý. U pece leží velký zvon z kaple, ještě nepřelitý.",
+          true: "Ondra se přiznává: měšec nechal u Svatavy. Matěj ukáže zvon – koupil ho na přelití, lhůta běží.",
         } },
         contradicts: ["c1"],
       },
@@ -145,10 +145,10 @@
 
     /* dopady verdiktů: trust → ceny (priceMod), banka poplatek při trust < 0, zlato, flagy */
     verdicts: {
-      return: { label: "Vrátit zvon do kaple", at: "chapel", needs: { bell: true }, hint: "kaple a Lidmila ti budou věřit; Matěj přijde o zakázku", effects: { trust: { anicka: 2, lidmila: 1, matej: -1 }, flags: ["zvon_return"] }, consumeBell: true, epilogue: "Zvon znovu visí v kapli. Zvoní. Střecha počká — nebo se najde jiný kov." },
+      return: { label: "Vrátit zvon do kaple", at: "chapel", needs: { bell: true }, hint: "kaple a Lidmila ti budou věřit; Matěj přijde o zakázku", effects: { trust: { anicka: 2, lidmila: 1, matej: -1 }, flags: ["zvon_return"] }, consumeBell: true, epilogue: "Zvon znovu visí v kapli. Zvoní. Střecha počká – nebo se najde jiný kov." },
       forge: { label: "Nechat zvon Matějovi na přelití", at: "forge", needs: { bell: true }, hint: "40 🪙 od Matěje; kaple dostane menší zvon, Anička se otočí", effects: { trust: { matej: 2, anicka: -2 }, gold: 40, flags: ["zvon_forge"] }, consumeBell: true, epilogue: "Matěj zvon přelije. Ves má menší hlas. Střecha kaple drží." },
       pay: { label: "Doplatit farnosti za střechu", at: "townhall", needs: { gold: 150 }, hint: "150 🪙; všichni budou spokojení, zvon se vrátí z hutí", effects: { trust: { anicka: 1, matej: 1, lidmila: 1, svatava: 1 }, gold: -150, flags: ["zvon_paid"] }, epilogue: "Dluh střechy je splacen. Matěj zvon vrátí do kaple. Kasa je prázdnější, ves tišší spokojením." },
-      keep: { label: "Nechat si zvon", at: "notebook", needs: { bell: true }, hint: "nic hned; ale nikdo ti nebude věřit", effects: { trust: { anicka: -1, matej: -1, lidmila: -1, svatava: -1 }, flags: ["zvon_keep"] }, epilogue: "Zvon máš ty. Lidé si šeptají, kdo ho má — a proč kaple mlčí." },
+      keep: { label: "Nechat si zvon", at: "notebook", needs: { bell: true }, hint: "nic hned; ale nikdo ti nebude věřit", effects: { trust: { anicka: -1, matej: -1, lidmila: -1, svatava: -1 }, flags: ["zvon_keep"] }, epilogue: "Zvon máš ty. Lidé si šeptají, kdo ho má – a proč kaple mlčí." },
       auction: { label: "Zvon byl přelit bez tebe", auto: true, effects: { trust: { anicka: -1 }, flags: ["zvon_melted"] }, epilogue: "Lhůta uplynula. Matěj zvon přelil. Ves má nový, menší hlas." },
     },
 

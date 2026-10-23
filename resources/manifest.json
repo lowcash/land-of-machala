@@ -131,6 +131,51 @@
       "source": "hand-svg"
     },
     {
+      "id": "locations-placeholder-senik",
+      "kind": "background",
+      "path": "resources/locations/placeholder/senik.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "seník za krčmou; PLACE hayloft"
+    },
+    {
+      "id": "locations-placeholder-nocleh",
+      "kind": "background",
+      "path": "resources/locations/placeholder/nocleh.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "noclehárna; PLACE lodging"
+    },
+    {
+      "id": "locations-placeholder-chalupa",
+      "kind": "background",
+      "path": "resources/locations/placeholder/chalupa.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "domácí chalupa Rodáka; PLACE cottage"
+    },
+    {
+      "id": "locations-placeholder-hrbitov",
+      "kind": "background",
+      "path": "resources/locations/placeholder/hrbitov.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "hřbitov; PLACE graveyard; budoucí wake"
+    },
+    {
+      "id": "locations-placeholder-pastvina",
+      "kind": "background",
+      "path": "resources/locations/placeholder/pastvina.svg",
+      "size": "1600x900",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "pastvina u seníku; PLACE pasture; budoucí wake"
+    },
+    {
       "id": "enemies-placeholder-bandit",
       "kind": "enemy",
       "path": "resources/enemies/placeholder/bandit.svg",

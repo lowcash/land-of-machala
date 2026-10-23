@@ -33,39 +33,48 @@
   <main data-screen="landing" class="view-full landing-screen">
     <div class="landing-bg" aria-hidden="true"></div>
     <div class="landing-frame landing-auth-only">
-      <p class="brand">Land of Machala</p>
-      <p class="landing-tagline">Textová poutnická RPG v zemi Machala.</p>
-      <figure class="landing-quote">
-        <blockquote id="landing-quote"></blockquote>
-        <figcaption id="landing-quote-by"></figcaption>
-      </figure>
-      <section class="auth-card">
-        <div id="auth-chrome"></div>
-        <div id="auth-continue" class="auth-continue hidden"></div>
-        <div id="auth-register">
-          <label>E-mail<input type="email" placeholder="poutnik@machala.cz" autocomplete="username" /></label>
-          <label>Tajná fráze<input type="password" placeholder="••••••••" autocomplete="new-password" /></label>
-          <div class="auth-consent-slot">
-            <label class="check"><input type="checkbox" /> Souhlasím s <button type="button" class="linkish" data-act="open-legal" data-legal="terms">podmínkami</button></label>
-          </div>
-          <button type="button" class="btn btn-primary wide" data-goto="origins">Vytvořit účet</button>
-          <div class="auth-alt">
-            <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-signin">Už mám účet</button>
-            <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-guest">Hrát jako host</button>
-          </div>
-        </div>
-        <div id="auth-signin" class="hidden">
-          <label>E-mail<input type="email" placeholder="poutnik@machala.cz" autocomplete="username" /></label>
-          <label>Tajná fráze<input type="password" placeholder="••••••••" autocomplete="current-password" /></label>
-          <div class="auth-consent-slot" aria-hidden="true"></div>
-          <button type="button" class="btn btn-primary wide" data-goto="town">Vstoupit do hry</button>
-          <div class="auth-alt">
-            <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-register">Nemám účet</button>
-            <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-guest">Hrát jako host</button>
+      <section class="landing-panel auth-card" id="landing-card">
+        <header class="landing-intro">
+          <p class="brand">Land of Machala</p>
+          <p class="landing-tagline">Textová poutnická RPG v zemi Machala.</p>
+          <figure class="landing-quote">
+            <div class="landing-quote-inner">
+              <blockquote id="landing-quote"></blockquote>
+              <figcaption id="landing-quote-by"></figcaption>
+            </div>
+          </figure>
+        </header>
+        <div class="landing-card-body">
+          <div id="auth-chrome"></div>
+          <!-- continue: když je postava, účet schovaný (nejdřív Odhlásit) -->
+          <div id="auth-continue" class="auth-continue hidden"></div>
+          <div id="auth-forms">
+            <div id="auth-register">
+              <label>E-mail<input type="email" placeholder="poutnik@machala.cz" autocomplete="username" /></label>
+              <label>Heslo<input type="password" placeholder="••••••••" autocomplete="new-password" /></label>
+              <div class="auth-consent-slot">
+                <label class="check"><input type="checkbox" /> Souhlasím s <button type="button" class="linkish" data-act="open-legal" data-legal="terms">podmínkami</button></label>
+              </div>
+              <button type="button" class="btn btn-primary wide" data-goto="origins">Vytvořit účet</button>
+              <div class="auth-alt">
+                <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-signin">Už mám účet</button>
+                <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-guest">Hrát jako host</button>
+              </div>
+            </div>
+            <div id="auth-signin" class="hidden">
+              <label>E-mail<input type="email" placeholder="poutnik@machala.cz" autocomplete="username" /></label>
+              <label>Heslo<input type="password" placeholder="••••••••" autocomplete="current-password" /></label>
+              <div class="auth-consent-slot" aria-hidden="true"></div>
+              <button type="button" class="btn btn-primary wide" data-goto="town">Vstoupit do hry</button>
+              <div class="auth-alt">
+                <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-register">Nemám účet</button>
+                <button type="button" class="btn btn-ghost wide auth-alt-btn" data-act="auth-guest">Hrát jako host</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-      <footer class="landing-footer">
+      <footer class="landing-panel landing-footer">
         <p id="landing-version">Verze …</p>
         <nav class="legal-links" aria-label="Odkazy">
           <button type="button" class="legal-link" data-act="open-settings">Nastavení</button>
@@ -101,53 +110,51 @@
               <label class="gender-pick"><input type="radio" name="gender" value="m" data-act="pick-gender" checked /><span>Chlap</span></label>
               <label class="gender-pick"><input type="radio" name="gender" value="f" data-act="pick-gender" /><span>Ženská</span></label>
             </fieldset>
-            <label>Jak tě zovou
-              <span class="name-row">
-                <input id="input-name" type="text" maxlength="20" placeholder="Jedno slovo…" autocomplete="off" spellcheck="false" />
-                <button type="button" class="dice-btn has-tip" data-act="dice-name" data-tip="Náhodné jméno podle pohlaví" aria-label="Náhodné jméno" title="Náhodné jméno">🎲</button>
-              </span>
+            <label>Jak tě zvou
+              <input id="input-name" type="text" maxlength="20" placeholder="…" autocomplete="off" spellcheck="false" />
             </label>
           </div>
-          <div class="origin-scroll">
-          <div class="origin-cols">
-          <details class="origin-acc origin-col" id="origin-race">
-            <summary class="col-label">Vyber svůj kraj</summary>
-            <div class="origin-acc-body">
-              <div class="pick-grid" id="race-grid"></div>
-              <p class="blurb-box" id="race-blurb"></p>
-              <p class="bonus-label">Bonusy kraje</p>
-              <div id="race-bonus"></div>
+          <div class="origin-scroll-wrap">
+            <div class="origin-scroll">
+            <div class="origin-cols">
+            <details class="origin-acc origin-col" id="origin-race">
+              <summary class="col-label">Vyber svůj kraj</summary>
+              <div class="origin-acc-body">
+                <div class="pick-grid" id="race-grid"></div>
+                <p class="blurb-box" id="race-blurb"></p>
+                <p class="bonus-label">Bonusy kraje</p>
+                <div id="race-bonus"></div>
+              </div>
+            </details>
+            <details class="origin-acc origin-col" id="origin-class">
+              <summary class="col-label">Vyber svou živnost</summary>
+              <div class="origin-acc-body">
+                <div class="pick-grid" id="class-grid"></div>
+                <p class="blurb-box" id="class-blurb"></p>
+                <p class="bonus-label">Bonusy živnosti</p>
+                <div id="class-bonus"></div>
+              </div>
+            </details>
+            <details class="origin-acc origin-col" id="origin-origin">
+              <summary class="col-label">Vyber svůj původ</summary>
+              <div class="origin-acc-body">
+                <div class="pick-grid" id="origin-grid"></div>
+                <p class="blurb-box" id="origin-blurb"></p>
+                <p class="bonus-label">Efekty původu</p>
+                <div id="origin-effects" class="blurb-box"></div>
+              </div>
+            </details>
             </div>
-          </details>
-          <details class="origin-acc origin-col" id="origin-class">
-            <summary class="col-label">Vyber svou živnost</summary>
-            <div class="origin-acc-body">
-              <div class="pick-grid" id="class-grid"></div>
-              <p class="blurb-box" id="class-blurb"></p>
-              <p class="bonus-label">Bonusy živnosti</p>
-              <div id="class-bonus"></div>
+            <aside class="stats-preview">
+              <h3 class="col-label">Tvé statistiky</h3>
+              <div class="stat-icons" id="confirm-stats"></div>
+            </aside>
             </div>
-          </details>
-          <details class="origin-acc origin-col" id="origin-origin">
-            <summary class="col-label">Vyber svůj původ</summary>
-            <div class="origin-acc-body">
-              <div class="pick-grid" id="origin-grid"></div>
-              <p class="blurb-box" id="origin-blurb"></p>
-              <p class="bonus-label">Efekty původu</p>
-              <div id="origin-effects" class="blurb-box"></div>
-            </div>
-          </details>
-          </div>
-          <aside class="stats-preview">
-            <h3 class="col-label">Tvé statistiky</h3>
-            <div class="stat-icons" id="confirm-stats"></div>
-          </aside>
+            <div class="origin-edge-fade bottom" aria-hidden="true"></div>
           </div>
         </div>
         <div class="actions origin-cta">
-          <button type="button" class="btn btn-ghost" id="prolog-again" data-act="prolog-again" hidden>Projít prolog znovu</button>
-          <button type="button" class="btn btn-primary" data-act="start-game">Vstoupit do hry</button>
-          <p class="tip origin-cta-note" id="origin-cta-note"></p>
+          <button type="button" class="btn btn-primary has-tip" data-act="start-game" data-tip="">Vstoupit do hry</button>
         </div>
       </section>
     </div>

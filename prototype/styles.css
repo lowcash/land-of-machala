@@ -33,7 +33,10 @@ img, svg { display: block; max-width: 100%; }
 :root {
   --bg: #140e0c;
   --fg: #f3e6d4;
-  --panel: rgba(18, 12, 10, 0.9);
+  /* jedna sklenice pro landing i prolog/Postava/status – měň jen tady */
+  --panel: rgba(18, 12, 10, 0.78);
+  --panel-blur: 8px;
+  --panel-solid: #1a1210; /* sticky / překryvy nad scrollem */
   --line: rgba(212, 168, 83, 0.55);
   --accent: #d4a853;
   --accent-text: #1a1210;
@@ -397,6 +400,30 @@ body.has-dev .game-frame {
   align-items: stretch;
   gap: 0.75rem;
 }
+/* stejná komponenta jako .auth-card / status-box: --panel */
+.landing-panel {
+  border: 1px solid rgba(185, 168, 148, 0.22);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  background: var(--panel);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+}
+/* intro + formulář = jeden panel; oddělovač; footer zvlášť */
+.landing-intro {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+  text-align: center;
+  padding: 0 0 0.75rem;
+  margin: 0;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.landing-card-body {
+  display: grid;
+  gap: var(--gap);
+  padding-top: 0.75rem;
+}
 .landing-auth-only .brand {
   text-align: center;
 }
@@ -409,12 +436,70 @@ body.has-dev .game-frame {
 }
 .landing-auth-only .auth-card {
   width: 100%;
+  box-sizing: border-box;
 }
 .landing-auth-only .landing-footer {
   margin: 0;
   display: grid;
   gap: 0.45rem;
   justify-items: center;
+}
+.landing-quote {
+  margin: 0.35rem 0 0;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.landing-quote-inner {
+  display: grid;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  justify-items: stretch;
+}
+.landing-quote blockquote {
+  margin: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--fg);
+  font-style: italic;
+}
+.landing-quote figcaption {
+  margin: 0;
+  text-align: right;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+/* continue = celý box; účet schovaný, dokud neodhlásíš */
+.landing-continue #auth-forms { display: none; }
+.landing-auth #auth-continue { display: none !important; }
+.auth-continue {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+  justify-items: stretch;
+  margin: 0;
+}
+.auth-continue .btn,
+.auth-continue .btn.wide,
+.auth-continue .btn-action {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
+.auth-continue .btn-action {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: center;
+  text-align: center;
+  padding: 0.75rem 1rem;
+}
+.auth-continue .btn-action .btn-hint {
+  font-weight: 400;
 }
 /* prolog + původ - kompaktnější (ne obří) */
 .landing-frame.narrow.origin-frame,
@@ -459,15 +544,6 @@ body.has-dev .game-frame {
 #auth-signin {
   display: grid;
   gap: var(--space-3);
-}
-.auth-continue {
-  display: grid;
-  gap: 0.3rem;
-  margin-bottom: var(--space-3);
-}
-.auth-continue .tip {
-  text-align: center;
-  font-size: 0.78rem;
 }
 /* secondary pod primary - viditelná mezera před alt */
 .auth-alt {
@@ -551,10 +627,8 @@ body.has-dev .game-frame {
   padding: 0.85rem 0.9rem;
   display: grid;
   gap: var(--space-3);
-  backdrop-filter: blur(10px);
-}
-.landing-auth-only .auth-card {
-  background: rgba(18, 12, 10, 0.94);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
 }
 .landing-left,
 .chronicles {
@@ -707,7 +781,7 @@ input, select {
 .gender-legend {
   width: 100%;
   margin: 0 0 0.35rem;
-  text-align: center;
+  text-align: left;
   font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -783,16 +857,20 @@ input, select {
   padding: 0.65rem 0.75rem;
   background: rgba(0,0,0,0.35);
 }
-/* beat / prolog / chrome sub - jedna typografie */
+/* narrativní beat: prolog = ráno/poledne (vlevo, stejné písmo; kurzíva jen u gest) */
 .prose-beat,
 .origin-text {
   margin: 0;
-  font-style: italic;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--muted);
-  text-align: center;
+  font-style: normal;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--fg);
+  text-align: left;
   text-wrap: pretty;
+}
+.origin-reply {
+  font-style: italic;
+  color: var(--muted);
 }
 .choice-stack .choice { letter-spacing: 0.02em; }
 .origin-body { display: grid; gap: 0.6rem; }
@@ -804,7 +882,7 @@ input, select {
 .confirm-summary .origin-acc { margin-bottom: 0.35rem; }
 .confirm-summary .origin-acc > summary { pointer-events: none; }
 .confirm-summary .origin-acc > summary::before { display: none; }
-#prolog-again[hidden], .bonus-label[hidden] { display: none; }
+.bonus-label[hidden] { display: none; }
 .choice-act { font-style: italic; font-weight: 400; color: var(--muted); }
 .fade-top { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem); mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem); }
 .fade-bottom { -webkit-mask-image: linear-gradient(to top, transparent 0, #000 1.6rem); mask-image: linear-gradient(to top, transparent 0, #000 1.6rem); }
@@ -1250,11 +1328,13 @@ input, select {
   font-size: 1.15rem;
   line-height: 1;
 }
+/* jednotný sheet/chrome label: Prolog · Postava · Ráno · Poledne */
 .progress-label {
   font-size: 0.68rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);
+  text-align: center;
 }
 .progress-arrow-spacer {
   display: block;
@@ -1594,6 +1674,14 @@ abbr.kodex:focus-visible::after {
   min-height: 0;
 }
 .origin-name { flex: 0 0 auto; }
+/* wrap: jen spodní fade (absolutní overlay by překryl sticky – isolation na scrollu) */
+.origin-scroll-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .origin-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -1603,6 +1691,23 @@ abbr.kodex:focus-visible::after {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-right: 0.15rem;
+  isolation: isolate; /* sticky summary nad průhledným scrollem */
+}
+/* jen dole; nahoře sticky Kraj/Živnost musí zůstat celé viditelné */
+.origin-edge-fade {
+  position: absolute;
+  left: 0;
+  right: 0.15rem;
+  height: 1.6rem;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.origin-edge-fade.is-on { opacity: 1; }
+.origin-edge-fade.bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--panel-solid) 20%, transparent);
 }
 .origin-col,
 .origin-acc {
@@ -1620,6 +1725,14 @@ abbr.kodex:focus-visible::after {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  /* při scrollu Postavy zůstanou kraj / živnost / původ vidět */
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--panel-solid);
+  box-shadow: 0 1px 0 rgba(185, 168, 148, 0.25);
+  padding: 0.4rem 0.15rem;
+  margin: 0;
 }
 .origin-acc > summary::-webkit-details-marker { display: none; }
 .origin-acc > summary::before {
@@ -1681,6 +1794,16 @@ abbr.kodex:focus-visible::after {
 .origin-cta .btn-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+/* krok zpět k prologu: u chrome nahoře, ne vedle hlavního CTA */
+.chrome-alt-back {
+  margin: 0.25rem 0 0;
+  display: flex;
+  justify-content: center;
+}
+.chrome-alt-back .btn-ghost {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
 }
 .gear-strip {
   display: flex;
@@ -2790,6 +2913,14 @@ button,
   justify-content: flex-end;
   gap: 0.5rem;
 }
+.loot-actions.is-solo {
+  display: grid;
+  justify-items: stretch;
+}
+.loot-actions.is-solo .btn {
+  width: 100%;
+  box-sizing: border-box;
+}
 .inv-grid-flat {
   grid-template-columns: repeat(auto-fill, minmax(3.25rem, 1fr));
 }
@@ -3272,21 +3403,51 @@ button,
 .map-ico.corner { position: absolute; right: 1px; top: 0; font-size: 0.7rem; }
 .map-notes { margin: 0.4rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
 
-/* zalamování: žádná osiřelá slova, centrované věty vyvážené */
-.origin-text, .prose-beat, .landing-tagline, .chrome-sub, .landing-quote blockquote { text-wrap: balance; }
-.blurb-box, .btn-hint, .choice strong, .tip, .faq-item p, .auth-card p { text-wrap: pretty; }
-.landing-quote { margin: 0 auto; display: grid; gap: 0.25rem; width: fit-content; max-width: 100%; }
-.landing-quote blockquote { margin: 0; text-align: center; font-size: 1.05rem; line-height: 1.4; color: var(--fg); }
-.landing-quote figcaption { text-align: right; font-style: italic; font-size: 0.8rem; color: var(--muted); }
-.confirm-sheet { width: min(24rem, 100%); gap: 0.75rem; padding: 1rem; }
+/* krátké centrované = balance; odstavce prose = pretty */
+.landing-tagline, .chrome-sub, .landing-quote blockquote { text-wrap: balance; }
+.blurb-box, .btn-hint, .choice strong, .tip, .faq-item p, .auth-card p,
+.prose-beat, .origin-text, .morning-demo-note { text-wrap: pretty; }
+.confirm-sheet { width: min(24rem, 100%); gap: 0.75rem; padding: 1rem; box-sizing: border-box; }
 .confirm-sheet p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--muted); }
 .confirm-sheet strong:first-child { color: var(--accent); }
+/* Ráno/Poledne: sheet širší; label přes screenChrome (= Prolog/Postava); tělo vlevo */
+.loot-overlay[data-morning] .morning-sheet {
+  width: min(28rem, calc(100vw - 2rem));
+  display: grid;
+  justify-items: stretch;
+  gap: 0.75rem;
+}
+.loot-overlay[data-morning] .screen-chrome {
+  justify-self: stretch;
+}
+.loot-overlay[data-morning] .morning-body {
+  display: grid;
+  gap: 0.55rem;
+}
+.loot-overlay[data-morning] .morning-body .prose-beat strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.loot-overlay[data-morning] .morning-demo-note {
+  margin: 0;
+  text-align: left;
+  text-wrap: pretty;
+  font-size: 0.85rem;
+}
+.loot-overlay[data-morning] .morning-cta {
+  display: block;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  text-align: center;
+}
 /* desktop: Postava je širší, staty vpravo stojí vedle sekcí; prolog zůstává úzký (čte se) */
 @media (min-width: 880px) {
   .landing-frame.narrow.origin-frame { max-width: min(46rem, 100%); }
   .origin-scroll { flex-direction: row; align-items: flex-start; gap: var(--stack); }
   .origin-cols { flex: 1 1 auto; min-width: 0; }
-  .origin-scroll > .stats-preview { flex: 0 0 13rem; position: sticky; top: 0; }
+  .origin-scroll > .stats-preview { flex: 0 0 13rem; position: sticky; top: 0; z-index: 5; }
 }
 .origin-cols { display: flex; flex-direction: column; gap: var(--space-2); }
 
