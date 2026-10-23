@@ -3,7 +3,7 @@ const { createRng } = require("./rng.js");
 const { createCombat, resolveTurn, availableActions } = require("./systems/combat.js");
 const { ENEMIES } = require("./data/enemies.js");
 
-/* Start postavy Lv1 Zdejší + startovní výbava (viz statsNow v app.js). */
+/* Start postavy Lv1 Machalští + startovní výbava (viz statsNow v app.js). */
 const PLAYERS = {
   mercenary: { classId: "mercenary", hpMax: 58, resMax: 14, atk: 13, def: 10, dex: 5, int: 4 },
   tracker: { classId: "tracker", hpMax: 54, resMax: 12, atk: 10, def: 9, dex: 9, int: 5 },

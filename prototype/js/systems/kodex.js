@@ -32,11 +32,11 @@
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  /** Seznam { id, form, re } pro neviděná hesla; delší formy dřív. */
-  function buildMatchers(seenSet, entries) {
+  /** Seznam { id, form, re }; `skip` = id už obalená v tomto průchodu. Delší formy dřív. */
+  function buildMatchers(skip, entries) {
     const list = [];
     for (const e of entries) {
-      if (seenSet && seenSet.has(e.id)) continue;
+      if (skip && skip.has(e.id)) continue;
       for (const form of e.forms) {
         if (!form) continue;
         list.push({
@@ -113,24 +113,36 @@
     return best;
   }
 
+  /** Id už přítomná jako data-kodex v HTML (ať se při druhém annotate neobalí znovu). */
+  function idsInHtml(html) {
+    const ids = new Set();
+    const re = /data-kodex="([^"]+)"/g;
+    let m;
+    while ((m = re.exec(html))) ids.add(m[1]);
+    return ids;
+  }
+
   /**
-   * Obalí první výskyt každého ještě neviděného hesla (jednou za heslo).
-   * Nově obalená id přidá do seenSet.
+   * Obalí první výskyt každého hesla v tomto HTML (jednou za id).
+   * Globální `seenSet` se plní, ale **neblokuje** obalení čistého textu
+   * (návrat na krok prologu znovu ukáže tečky). Už obalená id v HTML se přeskočí.
    */
   function annotate(html, seenSet, opts = {}) {
     if (!enabled(opts.prefs)) return html;
     if (typeof html !== "string" || !html) return html || "";
     const entries = opts.entries || KODEX;
     const set = seenSet || new Set();
+    const here = idsInHtml(html); /* už v HTML + nově v tomto průchodu */
     let out = html;
 
     for (;;) {
-      const open = buildMatchers(set, entries);
+      const open = buildMatchers(here, entries);
       if (!open.length) break;
       const hit = findFirst(out, open);
       if (!hit) break;
       const wrap = `<abbr class="kodex" data-kodex="${escAttr(hit.id)}">${hit.text}</abbr>`;
       out = out.slice(0, hit.start) + wrap + out.slice(hit.end);
+      markSeen(here, hit.id);
       markSeen(set, hit.id);
     }
     return out;

@@ -1,6 +1,7 @@
 /*
  * Původ: startovní patch postavy. Čisté - bez DOMu, bez Math.random.
  * apply(state, originId) vrátí patch (gold, bank, bag, standing, travel, start, intro, hearClaim…).
+ * startKit(picks) = výbava a batoh z voleb prologu (živnost, reakce na zvon, původ).
  * null / neznámý id = žádné efekty (staré uložené hry).
  */
 (function (root, factory) {
@@ -10,6 +11,7 @@
   else root.LOM = Object.assign(root.LOM || {}, { Origin: api });
 })(typeof globalThis !== "undefined" ? globalThis : this, function (ORIGINS) {
   const clampStanding = (n) => Math.max(-2, Math.min(2, n | 0));
+  const EQUIP_SLOTS = ["weapon", "shield", "head", "shoulders", "body", "hands", "wrists", "legs", "feet", "neck", "trinket"];
 
   function cleanStanding(raw) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -29,6 +31,65 @@
     return next;
   }
 
+  function emptyEquipped() {
+    return Object.fromEntries(EQUIP_SLOTS.map((k) => [k, null]));
+  }
+
+  /**
+   * Výchozí gear z prologu: co hráč zmíní / udělá, to má u sebe.
+   * @param {{ classId?: string|null, originId?: string|null, react?: string|null, hasClass?: boolean }} opts
+   * @returns {{ equipped: object, bagAdd: string[] }}
+   */
+  function startKit(opts = {}) {
+    const classId = opts.classId || null;
+    const originId = opts.originId || null;
+    const react = opts.react || null;
+    const hasClass = opts.hasClass !== false && !!classId;
+    const equipped = emptyEquipped();
+    const bagAdd = [];
+
+    equipped.body = "tunic";
+    if (!hasClass) {
+      equipped.weapon = "stick";
+    } else if (classId === "tracker") {
+      equipped.weapon = "axe";
+      bagAdd.push("ration");
+    } else if (classId === "mercenary") {
+      equipped.weapon = "wood_sword";
+      equipped.wrists = "bracers";
+    } else if (classId === "chanter") {
+      equipped.weapon = "stick";
+      bagAdd.push("herbs");
+      bagAdd.push("potion");
+    } else if (classId === "legist") {
+      equipped.weapon = "stick";
+      bagAdd.push("quill");
+      bagAdd.push("ration");
+    } else {
+      equipped.weapon = "stick";
+    }
+
+    if (react === "ward") equipped.neck = "amulet";
+    if (react === "fight") equipped.feet = "boots";
+    if (react === "hide") bagAdd.push("ration");
+
+    if (originId === "apprentice") equipped.hands = "gloves";
+    if (originId === "exile") equipped.shoulders = "cloak";
+    if (originId === "wayfarer") {
+      if (!equipped.feet) equipped.feet = "boots";
+      equipped.shoulders = equipped.shoulders || "cloak";
+      bagAdd.push("ration");
+    }
+    if (originId === "watchman") {
+      equipped.head = "cap";
+      equipped.shield = "buckler";
+    }
+    if (originId === "native") bagAdd.push("ration");
+    if (originId === "debtor") bagAdd.push("daisy");
+
+    return { equipped, bagAdd };
+  }
+
   /**
    * @returns {{ origin, standing, gold?, bank?, bag?, travel?, start?, intro?, hearClaim?, effectsLine? }}
    */
@@ -38,7 +99,9 @@
       return { origin: null, standing: cleanStanding(state && state.standing) };
     }
     const standing = cleanStanding(o.standing);
-    const bag = putInBag((state && state.bag) || [], o.item);
+    /* věc z dat původu do batohu jen když není zároveň ve výbavě (startKit) */
+    let bag = (state && state.bag) || [];
+    if (o.item) bag = putInBag(bag, o.item);
     const energyMax = ((state && state.travel && state.travel.energyMax) || 14) + (o.energyBonus || 0);
     const energy = Math.min(energyMax, (state && state.travel && state.travel.energy) || energyMax);
     return {
@@ -76,5 +139,5 @@
     return fallback || [];
   }
 
-  return { apply, def, cleanStanding, effectsText, greetPool, ORIGINS };
+  return { apply, startKit, def, cleanStanding, effectsText, greetPool, ORIGINS };
 });

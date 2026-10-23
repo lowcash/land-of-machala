@@ -69,6 +69,33 @@ test("učeň platí u kováře méně; dlužník má poplatek v bance", () => {
   assert.equal(K.bankFee(null, way.standing), 0);
 });
 
+test("startKit: gear z živnosti, reakce a původu", () => {
+  const axe = Origin.startKit({ classId: "tracker", originId: "exile", react: "ward", hasClass: true });
+  assert.equal(axe.equipped.weapon, "axe");
+  assert.equal(axe.equipped.neck, "amulet");
+  assert.equal(axe.equipped.shoulders, "cloak");
+  assert.equal(axe.equipped.body, "tunic");
+  const herbs = Origin.startKit({ classId: "chanter", originId: "native", react: "hide", hasClass: true });
+  assert.ok(herbs.bagAdd.includes("herbs"));
+  assert.ok(herbs.bagAdd.includes("potion"));
+  assert.ok(herbs.bagAdd.includes("ration"));
+  assert.equal(herbs.equipped.neck, null);
+  const out = Origin.startKit({ classId: "mercenary", originId: "wayfarer", react: "fight", hasClass: true });
+  assert.equal(out.equipped.weapon, "wood_sword");
+  assert.equal(out.equipped.wrists, "bracers");
+  assert.equal(out.equipped.feet, "boots");
+  const none = Origin.startKit({ classId: null, originId: "debtor", react: null, hasClass: false });
+  assert.equal(none.equipped.weapon, "stick");
+  assert.equal(none.equipped.hands, null);
+  assert.ok(none.bagAdd.includes("daisy"));
+  const app = Origin.startKit({ classId: "legist", originId: "apprentice", react: null, hasClass: true });
+  assert.equal(app.equipped.hands, "gloves");
+  assert.ok(app.bagAdd.includes("quill"));
+  const watch = Origin.startKit({ classId: "mercenary", originId: "watchman", react: null, hasClass: true });
+  assert.equal(watch.equipped.head, "cap");
+  assert.equal(watch.equipped.shield, "buckler");
+});
+
 test("greetPool: původ jen při visits===0, jinak fallback", () => {
   const fb = ["běžný"];
   const first = Origin.greetPool("smith", "apprentice", 0, fb);

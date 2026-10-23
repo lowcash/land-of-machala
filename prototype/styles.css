@@ -690,6 +690,14 @@ input, select {
 }
 .name-row { display: flex; gap: 0.35rem; align-items: stretch; }
 .name-row input { flex: 1; }
+.gender-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  border: 0;
+}
 .dice-btn {
   flex: 0 0 auto;
   min-width: 2.75rem;
@@ -1379,10 +1387,25 @@ input, select {
   border-radius: var(--radius);
 }
 abbr.kodex {
+  position: relative;
   text-decoration: underline dotted;
   text-decoration-color: rgba(212, 168, 83, 0.7);
   text-underline-offset: 0.2em;
   cursor: help;
+}
+/* ? mimo tok textu (nesmí posunout řádek); vysvětlení je ve #float-tip */
+abbr.kodex:hover::after,
+abbr.kodex:focus-visible::after {
+  content: "?";
+  position: absolute;
+  left: calc(100% + 0.12em);
+  top: -0.2em;
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent, #d4a853);
+  opacity: 0.95;
+  pointer-events: none;
 }
 .float-tip.show { display: block; }
 .float-tip.below { transform: translate(-50%, 0.35rem); }

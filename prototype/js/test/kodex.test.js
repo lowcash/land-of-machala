@@ -4,7 +4,7 @@ const { KODEX } = require("../data/kodex.js");
 const { annotate, markSeen, enabled } = require("../systems/kodex.js");
 
 test("kodex: ~40 hesel s povinnými poli", () => {
-  assert.ok(KODEX.length >= 35 && KODEX.length <= 50, `počet ${KODEX.length}`);
+  assert.ok(KODEX.length >= 35 && KODEX.length <= 55, `počet ${KODEX.length}`);
   const ids = new Set();
   for (const e of KODEX) {
     assert.ok(e.id && e.term && e.short && Array.isArray(e.forms) && e.forms.length);
@@ -23,6 +23,13 @@ test("kodex: první výskyt jen jednou, druhé stejné heslo neobalí", () => {
   assert.ok(seen.has("hvozd"));
   const twice = annotate(once, seen);
   assert.equal(twice, once);
+});
+
+test("kodex: návrat na text znovu obalí i už viděné heslo", () => {
+  const seen = new Set(["hvozd"]);
+  const out = annotate("Ve hvozdu je tma.", seen);
+  assert.match(out, /data-kodex="hvozd"/);
+  assert.equal(seen.size, 1);
 });
 
 test("kodex: skloňování najde tvar z forms", () => {
@@ -75,4 +82,11 @@ test("kodex: markSeen je idempotentní", () => {
   markSeen(set, "myto");
   markSeen(set, "myto");
   assert.equal(set.size, 1);
+});
+
+test("kodex: dobová hesla z prologu (korbel, na sekeru)", () => {
+  const seen = new Set();
+  const out = annotate("Svatava postaví korbel. Na sekeru píšu jen známým.", seen);
+  assert.match(out, /data-kodex="korbel"/);
+  assert.match(out, /data-kodex="na-sekeru"/);
 });

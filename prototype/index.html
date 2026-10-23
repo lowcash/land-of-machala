@@ -98,10 +98,15 @@
           <div class="origin-name">
             <label>Jméno hrdiny
               <span class="name-row">
-                <input id="input-name" type="text" maxlength="20" placeholder="Zadej jméno…" />
+                <input id="input-name" type="text" maxlength="20" placeholder="Jedno jméno…" autocomplete="off" spellcheck="false" />
                 <button type="button" class="dice-btn has-tip" data-act="dice-name" data-tip="Náhodné jméno" aria-label="Náhodné jméno" title="Náhodné jméno">🎲</button>
               </span>
             </label>
+            <fieldset class="gender-row" id="gender-row">
+              <legend class="sr-only">Pohlaví</legend>
+              <label class="check"><input type="radio" name="gender" value="m" data-act="pick-gender" checked /> Chlap</label>
+              <label class="check"><input type="radio" name="gender" value="f" data-act="pick-gender" /> Žena</label>
+            </fieldset>
           </div>
           <div class="origin-scroll">
           <div class="origin-cols">

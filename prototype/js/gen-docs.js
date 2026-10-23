@@ -172,16 +172,14 @@ blocks.scenes = md(
   ["skupina", "id", "název", "co zkusit"],
   [...SCENARIOS].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group)).map((sc) => [`${GROUPS.indexOf(sc.group) + 1} ${sc.group}`, `\`${sc.id}\``, cell(sc.label), cell(sc.note)])
 );
-/* doporučená trasa prohlídky: celá smyčka start → boj → kauza → úschovna */
+/* doporučená trasa: jen pracovní sada Prolog */
 const TOUR = [
-  ["town-start", "start: město, služby, mapa"],
-  ["healer-hurt", "léčení, zlato"],
-  ["fight-wolf", "boj: záměr, akce, zdroj"],
-  ["zvon-tavern", "kauza: první fáma"],
-  ["zvon-forge", "kauza: hutě a zvon"],
-  ["zvon-verdict", "kauza: verdikt a důvěra"],
-  ["bag-shovel", "odložit a zakopat věc"],
-  ["bag-full-stash", "plný batoh a úschovna"],
+  ["start-landing", "landing (private only)"],
+  ["start-origins", "prolog choices"],
+  ["start-confirm", "character summary + name"],
+  ["start-morning", "morning beat (= public demo end)"],
+  ["origin-apprentice", "morning: apprentice at Karel"],
+  ["origin-exile", "morning: exile"],
 ];
 blocks.tour = md(
   ["#", "scéna", "proč"],
@@ -315,9 +313,105 @@ function fill(file) {
   console.log("aktualizováno:", f);
 }
 
+/* Výpis herních textů ke kontrole tónu (soukromé: docs/story/, mimo ALLOW exportu). */
+function writeTexty() {
+  const { ORIGINS } = require("./data/origins.js");
+  const { KODEX } = require("./data/kodex.js");
+  const appSrc = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const stepMatch = appSrc.match(/const ORIGIN_STEPS = (\[[\s\S]*?\n\]);/);
+  let prolog = "_Nelze vyčíst ORIGIN_STEPS z app.js._\n";
+  if (stepMatch) {
+    try {
+      // eslint-disable-next-line no-new-func
+      const steps = Function(`"use strict"; return (${stepMatch[1]});`)();
+      prolog = steps
+        .map((s, i) => {
+          const lines = [`### Krok ${i + 1} (\`${s.pick}\`)`, "", s.text || ""];
+          if (s.lead) {
+            lines.push("", "**Lead podle živnosti:**");
+            for (const [k, v] of Object.entries(s.lead)) lines.push(`- \`${k}\`: ${v}`);
+          }
+          lines.push("", "**Volby:**");
+          for (const c of s.choices || []) {
+            const bits = [c.say && `„${c.say}“`, c.act && `*${c.act}*`, c.hint && `(${c.hint})`].filter(Boolean);
+            lines.push(`- ${bits.join(" ")}`);
+          }
+          return lines.join("\n");
+        })
+        .join("\n\n");
+    } catch (e) {
+      prolog = `_Chyba parsování ORIGIN_STEPS: ${e.message}_\n`;
+    }
+  }
+  const originsBlock = Object.entries(ORIGINS)
+    .map(([id, o]) => {
+      const greets = o.greet
+        ? Object.entries(o.greet)
+            .map(([place, lines]) => `- **${place}:** ${(Array.isArray(lines) ? lines : [lines]).map((x) => `„${x}“`).join(" / ")}`)
+            .join("\n")
+        : "_bez greet_";
+      return `### \`${id}\` ${o.label || ""}\n\n${o.intro || ""}\n\n${greets}`;
+    })
+    .join("\n\n");
+  const kodexBlock = KODEX.map((e) => `- **${e.term}** (\`${e.id}\`): ${e.short}`).join("\n");
+  const out = `# Herní texty (výpis)
+
+Generováno z dat a prologu (\`node prototype/js/gen-docs.js\`). **Soukromé.** Ve hře žádné em-dash \`—\`.
+Pokročilá hesla: [slovnik.md](slovnik.md) (stejný zdroj: \`js/data/kodex.js\`).
+
+## Prolog
+
+${prolog}
+
+## Původy (intro + greet)
+
+${originsBlock}
+
+## Kodex (hesla)
+
+${kodexBlock}
+`;
+  const dest = path.join(__dirname, "../../docs/story/texty.md");
+  fs.writeFileSync(dest, out);
+  console.log("aktualizováno:", dest);
+}
+
+/** Seznam pokročilých slov = Kodex (zdroj pravdy). Snadná kontrola významu. */
+function writeSlovnik() {
+  const { KODEX } = require("./data/kodex.js");
+  const byKind = {};
+  for (const e of KODEX) {
+    const k = e.kind || "other";
+    (byKind[k] || (byKind[k] = [])).push(e);
+  }
+  const sections = Object.keys(byKind)
+    .sort()
+    .map((k) => {
+      const rows = byKind[k]
+        .sort((a, b) => a.term.localeCompare(b.term, "cs"))
+        .map((e) => `| ${e.term} | \`${e.id}\` | ${e.short.replace(/\|/g, "\\|")} |`)
+        .join("\n");
+      return `## ${k}\n\n| slovo | id | význam |\n|---|---|---|\n${rows}`;
+    })
+    .join("\n\n");
+  const out = `# Slovník (Kodex)
+
+Generováno z \`prototype/js/data/kodex.js\` (\`node prototype/js/gen-docs.js\`). **Soukromé.**
+Jen význam slova (ne děj). Běžná slova (sud, kaple, pivo) sem nepatří.
+Celé herní texty: [texty.md](texty.md).
+
+${sections}
+`;
+  const dest = path.join(__dirname, "../../docs/story/slovnik.md");
+  fs.writeFileSync(dest, out);
+  console.log("aktualizováno:", dest);
+}
+
 function main() {
   ["combat.md", "characters.md", "items.md", "world.md", "quests.md", "kauza.md", "storybook.md", "map.md", "../STATUS.md"].forEach(fill);
   fill(path.join(IDEAS_DIR, "README.md"));
+  writeTexty();
+  writeSlovnik();
 }
 
 if (require.main === module) main();

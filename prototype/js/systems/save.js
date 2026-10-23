@@ -22,6 +22,8 @@
   const FIELDS = {
     /* postava a postup */
     name: "jméno hráče",
+    gender: "m | f (oslovení, kostka jmen)",
+    literacy: "0–2 čtení (písař start 2)",
     picks: "povolání, rasa a původ",
     guest: "host vs. účet (maketa)",
     originReached: "jak daleko v prologu",
@@ -78,6 +80,8 @@
   /** Výchozí hodnoty chybějících polí po načtení (doplní se, nic se nevyhodí). */
   const DEFAULTS = {
     name: "",
+    gender: "m",
+    literacy: 0,
     picks: { class: "mercenary", race: "local", origin: null },
     guest: false,
     originReached: 0,

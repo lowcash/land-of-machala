@@ -1,23 +1,27 @@
-/** Česká jména (prototyp). Fantasy skládání = v1 NAME_PREFIX+SUFFIX. */
-const NAMES_CS = [
-  "Břetislav", "Milada", "Bořivoj", "Dobromila", "Květoslav",
-  "Vlasta", "Radovan", "Zdislava", "Ctibor", "Lumír",
-  "Oldřich", "Božena", "Václav", "Libuše", "Jaromír", "Drahomíra",
-];
-const NAME_PREFIXES = ["Eldar", "Thorn", "Grom", "Aria", "Kael", "Luna", "Brak", "Morg", "Fay", "Zorn"];
-const NAME_SUFFIXES = ["ion", "ia", "osh", "is", "en", "os", "ar", "eth", "um", "ax"];
-
-/** Jméno hráče jde do innerHTML: escapovat při renderu (a čistit při vstupu). */
+/** Jméno hráče: jen jedno slovo (bez mezer / přízvisek); do HTML escapovat. */
 function escapeHtml(v) {
   return String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
+/** Kostka: fondy staročeská / německá / polská / církevní; jen křestní (bez „od dolů“ apod.). */
 function randomName() {
-  if (Math.random() < 0.65) return NAMES_CS[Math.floor(Math.random() * NAMES_CS.length)];
-  return (
-    NAME_PREFIXES[Math.floor(Math.random() * NAME_PREFIXES.length)] +
-    NAME_SUFFIXES[Math.floor(Math.random() * NAME_SUFFIXES.length)]
-  );
+  const rng = LOM.createRng((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
+  const pool = rng.weighted({ staroceska: 55, nemecka: 18, polska: 12, cirkevni: 15 });
+  const gender = state.gender === "f" || state.gender === "m" ? state.gender : rng.chance(0.55) ? "m" : "f";
+  return LOM.Names.makeName(rng, { pool, gender, withNick: false }).first;
+}
+
+/** Vstup jména: bez mezer a interpunkce (přízviska později z mechanik, ne z pole). */
+function sanitizeHeroName(raw) {
+  return String(raw || "")
+    .replace(/[<>&"']/g, "")
+    .replace(/\s+/g, "")
+    .slice(0, 20);
+}
+
+/** Soft seed: písař čte plynně; ostatní zatím 0 (učení později). */
+function literacyFromPicks() {
+  return pickedClass() === "legist" ? 2 : 0;
 }
 
 /* PILGRIM / BASE / RACE_MOD / CLASS_INFO / RACE_INFO: js/data/characters.js */
@@ -30,11 +34,11 @@ const classLabelNow = () => CLASS_LABEL[pickedClass()] || "Povaleč";
 
 const STAT_META = [
   { key: "hp", icon: "♥", label: "HP", title: "Život: když dojde na 0, padáš." },
-  { key: "res", icon: "✦", label: "Res", title: "Energie nebo mana podle povolání." },
+  { key: "res", icon: "✦", label: "Res", title: "Zdroj v boji (energie; u bylinkáře mana). Mimo boj výdrž na cestu." },
   { key: "str", icon: "⚔", label: "STR", title: "Síla: fyzické poškození." },
   { key: "dex", icon: "◎", label: "DEX", title: "Obratnost: zásah a útěk." },
   { key: "vit", icon: "⬡", label: "VIT", title: "Vitalita: max HP a odolnost." },
-  { key: "int", icon: "✧", label: "INT", title: "Intelekt: mana a magie." },
+  { key: "int", icon: "✧", label: "INT", title: "Intelekt: čtení záměru a jistota fám (ne kouzla)." },
   { key: "atk", icon: "⚔", label: "ATK", title: "Útok: poškození zbraní a síly." },
   { key: "def", icon: "⬡", label: "DEF", title: "Obrana: snižuje přijaté poškození." },
   { key: "gold", icon: "🪙", label: "Zlato", title: "Měšec: zlato u sebe (banka je jinde)." },
@@ -183,51 +187,53 @@ function itemTileHtml(item, opts = {}) {
 const ORIGIN_STEPS = [
   {
     pick: "class",
-    text: "Jsi v krčmě. Dusno od kouře, cítit je pečená cibule a zatuchlina ze starých sudů. V rohu na stole chrápe pijan. Ve vsi se proslýchá, že z kaple zmizel zvon.\nSvatava před tebe postaví korbel: „Platíš hned, nebo jako Karel na sekeru? Dluh píšu jen tomu, kdo něco umí.“",
+    text: "Jsi v krčmě. Dusno od kouře, je cítit pečená cibule a zatuchlina ze starých sudů. Na stole v rohu chrápe pijan a jinak je tu prázdno. Ve vsi se proslýchá, že z kaple zmizel zvon.\nSvatava před tebe postaví korbel: „Platíš hned? Na sekeru mám Karla z kovárny. Čím se živíš?“",
     /* volba: say = řeč (v uvozovkách), act = gesto (kurzíva), actAfter = gesto až po řeči; použij jen to, co k volbě přirozeně patří */
     choices: [
       { say: "Dělám, co se komu hodí. Platí to líp než pole.", act: "Pokrčíš rameny, ruka na pásu.", hint: "pacholek", class: "mercenary" },
-      { say: "Kácím a chodím po lesích. Víc se neptej.", hint: "dřevorubec", class: "tracker" },
+      { say: "Kácím a chodím po lesích. Mně to stačí.", hint: "dřevorubec", class: "tracker" },
       { act: "Vytáhneš ze záňadří svazek sušených bylin a položíš ho na pult.", hint: "bylinkář", class: "chanter" },
-      { say: "Umím psát a číst. Smlouvy čtu i drobným písmem.", hint: "písař", class: "legist" },
+      { say: "Umím číst a psát. Smlouvy čtu i drobným písmem.", hint: "písař", class: "legist" },
       { say: "Já si nic neobjednal.", cheek: true },
     ],
   },
   {
     pick: "race",
     lead: {
-      mercenary: "„Co se komu hodí, to znám. Hlavně ať se ti hodí zaplatit.“ Opřeš se o lavici tak, aby bylo vidět na dveře.",
-      tracker: "„Dřevo se vždycky hodí.“ Ze zvyku pootočíš hlavu ke dveřím.",
-      chanter: "„Bylinky? Svoje neduhy si léčím pivem.“ Chvíli mlčíš a posloucháš, jak v rohu chrápe pijan.",
-      legist: "„Smlouvy mi nevnucuj. Počítat umím líp než kdejaký písař.“ Díváš se, jak Svatava bez zaváhání sčítá zářezy na trámu u pultu.",
+      mercenary: "„Hlavně ať se ti hodí zaplatit.“ Opřeš se o lavici tak, aby bylo vidět na dveře.",
+      tracker: "Svatava jen přikývne a utře pult. Ze zvyku pootočíš hlavu ke dveřím.",
+      chanter: "„K pivku se to hodí,“ usměje se Svatava. „Nech to tu.“ Chvíli mlčíš a posloucháš, jak na stole v rohu chrápe pijan.",
+      legist: "Svatava sčítá zářezy na trámu u pultu. Díváš se a nic neříkáš.",
       none: "„Neobjednal,“ zopakuje Svatava. Zvedne korbel a vypije ho do dna, postaví ho prázdný na pult a vůbec ji to nerozhodí.",
     },
-    text: "Pijan zvedne hlavu ze stolu a dívá se kamsi vedle tebe.\n„Kdo to tam stojí? Odkud seš a co se u vás pije?“",
+    text: "Pijan zvedne hlavu ze stolu a dívá se kamsi vedle tebe.\n„Hej, kdo tam? Odkud seš, co se u vás pije?“",
     choices: [
-      { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "ves a pole", race: "local", bridge: "„Pivo? To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
-      { say: "Slanou polévku po šichtě.", hint: "solný důl", race: "saltfolk", bridge: "„Z dolů. To je pak žízeň,“ zakašle pijan." },
-      { say: "Kvas z bahenních plodů.", hint: "slatě", race: "woodfolk", bridge: "„Ze slatí? Tam prý stezky… chodí, kam se jim zachce. Jako já,“ řekne pijan." },
-      { say: "Víno a pečeného kapra na břehu.", hint: "brod", race: "riverfolk", bridge: "„Od vody. Tam prý chlap chytí rybu dřív, než si sundá boty,“ řekne pijan." },
-      { say: "Mléko z paseky, ještě teplé.", hint: "paseka", race: "hillfolk", bridge: "„Z pasek. Tam prý ovce ví o zimě dřív než pastýř,“ řekne pijan." },
+      /* znak kraje (pití/jídlo doma) — bez vysvětlení místa; hráč si znaky spojí sám */
+      { say: "Tmavé pivo, chleba s kmínem a cibuli k tomu.", hint: "Machalští", race: "local", bridge: "„To znám,“ řekne pijan a spokojeně si ťukne do korbelu." },
+      { say: "Slanou polévku po šichtě.", hint: "Solníci", race: "saltfolk", bridge: "„Z dolů. To je pak žízeň,“ zakašle pijan." },
+      { say: "Kyselý kvas.", hint: "Slatiňané", race: "woodfolk", bridge: "„Kvas. To je ze slatí, ne?“ řekne pijan. „Tam prý stezky chodí, kam se jim zachce. Jako já.“" },
+      { say: "Víno a pečeného kapra.", hint: "Brodáci", race: "riverfolk", bridge: "„Od vody. Tam prý chlap chytí rybu dřív, než si sundá boty,“ řekne pijan." },
+      { say: "Mléko, ještě teplé.", hint: "Pasečané", race: "hillfolk", bridge: "„Mléko. Tam prý ovce ví o zimě dřív než pastýř,“ řekne pijan." },
     ],
   },
   {
     pick: "react",
-    text: "Svatava mezitím odešla do sklepa pro další sud. Chvíli se nic neděje, pak přijde tupá rána. „Čert to vem, herdek, vždyť jsem to tu měla sotva tři dni!“\n„Co zas je,“ řekne pijan a opře si hlavu o stůl. Pak se od kaple ozve zvon, jednou. Což je divné, protože žádný tam není. Co uděláš?",
+    text: "Svatava mezitím odešla do sklepa pro další sud. Chvíli se nic neděje, pak přijde tupá rána. „Čert to vem, herdek, vždyť jsem to tu měla sotva tři dni!“\n„Co zas?“ řekne pijan a opře si hlavu o stůl. Pak se od kaple ozve zvon, jednou. Což je divné, protože žádný tam není. Co uděláš?",
     choices: [
-      { say: "Vždyť v kapli žádný zvon není.", act: "Překvapeně vstaneš a vyjdeš ven.", react: "fight", bridge: "Venku mokrá tma a od kaple ticho, jako by tam zvon nikdy nevisel. Vrátíš se dovnitř s prázdnou." },
+      { say: "Vždyť v kapli žádný zvon není.", act: "Překvapeně vstaneš a vyjdeš ven.", react: "fight", bridge: "Venku mokrá tma a od kaple ticho, jako by tam zvon nikdy nevisel. Vrátíš se dovnitř s prázdnou. Boty máš od bláta." },
       { act: "Neuděláš nic. Počkáš, jestli se to ozve znovu.", react: "hide", bridge: "Chvíli čekáš. Zvon se už neozve." },
-      { say: "Zvon, který tu není, nevěstí nic dobrého.", act: "Sevřeš amulet pod košilí.", react: "ward", bridge: "Amulet je studený a nic se neděje, což tě uklidní míň, než čekáš." },
+      { act: "Sevřeš dřevěný křížek pod košilí.", react: "ward", bridge: "Nic se nestane, a to tě uklidní míň, než čekáš." },
     ],
   },
   {
     pick: "origin",
-    text: "Pijan zvedne hlavu ze stolu a podívá se na tebe, jako by tě viděl poprvé.\n„Jak ses sem vlastně dostal? Sem se chodí hlavně kvůli pivu.“",
+    /* kraj = kultura Machalska; původ = proč jsi tady / jestli tě ve vsi znají */
+    text: "Pijan zvedne hlavu ze stolu a podívá se na tebe, jako by tě viděl poprvé.\n„Jak ses sem vlastně dostal? Sem se chodívá za pivem.“",
     choices: [
-      { say: "Dlužím, co dlužím. Přišel jsem to vyřešit.", hint: "dlužník", origin: "debtor" },
+      { say: "Přišel jsem vyrovnat účty.", hint: "dlužník", origin: "debtor" },
       { act: "Ukážeš ruce plné mozolů a spálenin od výhně.", hint: "učeň kováře", origin: "apprentice" },
       { say: "Hlídal jsem bránu. Už ne.", hint: "bývalý strážný", origin: "watchman" },
-      { say: "Jdu z Brodu a zítra zas dál.", hint: "poutník z Brodu", origin: "wayfarer" },
+      { say: "Jen procházím. Zítra zas pokračuju dál.", hint: "poutník", origin: "wayfarer" },
       { act: "Stáhneš si kapuci hlouběji.", origin: "exile" },
       { say: "Ty mě nepoznáváš? Vždyť jsem odsud.", hint: "rodák", origin: "native" },
     ],
@@ -329,7 +335,7 @@ const PLACE = {
       `Ve vzduchu visí kouř z kadidla. Na polici cinkají lahvičky; Lidmila právě drtila kořeny.`,
       `U okna se suší svazky heřmánku a v hrnci něco tiše bublá. Obrázek paní z pohraničí se dívá z police.`,
     ],
-    greeting: [`„Bolí to, protože je čtvrtek. Kde?“`, `„Posaď se. Kde to bolí?“`, `„Zase ty? Ukaž a neříkej, že prší.“`],
+    greeting: [`„Posaď se. Kde to bolí?“`, `„Ukaž. A klidně to řekni dvakrát.“`, `„Zase ty? Ruce mám od bylin, ale poslouchám.“`],
     /* priority: heal → protijed → buffy */
     services: [
       { id: "heal", name: "Ošetření", descHtml: () => statChipBtn("hp", null), price: 50 },
@@ -468,7 +474,7 @@ const PLACE_BEATS = {
   healer: {
     openTalk: {
       you: `„Lidmilo, můžu se na chvíli zeptat?“`,
-      foe: [`„Povídej. Bolí to, protože je čtvrtek.“`, `„Poslouchám, jen nesahej na lahvičky.“`, `„Ptej se. Ruce mám zrovna od bylin.“`],
+      foe: [`„Povídej. Jen nesahej na lahvičky.“`, `„Poslouchám. Ruce mám zrovna od bylin.“`, `„Ptej se. Léky počkají.“`],
     },
     openServices: {
       you: `„Ukaž mi, co nabízíš.“`,
@@ -723,6 +729,8 @@ const makeState = () => ({
   originStep: 0,
   picks: { class: "mercenary", race: "local", origin: null },
   name: "",
+  gender: "m", /* m | f; kostka jmen a pozdější skloňování */
+  literacy: 0, /* 0 neumí / 1 slabě / 2 plynně (písař start 2) */
   gold: 80,
   bank: 20,
   place: null,
@@ -950,7 +958,7 @@ const MORNING_BASE = {
 const MORNING_REACT = {
   fight: " Na botách máš zaschlé bláto od kaple, kde nic nebylo.",
   hide: " Zvon se už neozval, nebo sis ho nezapamatoval.",
-  ward: " Amulet držíš pořád v dlani.",
+  ward: " Křížek držíš pořád v dlani.",
 };
 const MORNING_NOORDER = "Šel ses vyspat do seníku za krčmou, když už ses nic neobjednal.";
 const prologMorning = () =>
@@ -1274,6 +1282,9 @@ function renderConfirmPicks() {
   const raceBonus = $("race-bonus");
   const classBonus = $("class-bonus");
   const originEffects = $("origin-effects");
+  document.querySelectorAll('input[name="gender"]').forEach((el) => {
+    el.checked = el.value === (state.gender === "f" ? "f" : "m");
+  });
   if (raceGrid) {
     raceGrid.innerHTML = Object.entries(RACE_INFO)
       .map(
@@ -1423,7 +1434,7 @@ function updateStartGate() {
   if (!btn) return;
   /* vstoupit jde bez voleb (zůstanou neznámé), ale ne bez jména */
   const missing = missingPicks();
-  const hasName = !!$("input-name")?.value.trim();
+  const hasName = !!sanitizeHeroName($("input-name")?.value);
   btn.disabled = !hasName;
   const note = $("origin-cta-note");
   if (note) note.textContent = !hasName ? "Vyber si jméno hrdiny (kostka ti pomůže)." : missing.length ? `Nevybráno: ${missing.join(", ")}. Zůstane neznámé.` : "";
@@ -1690,7 +1701,7 @@ function clearUiScrollMem() {
 const LANDING_QUOTES = [
   { q: "„Mlčeti zlato.“", by: "lidové rčení" },
   { q: "„Musíme obdělávat svou zahradu.“", by: "Voltaire, Candide" },
-  { q: "„Bolí to, protože je čtvrtek.“", by: "Lidmila, léčitelka" },
+  { q: "„Posaď se. Kde to bolí?“", by: "Lidmila, léčitelka" },
   { q: "„Platit budete tak jako tak.“", by: "Svatava z Přívozu, hostinská" },
 ];
 let landingQuoteIdx = -1;
@@ -1782,7 +1793,12 @@ function revealText(el, { step = 26, max = 1100, delay = 0 } = {}) {
   if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   const nodes = [];
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.trim()) nodes.push(n);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue.trim()) continue;
+    /* Kodex: heslo necháme vcelku (tooltip + tečky), bez náběhu po slovech */
+    if (n.parentElement?.closest?.("abbr.kodex")) continue;
+    nodes.push(n);
+  }
   const total = nodes.reduce((a, n) => a + n.nodeValue.split(/[ \t\n]+/).filter(Boolean).length, 0);
   const per = Math.min(step, max / Math.max(total, 1));
   let i = 0;
@@ -2387,7 +2403,7 @@ function openPanel(kind, opts = {}) {
             <details class="faq-item" name="faq">
               <summary>Atributy (STR / DEX / VIT / INT)</summary>
               <p>Ikony u rasy a povolání = stejné chipy jako ve hře. Tip na chipu = krátký popis.</p>
-              <p>STR → fyzické poškození · DEX → zásah a útěk · VIT → max HP a DEF · INT → mana a čitelnost telegraphu.</p>
+              <p>STR → fyzické poškození · DEX → zásah a útěk · VIT → max HP a DEF · INT → čtení záměru a jistota fám. Zdroj (Res) = energie v boji; bylinkář má mana.</p>
             </details>
             <details class="faq-item" name="faq">
               <summary>Jak se počítá ATK / DEF?</summary>
@@ -2414,6 +2430,7 @@ function openPanel(kind, opts = {}) {
 }
 
 function choiceIsPicked(choice) {
+  if (choice.cheek) return !state.prologDone.class && (state.prologCheek || 0) > 0;
   if (choice.class) return state.prologDone.class && state.picks.class === choice.class;
   if (choice.race) return state.prologDone.race && state.picks.race === choice.race;
   if (choice.origin) return state.prologDone.origin && state.picks.origin === choice.origin;
@@ -2478,14 +2495,17 @@ function renderOrigins() {
   /* mezivěta po reakci na zvon: krok „domov“ na ni navazuje */
   const lead = step.lead ? step.lead[pickedClass() || "none"] : "";
   const bridge = state.prologBridges?.[state.originStep - 1] || ""; /* Svatavina odpověď nebo následek předchozí volby */
+  if (!state.kodexSeen) state.kodexSeen = new Set();
+  const bodyRaw = [bridge, lead, step.text]
+    .filter(Boolean)
+    .join("\n")
+    .split("\n")
+    .map((para) => `<p class="prose-beat origin-text">${nbspCzech(para, { tail: true })}</p>`)
+    .join("");
+  const bodyHtml = LOM.Kodex.annotate(bodyRaw, state.kodexSeen, { prefs: state.prefs });
   box.innerHTML = `
     ${chrome}
-    <div class="origin-body">${[bridge, lead, step.text]
-      .filter(Boolean)
-      .join("\n")
-      .split("\n")
-      .map((para) => `<p class="prose-beat origin-text">${nbspCzech(para, { tail: true })}</p>`)
-      .join("")}</div>
+    <div class="origin-body">${bodyHtml}</div>
     ${state.prologReply && step.pick === "class" ? `<p class="prose-beat origin-reply">${nbspCzech(state.prologReply)}</p>` : ""}
     <div class="choice-stack">
       ${step.choices
@@ -2802,22 +2822,22 @@ const PLACE_ASK = {
       hint: "prolog · šel jsi ven",
       when: () => state.prologReact === "fight",
       ask: `„Tehdy jsem šel ven za zvonem. Nic jsem nenašel.“`,
-      ans: `„Viděla jsem tě jít. Vrátil ses s prázdnou — jako ten zvon. Sud pořád leží ve sklepě.“`,
+      ans: `„Viděla jsem tě jít. Vrátil ses s prázdnou, jako ten zvon. Sud pořád leží ve sklepě.“`,
     },
     {
       id: "prolog_hide",
       title: `Připomenout ${hl("noc")} se sudem`,
       hint: "prolog · zůstal jsi",
       when: () => state.prologReact === "hide",
-      ask: `„Tehdy jsem zůstal sedět. Sud i zvon — obojí najednou.“`,
+      ask: `„Tehdy jsem zůstal sedět. Sud i zvon, obojí najednou.“`,
       ans: `„Sedět umíš. Sud je ve sklepě. A zvon? Lidi šeptají. Ptej se.“`,
     },
     {
       id: "prolog_ward",
       title: `Připomenout ${hl("noc")} se sudem`,
-      hint: "prolog · amulet",
+      hint: "prolog · křížek",
       when: () => state.prologReact === "ward",
-      ask: `„Tehdy jsem držel amulet. Sud stejně praskl.“`,
+      ask: `„Tehdy jsem sevřel křížek. Sud stejně praskl.“`,
       ans: `„Modlitba sud neslepí. Podívej se dolů, až budeš chtít vědět, odkud byly mince.“`,
     },
     {
@@ -3286,7 +3306,7 @@ function kauzaCellAct(act) {
         sysLines.push(kzStatusLine("c3", r));
       }
     }
-    if (!texts.length) texts.push("Vůz stojí u cesty. Na ojí visí malý zvonek — zní skoro jako kaple, ale je to jiný.");
+    if (!texts.length) texts.push("Vůz stojí u cesty. Na ojí visí malý zvonek. Zní skoro jako kaple, ale je to jiný.");
     const takeCartBell = !hasItemAnywhere("cart_bell") && !k.facts.cartBellTaken;
     if (takeCartBell) texts.push("Zvonek jde sejmout.");
     kzSay({ scene: texts.join(" "), fresh: "scene" });
@@ -3294,7 +3314,7 @@ function kauzaCellAct(act) {
     if (takeCartBell && bagCanFit("cart_bell")) {
       bagPut("cart_bell");
       k.facts.cartBellTaken = true;
-      kzSay({ scene: "Vezmeš vozový zvonek. Není z kaple — to poznáš po váze.", fresh: "scene" });
+      kzSay({ scene: "Vezmeš vozový zvonek. Není z kaple, to poznáš po váze.", fresh: "scene" });
     }
   }
   if (act === "kz-ondra") {
@@ -3331,7 +3351,7 @@ function kauzaCellAct(act) {
         sysLines.push(kzStatusLine("c6", r));
       }
     }
-    if (!texts.length) texts.push("Žár pece, pach kovu. Matěj od pece otírá ruce. V koutě leží velký zvon z kaple — ještě celý.");
+    if (!texts.length) texts.push("Žár pece, pach kovu. Matěj od pece otírá ruce. V koutě leží velký zvon z kaple, ještě celý.");
     if (!hasItemAnywhere("bell") && !k.facts.bellGone) texts.push("Zvon jde odnést, dokud nepůjde do pece.");
     kzSay({ scene: texts.join(" "), fresh: "scene" });
     sysLines.forEach((l) => logSys(l));
@@ -4590,8 +4610,8 @@ function dieAndRespawn() {
   state.clock = LOM.advanceClock(state.clock, 4);
   pushPlaceTurn({
     you: hadAnything
-      ? `Lidmila tě přinesla. „Zase ty… Bolí to, protože je čtvrtek. Tvoje věci zůstaly tam, kde jsi padl: ${where}.“`
-      : "Lidmila tě přinesla. „Zase ty… Bolí to, protože je čtvrtek.“",
+      ? `Lidmila tě přinesla. „Zase ty. Věci zůstaly tam, kde jsi padl: ${where}.“`
+      : "Lidmila tě přinesla. „Zase ty. Sedni a ukaž, kde to bolí.“",
     fresh: "you",
   });
   state.log = placeProse("healer");
@@ -4913,6 +4933,11 @@ document.body.addEventListener("click", (e) => {
     $("input-name").value = randomName();
     updateStartGate();
   }
+  if (act === "pick-gender") {
+    const g = t.value === "f" ? "f" : "m";
+    state.gender = g;
+    updateStartGate();
+  }
   if (act === "start-back") closeStartModal();
   if (act === "start-game" || act === "start-confirm") {
     const missing = missingPicks();
@@ -4926,12 +4951,26 @@ document.body.addEventListener("click", (e) => {
       toast("Uložená hra se přepíše. Klikni znovu na Vstoupit do hry.");
       return;
     }
-    const nm = $("input-name")?.value?.replace(/[<>&"']/g, "").trim().slice(0, 20);
+    const nm = sanitizeHeroName($("input-name")?.value);
+    if ($("input-name") && $("input-name").value !== nm) $("input-name").value = nm;
     if (!nm) return;
     /* čistý start: nic z dřívější postavy (po Pokračovat → odhlášení) */
-    resetState({ picks: state.picks, prologDone: state.prologDone, prologReact: state.prologReact, originReached: state.originReached, guest: state.guest });
+    const genderKeep = state.gender === "f" ? "f" : "m";
+    resetState({ picks: state.picks, prologDone: state.prologDone, prologReact: state.prologReact, originReached: state.originReached, guest: state.guest, gender: genderKeep });
     state.name = nm;
+    state.gender = genderKeep;
+    state.literacy = literacyFromPicks();
     if (PUBLIC_DEMO) state.noSave = true;
+    const kit = LOM.Origin.startKit({
+      classId: pickedClass(),
+      originId: state.picks.origin,
+      react: state.prologReact,
+      hasClass: !!state.prologDone.class,
+    });
+    /* prolog: výbava jen z voleb (ne výchozí naběračka/štíty z makeState) */
+    state.equipped = kit.equipped;
+    state.bag = Array(BAG_SLOTS).fill(null);
+    for (const id of kit.bagAdd) bagPut(id);
     const patch = LOM.Origin.apply(state, state.picks.origin);
     state.origin = patch.origin;
     state.standing = patch.standing || {};
@@ -5294,15 +5333,11 @@ document.body.addEventListener("click", (e) => {
     else hideFloatTip();
   }
   if (act === "prolog-again") {
+    /* volby nechat (highlight); jen se vrátit na začátek prologu */
     state.originStep = 0;
-    state.originReached = 0;
-    state.prologDone = { class: false, race: false, origin: false };
-    state.picks.origin = null;
-    state.prologReact = null;
-    state.prologBridges = {};
-    state.prologReply = null;
-    state.prologCheek = 0;
+    state.originReached = Math.max(state.originReached || 0, ORIGIN_STEPS.length - 1);
     state.prologStory = false;
+    state.prologReply = null;
     setScreen("origins");
   }
   if (act === "origin-back") {
@@ -5879,13 +5914,26 @@ function applyScenario(id, knobs = devKnobs) {
     setScreen("origins");
   } else if (view === "confirm") {
     setScreen("confirm");
+  } else if (view === "demo-morning") {
+    state.prologReact = sc.prologReact || "hide";
+    state.prologDone = { class: true, race: true, origin: true };
+    const patch = state.picks.origin ? LOM.Origin.apply(state, state.picks.origin) : {};
+    if (patch.origin) state.origin = patch.origin;
+    if (patch.standing) state.standing = patch.standing;
+    const morning = `${prologMorning()} ${patch.intro || ""}`.trim();
+    state.log = nbspCzech(morning);
+    setScreen("town");
+    openDemoEnd(morning);
   } else {
     state.mode = view === "exits" ? "exits" : PLACE_VIEWS.includes(view) ? "place" : "town";
     if (state.mode === "place") {
       state.place = view;
       state.visits[view] = 0;
-      state.log = placeProse(view);
+      const morning = sc.withMorning ? `${prologMorning()} ` : "";
+      state.log = nbspCzech(`${morning}${placeProse(view)}`);
       if (sc.placeView) state.placeView = sc.placeView;
+    } else if (sc.withMorning) {
+      state.log = nbspCzech(`${prologMorning()} ${TOWN_PROSE}`);
     }
     setScreen("town");
   }
@@ -6088,7 +6136,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("input", (e) => {
-  if (e.target?.id === "input-name") updateStartGate();
+  if (e.target?.id !== "input-name") return;
+  const clean = sanitizeHeroName(e.target.value);
+  if (e.target.value !== clean) {
+    const pos = e.target.selectionStart;
+    e.target.value = clean;
+    if (typeof pos === "number") e.target.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+  }
+  updateStartGate();
 });
 
 document.addEventListener("click", (e) => {

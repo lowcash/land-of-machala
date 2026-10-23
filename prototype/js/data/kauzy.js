@@ -63,7 +63,7 @@
       gustav: { name: "Gustav", rel: 0.7, tell: 0, signals: {},
         react: { believe: ["„Dobře. Knihy si ověřte sám. Stojí to pár mincí.“"], doubt: ["„U svědka je pochybnost na místě. Kniha leží na radnici.“"] } },
       lidmila: { name: "Lidmila", rel: 0.6, tell: 0.3, signals: { a: "Lidmila ztiší hlas.", b: "Lidmila ztiší hlas a mrkne ke dveřím." },
-        react: { believe: ["„Bolí to, protože je čtvrtek. Ono se ti to možná potvrdí.“"], doubt: ["„Děláš dobře. Já sama nevím, čemu věřit, a to říkám potichu.“"] } },
+        react: { believe: ["„Možná. Uvidíš, až to ověříš.“"], doubt: ["„Děláš dobře. Já sama nevím, čemu věřit, a to říkám potichu.“"] } },
       ondra: { name: "Ondra od vozu", rel: 0.4, tell: 0.55, signals: { a: "Ondra si otře ústa rukávem.", b: "Ondra se podívá na zem a mlčí o vteřinu déle." },
         after: { believe_true: ["„No vidíš. Já to říkal. Jen jsem to… no.“"], believe_half: ["„Půlka. To je pořád víc než nic.“"], believe_false: ["„Slyšel jsem to od Ondřeje. Nebo od sebe. Už nevím.“"], doubt_false: ["„Dobře, že ses ptal. Já se nepamatuju, abych se ptal.“"], doubt_half: ["„Napůl. Jako ten měšec.“"], doubt_true: ["„Nic se nestalo. Aspoň doufám.“"], neutral: ["„Hm. Jo.“"] },
         react: { believe: ["„Tak jo. Aspoň jeden, kdo neřve.“"], doubt: ["„Nevěříš. Já bych taky nevěřil sobě.“"] } },

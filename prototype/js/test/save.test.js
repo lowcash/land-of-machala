@@ -6,6 +6,8 @@ function sampleState(extra) {
   const used = new Set(["Jana Nová", "Petr Kovář"]);
   return {
     name: "Mirek",
+    gender: "m",
+    literacy: 0,
     picks: { class: "tracker", race: "local", origin: null },
     guest: false,
     originReached: 2,

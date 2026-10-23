@@ -39,7 +39,7 @@
 
   /* Šperky (neck, trinket) */
   const JEWELRY = [
-    { id: "amulet", icon: "📿", name: "Amulet z lesa", tip: "štěstí", slot: "neck", def: 1, weight: 0.5, rarity: "rare" },
+    { id: "amulet", icon: "✝️", name: "Dřevěný křížek", tip: "ochrana", slot: "neck", def: 1, weight: 0.5, rarity: "common" },
     { id: "trinket", icon: "🔮", name: "Skleněný korálek", tip: "trinket", slot: "trinket", atk: 1, weight: 0.5, rarity: "uncommon" },
   ];
 
@@ -50,9 +50,11 @@
     { id: "ration", icon: "🍞", name: "Suchý chléb", tip: "cesta", slot: "consumable", weight: 1, rarity: "poor" },
   ];
 
-  /* Ostatní (trofeje, drobnosti) */
+  /* Ostatní (trofeje, drobnosti; herbs/quill = start z prologu) */
   const MISC = [
     { id: "daisy", icon: "🌼", name: "Sedmikráska", tip: "misc", slot: "misc", weight: 0.2, rarity: "poor" },
+    { id: "herbs", icon: "🌿", name: "Sušené byliny", tip: "voní ostře; z prologu", slot: "misc", weight: 0.3, rarity: "poor" },
+    { id: "quill", icon: "🪶", name: "Brk a kalamář", tip: "psaní; z prologu", slot: "misc", weight: 0.4, rarity: "common" },
     { id: "wolf-tooth", icon: "🦷", name: "Zub vlka", tip: "trofej", slot: "misc", weight: 0.3, rarity: "uncommon" },
     { id: "shovel", icon: "⛏", name: "Lopata", tip: "zakopat věci", slot: "misc", weight: 3, rarity: "common" },
     { id: "letter", icon: "✉️", name: "Zapečetěný dopis", tip: "příběhový předmět", slot: "misc", weight: 0.1, rarity: "rare", quest: true },

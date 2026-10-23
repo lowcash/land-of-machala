@@ -73,6 +73,39 @@
       { first: "Engelbert", gender: "m" },
       { first: "Judita", gender: "f" },
     ],
+    /* polská / slezská jména (hráčova kostka; vedlejší NPC berou váhy POOL_WEIGHTS) */
+    polska: [
+      { first: "Wojciech", gender: "m" },
+      { first: "Stanisław", gender: "m" },
+      { first: "Kazimír", gender: "m" },
+      { first: "Bolesław", gender: "m" },
+      { first: "Mikołaj", gender: "m" },
+      { first: "Jadwiga", gender: "f" },
+      { first: "Władysława", gender: "f" },
+      { first: "Zofia", gender: "f" },
+      { first: "Kinga", gender: "f" },
+      { first: "Dobrawa", gender: "f" },
+      { first: "Leszek", gender: "m" },
+      { first: "Przemysł", gender: "m" },
+      { first: "Bogumiła", gender: "f" },
+      { first: "Czesław", gender: "m" },
+      { first: "Wanda", gender: "f" },
+      { first: "Tadeáš", gender: "m" },
+      { first: "Bronisław", gender: "m" },
+      { first: "Mieczysław", gender: "m" },
+      { first: "Wacław", gender: "m" },
+      { first: "Zbigniew", gender: "m" },
+      { first: "Jagoda", gender: "f" },
+      { first: "Halina", gender: "f" },
+      { first: "Irena", gender: "f" },
+      { first: "Basia", gender: "f" },
+      { first: "Ryszard", gender: "m" },
+      { first: "Henryk", gender: "m" },
+      { first: "Agnieszka", gender: "f" },
+      { first: "Małgorzata", gender: "f" },
+      { first: "Piotr", gender: "m" },
+      { first: "Krystyna", gender: "f" },
+    ],
     jizni: [
       { first: "Ismail", gender: "m" },
       { first: "Selim", gender: "m" },
@@ -174,13 +207,14 @@
     ],
   };
 
-  /** Váhy fondů: staročeská ~50 %, zbytek rovnoměrně. */
+  /** Váhy fondů: staročeská 50 %, zbytek dohromady 50 (včetně polské). */
   const POOL_WEIGHTS = {
     staroceska: 50,
-    nemecka: 12.5,
-    jizni: 12.5,
-    cirkevni: 12.5,
-    zvlastni: 12.5,
+    nemecka: 10,
+    polska: 10,
+    jizni: 10,
+    cirkevni: 10,
+    zvlastni: 10,
   };
 
   /** Příjmení podle původu. */
