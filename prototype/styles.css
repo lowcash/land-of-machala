@@ -194,6 +194,20 @@ html, body {
 .proto-bar .dev-main { flex: 1 1 auto; min-width: 0; }
 .proto-bar .dev-main select { flex: 1 1 auto; min-width: 0; max-width: none; }
 .proto-bar .dev-btn { flex-shrink: 0; padding: 0.3rem 0.45rem; white-space: nowrap; }
+/* veřejná ukázka: jen drag / min / průhlednost + Místo + Doba */
+.proto-bar.is-public-demo .dev-main,
+.proto-bar.is-public-demo #dev-reset { display: none !important; }
+.proto-bar.is-public-demo .dev-chrome { border-bottom: none; }
+.proto-bar.is-public-demo:not(.is-collapsed):not(.is-minimized) .dev-chrome {
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.proto-bar.is-public-demo .dev-group,
+.proto-bar.is-public-demo .dev-sec[data-sec="postava"],
+.proto-bar.is-public-demo .dev-sec[data-sec="boj"],
+.proto-bar.is-public-demo .dev-sec[data-sec="ladeni"],
+.proto-bar.is-public-demo .dev-sec[data-sec="stav"] { display: none !important; }
+.proto-bar.is-public-demo .dev-sec[data-sec="svet"] > summary { display: none; }
+.proto-bar.is-public-demo .dev-sec[data-sec="svet"] { border: none; padding: 0; }
 .proto-nav { display: flex; flex-wrap: nowrap; gap: 0.25rem; flex-shrink: 0; }
 body:not(.has-dev) .proto-bar,
 .proto-bar[hidden] { display: none !important; }

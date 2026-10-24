@@ -9,6 +9,8 @@ Format: dated sections; versions follow `APP_VERSION` in `prototype/app.js` when
 ### Prologue
 - Public demo ends after the four prologue choices (no character screen): a short “demo version” modal offers to play the prologue again.
 - Storybook default preset is **Prolog · Svatava (S1)** only (other presets removed for now; modes still available via knobs).
+- Public Pages shows a slim floating bar (drag, collapse, opacity) with **place = tavern** and **four times of day** only — no preset list, mode, image style, or systems panel. Private storybook keeps the full bar.
+- Outside the baked prologue shots, place backgrounds are off for now (solid dark).
 - Photorealistic tavern pictures (four times of day, with and without Svatava) are now the default prologue look; the earlier illustrated set stays available in the storybook ("Image style").
 - Prologue text now sits below the picture (bottom sheet on desktop, picture on top on phones in portrait, side by side in low landscape) instead of covering it; the panel no longer uses a backdrop blur. A "Show scene" button hides the text and reveals the whole picture.
 - Tavern prologue uses finished illustrations for four times of day (morning, noon, evening, night): Svatava at the table (S1), then the sleeper alone (S2). Storybook can switch shot and time of day.

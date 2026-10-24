@@ -1253,7 +1253,8 @@ function saveDevBarPrefs(prefs) {
   } catch (_) {}
 }
 
-/** file: / localhost výchozí; ?dev=0 skryje, ?dev=1 ukáže; lom.dev přepíná Ctrl+Shift+D. */
+/** file: / localhost výchozí; ?dev=0 skryje, ?dev=1 ukáže; lom.dev přepíná Ctrl+Shift+D.
+ *  Veřejná ukázka (PUBLIC_DEMO): lišta je výchozí zapnutá (ořezaná). */
 function shouldShowDevBar() {
   try {
     const q = new URLSearchParams(location.search).get("dev");
@@ -1263,6 +1264,7 @@ function shouldShowDevBar() {
     if (stored === "0") return false;
     if (stored === "1") return true;
   } catch (_) {}
+  if (PUBLIC_DEMO) return true;
   const host = location.hostname;
   return location.protocol === "file:" || host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 }
@@ -1451,8 +1453,11 @@ function syncKnobModeVisibility() {
   document.querySelectorAll("[data-knob-mode]").forEach((el) => (el.hidden = el.dataset.knobMode !== mode));
 }
 
+/** Prozatím: pečené pozadí jen u prologu (S1/S2); landing a hra bez obrazu. */
+const BG_ONLY_PROLOG = true;
+
 function setGameBg(key) {
-  applyBgToEls([...document.querySelectorAll(".game-screen .landing-bg")], key);
+  applyBgToEls([...document.querySelectorAll(".game-screen .landing-bg")], BG_ONLY_PROLOG ? null : key);
   syncPhaseLook();
 }
 
@@ -1520,6 +1525,11 @@ function focusDevForScenario(secs = []) {
 const LANDING_BGS = ["village", "plains", "road", "hills", "tavern", "market", "forest"];
 let landingBgKey = null;
 function setLandingBg() {
+  if (BG_ONLY_PROLOG) {
+    applyBgToEls([...document.querySelectorAll('[data-screen="landing"] .landing-bg')], null);
+    syncPhaseLook();
+    return;
+  }
   const key = state.activeScenario
     ? bgKeyFromPlaceId(storyPlaceId)
     : landingBgKey || (landingBgKey = LANDING_BGS[Math.floor(Math.random() * LANDING_BGS.length)]);
@@ -6726,40 +6736,104 @@ function refreshScenarioOptionLabels(knobs = {}) {
   });
 }
 
+/** Veřejná lišta: jen Místo (krčma) + Doba (4); bez předvolby / režimu / stylu / systémů. */
+const PUBLIC_DEV_KNOB_IDS = new Set(["place", "phase"]);
+
+function publicDevKnobs() {
+  return LOM.KNOBS.filter((k) => PUBLIC_DEV_KNOB_IDS.has(k.id)).map((k) => {
+    if (k.id !== "place") return k;
+    return { ...k, opts: [["tavern", "Krčma"]] };
+  });
+}
+
 function initDevStorybook() {
   const sel = $("dev-scenario");
-  if (!sel || !window.LOM?.SCENARIOS) return;
-  const groups = {};
-  LOM.SCENARIOS.forEach((sc) => (groups[sc.group] = groups[sc.group] || []).push(sc));
-  sel.innerHTML = Object.entries(groups)
-    .map(
-      ([g, list]) =>
-        `<optgroup label="${LOM.GROUPS.indexOf(g) + 1} ${g}">${list.map((sc) => `<option value="${sc.id}">${scenarioOptionLabel(sc)}</option>`).join("")}</optgroup>`
-    )
-    .join("");
+  const bar = document.querySelector(".proto-bar");
+  if (!window.LOM?.SCENARIOS) return;
+  const publicBar = !!PUBLIC_DEMO;
+  if (bar) bar.classList.toggle("is-public-demo", publicBar);
 
+  const defaultScenarioId = LOM.SCENARIOS.some((x) => x.id === "start-origins")
+    ? "start-origins"
+    : LOM.SCENARIOS[0]?.id;
+  const scenarioId = () => (publicBar ? defaultScenarioId : sel?.value || defaultScenarioId);
+
+  if (sel) {
+    if (publicBar) {
+      sel.hidden = true;
+      sel.setAttribute("aria-hidden", "true");
+    } else {
+      const groups = {};
+      LOM.SCENARIOS.forEach((sc) => (groups[sc.group] = groups[sc.group] || []).push(sc));
+      sel.innerHTML = Object.entries(groups)
+        .map(
+          ([g, list]) =>
+            `<optgroup label="${LOM.GROUPS.indexOf(g) + 1} ${g}">${list.map((sc) => `<option value="${sc.id}">${scenarioOptionLabel(sc)}</option>`).join("")}</optgroup>`
+        )
+        .join("");
+    }
+  }
+  $("dev-reset")?.toggleAttribute("hidden", publicBar);
+
+  const knobs = publicBar ? publicDevKnobs() : LOM.KNOBS;
   const bySec = { postava: [], svet: [], boj: [] };
-  LOM.KNOBS.forEach((k) => {
+  knobs.forEach((k) => {
     const sec = DEV_KNOB_SEC[k.id] || "svet";
     (bySec[sec] || bySec.svet).push(k);
   });
   Object.entries(bySec).forEach(([sec, list]) => {
     const host = document.querySelector(`[data-knob-sec="${sec}"]`);
     if (!host) return;
-    /* vrstvy a objekty skladby jdou pod výběry scény (Místo, Pohled, Doba), ne do vlastní sekce */
     const stageChecks = list.filter((k) => k.stage && k.type === "check");
     host.innerHTML = list.filter((k) => !stageChecks.includes(k)).map(knobControlHtml).join("");
     const checks = document.querySelector(`[data-knob-sec="${sec}-checks"]`);
     if (checks) checks.innerHTML = stageChecks.map(knobControlHtml).join("");
   });
+  if (publicBar) {
+    /* schovat sekce bez knobů + přehledy / odhalení */
+    document.querySelectorAll(".dev-sec[data-sec], .dev-group").forEach((el) => {
+      const sec = el.dataset?.sec;
+      if (!sec) {
+        el.hidden = true;
+        return;
+      }
+      el.hidden = sec !== "svet";
+      if (sec === "svet") el.open = true;
+    });
+  }
+
+  /** Veřejná ukázka: změna doby jen překreslí bake, neresetuje volby prologu. */
+  const softApplyPublicPhase = () => {
+    const ph = document.querySelector('select[data-knob="phase"]')?.value;
+    if (!ph || !LOM.PHASES) return false;
+    const idx = Math.max(0, LOM.PHASES.findIndex((p) => p.id === ph));
+    state.clock = { day: state.clock?.day || 1, tick: idx * LOM.TICKS_PER_PHASE };
+    storyPlaceId = "tavern";
+    if (state.screen === "origins" || state.screen === "confirm") setPrologBg();
+    else syncPhaseLook();
+    return true;
+  };
+
   const applyFromKnobs = () => {
     devKnobs = knobsFromUi();
+    if (publicBar) {
+      softApplyPublicPhase();
+      return;
+    }
     refreshScenarioOptionLabels(devKnobs);
-    applyScenario(sel.value, devKnobs);
+    applyScenario(scenarioId(), devKnobs);
   };
   const loadPreset = () => {
-    const sc = LOM.SCENARIOS.find((x) => x.id === sel.value);
+    const id = scenarioId();
+    const sc = LOM.SCENARIOS.find((x) => x.id === id);
+    if (sel && !publicBar) sel.value = id;
     fillKnobsFromScenario(sc);
+    if (publicBar) {
+      /* pevně: origins + krčma; knoby jen place/phase */
+      applyScenario(id, { ...knobsFromUi(), mode: "origins", place: "tavern" });
+      softApplyPublicPhase();
+      return;
+    }
     applyFromKnobs();
   };
   document.querySelectorAll("[data-knob-sec]").forEach((el) =>
@@ -6769,11 +6843,11 @@ function initDevStorybook() {
       applyFromKnobs();
     })
   );
-  sel.addEventListener("change", loadPreset);
-  $("dev-reset")?.addEventListener("click", loadPreset);
-  renderDevStatus();
+  if (sel && !publicBar) sel.addEventListener("change", loadPreset);
+  if (!publicBar) $("dev-reset")?.addEventListener("click", loadPreset);
+  if (!publicBar) renderDevStatus();
   const togglesEl = $("dev-toggles");
-  if (togglesEl) {
+  if (togglesEl && !publicBar) {
     LOM.TOGGLES.forEach((t) => {
       if (state.dev[t.id] === undefined) state.dev[t.id] = t.default;
     });
@@ -6793,8 +6867,7 @@ function initDevStorybook() {
       render();
     });
   }
-  /* výchozí scéna = Prolog · Svatava (S1) */
-  if (LOM.SCENARIOS.some((x) => x.id === "start-origins")) sel.value = "start-origins";
+  if (sel && !publicBar && defaultScenarioId) sel.value = defaultScenarioId;
   loadPreset();
   syncDevUi();
 }
@@ -6923,7 +6996,10 @@ document.querySelectorAll(".origin-acc").forEach((el) => {
   if (el) el.textContent = `Verze ${APP_VERSION} · © ${APP_YEAR} Land of Machala · lowcash`;
 })();
 setAuth("register");
-if (PUBLIC_DEMO) {
+/* storybook (initDevStorybook) už nastavil scénu — nepřepisovat landingen */
+if (state.activeScenario) {
+  if (PUBLIC_DEMO) state.guest = true;
+} else if (PUBLIC_DEMO) {
   state.guest = true;
   setScreen("origins");
 } else setScreen("landing");

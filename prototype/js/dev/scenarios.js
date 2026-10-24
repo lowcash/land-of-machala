@@ -129,21 +129,21 @@
     {
       id: "phase",
       label: "Doba",
+      /* 4 pečené doby (afternoon ve hře = evening bake) */
       opts: [
         ["morning", "ráno"],
         ["noon", "poledne"],
-        ["afternoon", "odpoledne"],
         ["evening", "večer"],
         ["night", "noc"],
       ],
       from: (sc) => {
-        if (sc.phase) return sc.phase;
+        if (sc.phase) return sc.phase === "afternoon" ? "evening" : sc.phase;
         const { mode } = splitScenario(sc);
         if (mode === "wake") return sc.prologDone?.class ? "noon" : "morning";
         return "evening";
       },
       apply: (sc, v) => {
-        sc.phase = v;
+        sc.phase = v === "afternoon" ? "evening" : v;
       },
     },
     {
