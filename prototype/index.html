@@ -10,8 +10,7 @@
   <!-- DEV - skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
   <aside class="proto-bar is-collapsed" data-dev-only hidden aria-label="Vývojářský storybook">
     <div class="dev-row dev-chrome">
-      <button type="button" class="dev-drag" id="dev-drag" title="Přesunout" aria-label="Přesunout panel">⠿</button>
-      <button type="button" class="dev-btn" id="dev-minimize" title="Sbalit panel" aria-expanded="true" aria-controls="dev-detail-panel">–</button>
+      <button type="button" class="dev-drag" id="dev-drag" title="Otevřít nebo přesunout" aria-label="Otevřít nebo přesunout panel" aria-expanded="false" aria-controls="dev-detail-panel"><span class="dev-drag-ico" aria-hidden="true">⠿</span></button>
       <div class="dev-knob dev-main">
         <select id="dev-scenario" aria-label="Předvolba scény (nastaví přepínače)"></select>
       </div>
@@ -92,12 +91,14 @@
 
   <!-- PROLOG -->
   <main data-screen="origins" class="view-full landing-screen hidden">
-    <div class="landing-bg" aria-hidden="true"></div>
-    <button type="button" class="btn-ghost peek-btn" data-act="prolog-peek" aria-pressed="false">Ukázat scénu</button>
-    <div class="landing-frame narrow prolog-frame">
-      <section class="auth-card grow-card">
-        <div id="origins-box"></div>
-      </section>
+    <div class="origins-stage">
+      <div class="landing-bg" aria-hidden="true"></div>
+      <button type="button" class="btn-ghost peek-btn has-tip" data-act="prolog-peek" data-tip="Ukázat celou scénu" title="Ukázat celou scénu" aria-label="Ukázat celou scénu" aria-pressed="false"><span aria-hidden="true">👁</span></button>
+      <div class="landing-frame narrow prolog-frame">
+        <section class="auth-card grow-card">
+          <div id="origins-box"></div>
+        </section>
+      </div>
     </div>
   </main>
 

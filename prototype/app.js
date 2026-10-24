@@ -1078,6 +1078,493 @@ function syncDevPad() {
   document.documentElement.style.setProperty("--dev-pad", "0px");
 }
 
+/** Prolog peek: full image as a canvas (≥ viewport) so pan never shows empty bars. */
+const PEEK_HINT_KEY = "lom.peekHint";
+const PEEK_EXPAND_MS = 380;
+let peekPan = { x: 0, y: 0, scale: 1 };
+let peekLayout = { ew: 0, eh: 0, vw: 0, vh: 0 };
+let peekImgCache = { url: "", w: 0, h: 0 };
+/** Focus from CSS background-position (0–1); peek entry must match that crop. */
+let peekFocus = { x: 0.5, y: 0.5 };
+/** Cancels in-flight peek enter/exit (fast re-tap). */
+let peekEnterGen = 0;
+
+function peekReduceMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Mobile: half-screen plate → full viewport (portrait height / landscape width). */
+function peekNeedsExpand(from, vw, vh) {
+  return from.height < vh * 0.9 || from.width < vw * 0.9;
+}
+
+function peekHalfTarget(vw, vh) {
+  const portrait = window.matchMedia("(max-aspect-ratio: 1/1)").matches;
+  const shortLand = window.matchMedia("(min-aspect-ratio: 1/1) and (max-height: 520px)").matches;
+  if (portrait) return { left: 0, top: 0, w: vw, h: Math.round(vh * 0.46) };
+  if (shortLand) return { left: 0, top: 0, w: Math.round(vw * 0.54), h: vh };
+  return null;
+}
+
+/**
+ * Cover by default; on ultrawide (viewport wider than image) use contain so
+ * 16:9 art is not cropped top/bottom (pillarbox instead).
+ */
+function peekFitSize(iw, ih, vw, vh) {
+  if (!(iw > 0 && ih > 0)) return { ew: vw, eh: vh };
+  const viewAspect = vw / vh;
+  const imgAspect = iw / ih;
+  const scale =
+    viewAspect > imgAspect * 1.01
+      ? Math.min(vw / iw, vh / ih) /* contain */
+      : Math.max(vw / iw, vh / ih); /* cover */
+  return { ew: iw * scale, eh: ih * scale };
+}
+
+function peekTransformTransition() {
+  return [
+    `transform ${PEEK_EXPAND_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+    `filter ${PEEK_EXPAND_MS}ms ease`,
+    `opacity ${PEEK_EXPAND_MS}ms ease`,
+  ].join(", ");
+}
+
+function applyPeekCanvas(bg, ew, eh, vw, vh) {
+  peekLayout = { ew, eh, vw, vh };
+  const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
+  peekPan = { x: p.x, y: p.y, scale: 1 };
+  clampPeekPan();
+  bg.style.transition = "none";
+  /* fixed = full monitor, independent of the 16:9 stage */
+  bg.style.position = "fixed";
+  bg.style.width = `${ew}px`;
+  bg.style.height = `${eh}px`;
+  bg.style.left = `${(vw - ew) / 2}px`;
+  bg.style.top = `${(vh - eh) / 2}px`;
+  bg.style.right = "auto";
+  bg.style.bottom = "auto";
+  bg.style.backgroundSize = "100% 100%";
+  bg.style.backgroundPosition = "center";
+  bg.style.filter = "";
+  bg.style.opacity = "";
+  bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(1)`;
+}
+
+function afterPeekTransition(bg, gen, done) {
+  let finished = false;
+  const finish = () => {
+    if (finished || gen !== peekEnterGen) return;
+    finished = true;
+    done();
+  };
+  const onEnd = (e) => {
+    if (e.target !== bg) return;
+    if (e.propertyName !== "transform") return;
+    bg.removeEventListener("transitionend", onEnd);
+    finish();
+  };
+  bg.addEventListener("transitionend", onEnd);
+  setTimeout(finish, PEEK_EXPAND_MS + 60);
+}
+
+/** FLIP invert: final canvas already laid out; make it look like `from`, then animate to center. */
+function peekFlipFromRect(bg, from) {
+  const to = bg.getBoundingClientRect();
+  const fromCx = from.left + from.width / 2;
+  const fromCy = from.top + from.height / 2;
+  const toCx = to.left + to.width / 2;
+  const toCy = to.top + to.height / 2;
+  const scale = Math.max(from.width / Math.max(to.width, 1), from.height / Math.max(to.height, 1));
+  return {
+    scale: Number.isFinite(scale) && scale > 0 ? scale : 1,
+    dx: fromCx - toCx,
+    dy: fromCy - toCy,
+  };
+}
+
+function originsPeekBg() {
+  return document.querySelector('[data-screen="origins"] .landing-bg');
+}
+
+function peekBgUrl(bg) {
+  const raw = getComputedStyle(bg).backgroundImage || "";
+  const m = raw.match(/url\((['"]?)(.*?)\1\)/);
+  return m ? m[2] : "";
+}
+
+/** Parsuje background-position na podíl 0–1 (center/left/… i %). */
+function parseBgPosPart(part, axis) {
+  const p = String(part || "").trim().toLowerCase();
+  if (!p || p === "center") return 0.5;
+  if (p === "left" || p === "top") return 0;
+  if (p === "right" || p === "bottom") return 1;
+  if (p.endsWith("%")) {
+    const n = parseFloat(p);
+    return Number.isFinite(n) ? n / 100 : 0.5;
+  }
+  /* délky (px) neřešíme — u pečeného BG je vždy % / keyword */
+  return axis === "x" ? 0.5 : 0.5;
+}
+
+function readBgFocus(bg) {
+  const raw = getComputedStyle(bg).backgroundPosition || "center";
+  const parts = raw.trim().split(/\s+/);
+  if (parts.length === 1) {
+    const v = parseBgPosPart(parts[0], "x");
+    return { x: v, y: v };
+  }
+  return {
+    x: parseBgPosPart(parts[0], "x"),
+    y: parseBgPosPart(parts[1], "y"),
+  };
+}
+
+/** Pan tak, aby výřez seděl na CSS background-position (ne na geometrický střed). */
+function peekPanForFocus(ew, eh, vw, vh, focus) {
+  return {
+    x: (vw - ew) * (focus.x - 0.5),
+    y: (vh - eh) * (focus.y - 0.5),
+  };
+}
+
+function applyPeekTransform() {
+  const bg = originsPeekBg();
+  if (!bg) return;
+  bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
+}
+
+function clearPeekLayoutStyles(bg) {
+  if (!bg) return;
+  bg.style.transition = "";
+  bg.style.transform = "";
+  bg.style.position = "";
+  bg.style.width = "";
+  bg.style.height = "";
+  bg.style.left = "";
+  bg.style.top = "";
+  bg.style.right = "";
+  bg.style.bottom = "";
+  bg.style.backgroundSize = "";
+  bg.style.backgroundPosition = "";
+  bg.style.filter = "";
+  bg.style.opacity = "";
+  bg.classList.remove("is-dragging");
+}
+
+function resetPeekTransform() {
+  peekPan = { x: 0, y: 0, scale: 1 };
+  peekLayout = { ew: 0, eh: 0, vw: 0, vh: 0 };
+  clearPeekLayoutStyles(originsPeekBg());
+}
+
+function withPeekImageSize(bg, done) {
+  const url = peekBgUrl(bg);
+  if (!url) {
+    done(0, 0);
+    return;
+  }
+  if (peekImgCache.url === url && peekImgCache.w > 0) {
+    done(peekImgCache.w, peekImgCache.h);
+    return;
+  }
+  const img = new Image();
+  img.onload = () => {
+    peekImgCache = { url, w: img.naturalWidth, h: img.naturalHeight };
+    done(peekImgCache.w, peekImgCache.h);
+  };
+  img.onerror = () => done(0, 0);
+  img.src = url;
+}
+
+/**
+ * Cover: celý obrázek jako větší plátno; viewport je výřez, pan nesmí ukázat mimo.
+ * opts.resetPan — nový vstup do peeka (sedí na CSS ohnisko); resize ponechá pan.
+ */
+function layoutPeekFullImage(done, opts = {}) {
+  const scr = document.querySelector('[data-screen="origins"]');
+  const bg = originsPeekBg();
+  if (!scr || !bg || !scr.classList.contains("is-peek")) {
+    done?.();
+    return;
+  }
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const applySize = (iw, ih) => {
+    if (!scr.classList.contains("is-peek")) {
+      done?.();
+      return;
+    }
+    const { ew, eh } = peekFitSize(iw, ih, vw, vh);
+    peekLayout = { ew, eh, vw, vh };
+    bg.style.position = "fixed";
+    bg.style.width = `${ew}px`;
+    bg.style.height = `${eh}px`;
+    bg.style.left = `${(vw - ew) / 2}px`;
+    bg.style.top = `${(vh - eh) / 2}px`;
+    bg.style.right = "auto";
+    bg.style.bottom = "auto";
+    bg.style.backgroundSize = "100% 100%";
+    bg.style.backgroundPosition = "center";
+    if (opts.resetPan) {
+      const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
+      peekPan.x = p.x;
+      peekPan.y = p.y;
+      peekPan.scale = 1;
+    }
+    clampPeekPan();
+    applyPeekTransform();
+    done?.();
+  };
+  withPeekImageSize(bg, applySize);
+}
+
+function clampPeekPan() {
+  const { ew, eh, vw, vh } = peekLayout;
+  if (!ew || !eh || !vw || !vh) {
+    peekPan.x = 0;
+    peekPan.y = 0;
+    return;
+  }
+  const s = peekPan.scale;
+  /* meze vůči středu elementu; ohniskový offset je uvnitř (ew-vw)/2 */
+  const maxX = Math.max(0, (ew * s - vw) / 2);
+  const maxY = Math.max(0, (eh * s - vh) / 2);
+  peekPan.x = Math.max(-maxX, Math.min(maxX, peekPan.x));
+  peekPan.y = Math.max(-maxY, Math.min(maxY, peekPan.y));
+}
+
+function setPeekZoom(next, cx, cy) {
+  const bg = originsPeekBg();
+  if (!bg || !peekLayout.ew) return;
+  const prev = peekPan.scale;
+  const scale = Math.max(1, Math.min(2.5, next));
+  if (Math.abs(scale - prev) < 0.001) return;
+  if (cx != null && cy != null && prev > 0) {
+    const rect = bg.getBoundingClientRect();
+    const px = cx - (rect.left + rect.width / 2);
+    const py = cy - (rect.top + rect.height / 2);
+    peekPan.x += px * (1 - scale / prev);
+    peekPan.y += py * (1 - scale / prev);
+  }
+  peekPan.scale = scale;
+  if (scale <= 1.01) peekPan.scale = 1;
+  clampPeekPan();
+  applyPeekTransform();
+}
+
+function showPeekHintOnce() {
+  try {
+    if (sessionStorage.getItem(PEEK_HINT_KEY) === "1") return;
+    sessionStorage.setItem(PEEK_HINT_KEY, "1");
+  } catch (_) {}
+  toast("Táhni · přibliž", 2800);
+}
+
+function setPeekButtonState(btn, on) {
+  if (!btn) return;
+  btn.setAttribute("aria-pressed", String(!!on));
+  const tip = on ? "Zpět k textu" : "Ukázat celou scénu";
+  btn.dataset.tip = tip;
+  btn.title = tip;
+  btn.setAttribute("aria-label", tip);
+  if (!btn.querySelector("[aria-hidden]")) {
+    btn.innerHTML = `<span aria-hidden="true">${on ? "✕" : "👁"}</span>`;
+  } else {
+    btn.querySelector("[aria-hidden]").textContent = on ? "✕" : "👁";
+  }
+}
+
+function enterPeekMode() {
+  const scr = document.querySelector('[data-screen="origins"]');
+  const bg = originsPeekBg();
+  if (!scr || !bg) return;
+  const gen = ++peekEnterGen;
+  /* Read focus before is-peek (portrait/bake change background-position). */
+  peekFocus = readBgFocus(bg);
+  peekPan = { x: 0, y: 0, scale: 1 };
+  const from = bg.getBoundingClientRect();
+  withPeekImageSize(bg, (iw, ih) => {
+    if (gen !== peekEnterGen) return;
+    if (!scr.isConnected || !document.body.contains(bg)) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const { ew, eh } = peekFitSize(iw, ih, vw, vh);
+    const animate = !peekReduceMotion() && peekNeedsExpand(from, vw, vh);
+    scr.classList.add("is-peek");
+    applyPeekCanvas(bg, ew, eh, vw, vh);
+    if (!animate) {
+      scr.classList.remove("is-peek-expanding");
+      showPeekHintOnce();
+      return;
+    }
+    /*
+     * Zoom + pan to center (FLIP): lay out the final centered canvas, invert so it
+     * still looks like the stage/half frame, then animate transform to identity.
+     */
+    const flip = peekFlipFromRect(bg, from);
+    bg.style.transition = "none";
+    bg.style.filter = "blur(12px)";
+    bg.style.opacity = "0.82";
+    bg.style.transform = `translate(${peekPan.x + flip.dx}px, ${peekPan.y + flip.dy}px) scale(${flip.scale})`;
+    scr.classList.add("is-peek-expanding");
+    void bg.offsetWidth;
+    bg.style.transition = peekTransformTransition();
+    bg.style.filter = "blur(0px)";
+    bg.style.opacity = "1";
+    bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(1)`;
+    afterPeekTransition(bg, gen, () => {
+      scr.classList.remove("is-peek-expanding");
+      applyPeekTransform();
+      showPeekHintOnce();
+    });
+  });
+}
+
+function exitPeekMode() {
+  const scr = document.querySelector('[data-screen="origins"]');
+  const bg = originsPeekBg();
+  if (!scr) return;
+  const gen = ++peekEnterGen;
+  /* Already shrinking / cancelled enter — snap to settled CSS. */
+  if (scr.classList.contains("is-peek-expanding") && !scr.classList.contains("is-peek")) {
+    scr.classList.remove("is-peek-expanding");
+    resetPeekTransform();
+    return;
+  }
+  const half = peekHalfTarget(window.innerWidth, window.innerHeight);
+  const animate = bg && half && !peekReduceMotion() && scr.classList.contains("is-peek");
+  if (!animate) {
+    scr.classList.remove("is-peek", "is-peek-expanding");
+    resetPeekTransform();
+    return;
+  }
+  const from = bg.getBoundingClientRect();
+  /* Target = half-screen plate (portrait / landscape phone). */
+  const to = { left: half.left, top: half.top, width: half.w, height: half.h };
+  const toCx = to.left + to.width / 2;
+  const toCy = to.top + to.height / 2;
+  const fromCx = from.left + from.width / 2;
+  const fromCy = from.top + from.height / 2;
+  const scale = Math.max(to.width / Math.max(from.width, 1), to.height / Math.max(from.height, 1));
+  const dx = toCx - fromCx;
+  const dy = toCy - fromCy;
+  scr.classList.add("is-peek-expanding");
+  bg.style.transition = "none";
+  bg.style.filter = "blur(0px)";
+  bg.style.opacity = "1";
+  void bg.offsetWidth;
+  bg.style.transition = peekTransformTransition();
+  bg.style.filter = "blur(10px)";
+  bg.style.opacity = "0.88";
+  bg.style.transform = `translate(${peekPan.x + dx}px, ${peekPan.y + dy}px) scale(${scale})`;
+  afterPeekTransition(bg, gen, () => {
+    scr.classList.remove("is-peek", "is-peek-expanding");
+    resetPeekTransform();
+  });
+}
+
+function initPrologPeekGestures() {
+  const scr = document.querySelector('[data-screen="origins"]');
+  const bg = originsPeekBg();
+  if (!scr || !bg || bg.dataset.peekGestures === "1") return;
+  bg.dataset.peekGestures = "1";
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  const pointers = new Map();
+  let pinchDist = 0;
+  let pinchScale = 1;
+
+  bg.addEventListener("pointerdown", (e) => {
+    if (!scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try {
+      bg.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    if (pointers.size === 1) {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      bg.classList.add("is-dragging");
+    } else if (pointers.size === 2) {
+      dragging = false;
+      const pts = [...pointers.values()];
+      pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      pinchScale = peekPan.scale;
+    }
+    e.preventDefault();
+  });
+
+  bg.addEventListener("pointermove", (e) => {
+    if (!scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return;
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size >= 2) {
+      const pts = [...pointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      const midX = (pts[0].x + pts[1].x) / 2;
+      const midY = (pts[0].y + pts[1].y) / 2;
+      setPeekZoom(pinchScale * (dist / pinchDist), midX, midY);
+      return;
+    }
+    if (!dragging) return;
+    peekPan.x += e.clientX - lastX;
+    peekPan.y += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    clampPeekPan();
+    applyPeekTransform();
+  });
+
+  const endPtr = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      dragging = false;
+      bg.classList.remove("is-dragging");
+    } else if (pointers.size === 1) {
+      const only = [...pointers.values()][0];
+      dragging = true;
+      lastX = only.x;
+      lastY = only.y;
+      bg.classList.add("is-dragging");
+      pinchDist = 0;
+    }
+  };
+  bg.addEventListener("pointerup", endPtr);
+  bg.addEventListener("pointercancel", endPtr);
+
+  bg.addEventListener(
+    "wheel",
+    (e) => {
+      if (!scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return;
+      e.preventDefault();
+      setPeekZoom(peekPan.scale + (e.deltaY > 0 ? -0.12 : 0.12), e.clientX, e.clientY);
+    },
+    { passive: false }
+  );
+
+  bg.addEventListener("dblclick", (e) => {
+    if (!scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return;
+    e.preventDefault();
+    if (peekPan.scale > 1.05) {
+      peekPan.scale = 1;
+      clampPeekPan();
+      applyPeekTransform();
+    } else {
+      setPeekZoom(1.8, e.clientX, e.clientY);
+    }
+  });
+
+  const onPeekResize = () => {
+    if (!scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return;
+    layoutPeekFullImage();
+  };
+  window.addEventListener("resize", onPeekResize);
+  window.visualViewport?.addEventListener("resize", onPeekResize);
+}
+
 /** Veřejný export přepíše na true: ukázka končí po prologu (bez landingu a bez pokračování do hry). */
 const PUBLIC_DEMO = true;
 
@@ -1211,11 +1698,18 @@ const DEV_KNOB_SEC = {
   encounter: "boj",
 };
 
-/* slider 0 = panel zmizí; 1–100 = použitelný rozsah průhlednosti 20–80 % (mimo něj se vzhled skoro nemění) */
+/* slider 0 = pryč; 1–100 = použitelný rozsah 20–80 % (původní mapování) */
 const DEV_OP_MIN = 0.2;
 const DEV_OP_MAX = 0.8;
 const devSliderToOpacity = (v) => (v <= 0 ? 0 : DEV_OP_MIN + ((DEV_OP_MAX - DEV_OP_MIN) * Math.min(100, v)) / 100);
 const devOpacityToSlider = (o) => (o <= 0 ? 0 : Math.max(1, Math.min(100, Math.round(((o - DEV_OP_MIN) / (DEV_OP_MAX - DEV_OP_MIN)) * 100))));
+
+function applyDevOpacity(bar, opacity) {
+  const o = Math.min(DEV_OP_MAX, Math.max(0, opacity));
+  bar.style.setProperty("--dev-opacity", String(o));
+  const op = $("dev-opacity");
+  if (op) op.value = String(devOpacityToSlider(o));
+}
 
 function loadDevBarPrefs() {
   const out = {
@@ -1293,31 +1787,81 @@ function initDevBar() {
     bar.classList.toggle("is-collapsed", closed);
     bar.classList.toggle("is-minimized", closed);
     panel.hidden = closed;
-    bar.style.setProperty("--dev-opacity", String(prefs.opacity));
+    applyDevOpacity(bar, prefs.opacity);
     if (prefs.x != null && prefs.y != null) {
       bar.style.left = `${prefs.x}px`;
       bar.style.top = `${prefs.y}px`;
       bar.style.right = "auto";
     }
-    const op = $("dev-opacity");
-    if (op) op.value = String(devOpacityToSlider(prefs.opacity));
-    const minBtn = $("dev-minimize");
-    if (minBtn) {
-      minBtn.textContent = closed ? "+" : "–";
-      minBtn.title = closed ? "Rozbalit panel" : "Sbalit panel";
-      minBtn.setAttribute("aria-expanded", String(!closed));
+    const dragBtn = $("dev-drag");
+    if (dragBtn) {
+      const tip = closed ? "Otevřít nebo přesunout" : "Sbalit nebo přesunout";
+      dragBtn.title = tip;
+      dragBtn.setAttribute("aria-label", tip);
+      dragBtn.setAttribute("aria-expanded", String(!closed));
     }
     syncDevPad();
     requestAnimationFrame(() => clampBar());
   };
-  /* panel musí zůstat celý ve viewportu (devtools, resize, sbalení/rozbalení mění rozměry) */
+  /** Sbal/rozbal tak, aby čtverec zůstal tam, kde byl drag handle. */
+  const toggleCollapsed = () => {
+    const dragBtn = $("dev-drag");
+    const before = dragBtn?.getBoundingClientRect();
+    const willCollapse = !prefs.collapsed;
+    prefs.collapsed = willCollapse;
+    prefs.minimized = false;
+    if (willCollapse && before) {
+      prefs.x = before.left;
+      prefs.y = before.top;
+      bar.classList.add("is-collapsed", "is-minimized");
+      panel.hidden = true;
+      bar.style.left = `${prefs.x}px`;
+      bar.style.top = `${prefs.y}px`;
+      bar.style.right = "auto";
+      applyChrome();
+      return;
+    }
+    /* rozbalit: bar posunout tak, aby handle seděl na místě čtverce */
+    const anchorX = before ? before.left : prefs.x;
+    const anchorY = before ? before.top : prefs.y;
+    bar.classList.remove("is-collapsed", "is-minimized");
+    panel.hidden = false;
+    if (anchorX != null && anchorY != null && dragBtn) {
+      bar.style.left = `${anchorX}px`;
+      bar.style.top = `${anchorY}px`;
+      bar.style.right = "auto";
+      /* po layoutu: spočítat offset handle uvnitř baru */
+      const br = bar.getBoundingClientRect();
+      const dr = dragBtn.getBoundingClientRect();
+      prefs.x = anchorX - (dr.left - br.left);
+      prefs.y = anchorY - (dr.top - br.top);
+      bar.style.left = `${prefs.x}px`;
+      bar.style.top = `${prefs.y}px`;
+    }
+    applyChrome();
+  };
+  /* Keep bar in viewport; on prolog ultrawide, prefer the 16:9 stage (not black bars). */
   const clampBar = () => {
     if (prefs.x == null || prefs.y == null) return;
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
     const r = bar.getBoundingClientRect();
-    const x = Math.max(0, Math.min(vw - Math.min(r.width, vw), prefs.x));
-    const y = Math.max(0, Math.min(vh - Math.min(r.height, vh), prefs.y));
+    let minX = 0;
+    let minY = 0;
+    let maxX = vw - Math.min(r.width, vw);
+    let maxY = vh - Math.min(r.height, vh);
+    const stage = document.querySelector('[data-screen="origins"]:not(.hidden) .origins-stage');
+    const sr = stage?.getBoundingClientRect();
+    if (sr && sr.width < vw - 4) {
+      minX = sr.left;
+      maxX = Math.max(minX, sr.right - Math.min(r.width, sr.width));
+      minY = sr.top;
+      maxY = Math.max(minY, sr.bottom - Math.min(r.height, sr.height));
+    }
+    const x = Math.max(minX, Math.min(maxX, prefs.x));
+    const y = Math.max(minY, Math.min(maxY, prefs.y));
+    prefs.x = x;
+    prefs.y = y;
     bar.style.left = `${x}px`;
     bar.style.top = `${y}px`;
   };
@@ -1330,26 +1874,34 @@ function initDevBar() {
     });
   };
 
-  $("dev-minimize")?.addEventListener("click", () => {
-    prefs.collapsed = !prefs.collapsed;
-    prefs.minimized = false;
-    saveDevBarPrefs(prefs);
-    applyChrome();
-  });
   $("dev-opacity")?.addEventListener("input", (e) => {
     prefs.opacity = devSliderToOpacity(Number(e.target.value));
-    bar.style.setProperty("--dev-opacity", String(prefs.opacity));
+    applyDevOpacity(bar, prefs.opacity);
     saveDevBarPrefs(prefs);
   });
-  /* přesun po obrazovce */
+  /* čtverec: klik = sbalit/rozbalit (kotva = handle); táhni = přesun */
   const drag = $("dev-drag");
   if (drag) {
     let dragging = false;
+    let moved = false;
     let ox = 0;
     let oy = 0;
+    let startX = 0;
+    let startY = 0;
+    const THRESH = 6;
     const onMove = (e) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!dragging && (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH)) {
+        dragging = true;
+        moved = true;
+        bar.classList.add("is-dragging");
+        const rect = bar.getBoundingClientRect();
+        ox = startX - rect.left;
+        oy = startY - rect.top;
+      }
       if (!dragging) return;
-      const x = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - ox));
+      const x = Math.max(0, Math.min(window.innerWidth - 40, e.clientX - ox));
       const y = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - oy));
       prefs.x = x;
       prefs.y = y;
@@ -1358,20 +1910,25 @@ function initDevBar() {
       bar.style.right = "auto";
     };
     const onUp = () => {
-      if (!dragging) return;
-      dragging = false;
-      bar.classList.remove("is-dragging");
-      saveDevBarPrefs(prefs);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      bar.classList.remove("is-dragging");
+      if (!moved) {
+        toggleCollapsed();
+        saveDevBarPrefs(prefs);
+      } else if (dragging) {
+        saveDevBarPrefs(prefs);
+        clampBar();
+      }
+      dragging = false;
+      moved = false;
     };
     drag.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
-      dragging = true;
-      bar.classList.add("is-dragging");
-      const rect = bar.getBoundingClientRect();
-      ox = e.clientX - rect.left;
-      oy = e.clientY - rect.top;
+      moved = false;
+      dragging = false;
+      startX = e.clientX;
+      startY = e.clientY;
       e.preventDefault();
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -1495,30 +2052,18 @@ function syncPhaseLook() {
 }
 
 /**
- * Storybook: rozbalit jen sekce ke scéně (ostatní zavřít).
- * Odhalení (ladeni) jen když je ve `secs` — prolog ho neotevírá.
+ * Storybook: otevřít relevantní sekce Detailu. Nesahá na sbalení lišty
+ * (to drží localStorage `lom.devBarCollapsed`).
  */
 function focusDevForScenario(secs = []) {
   const bar = document.querySelector(".proto-bar");
   if (!bar || bar.hidden || !secs.length) return;
   const prefs = loadDevBarPrefs();
-  prefs.collapsed = false;
-  prefs.minimized = false;
   for (const id of Object.keys(prefs.sections)) prefs.sections[id] = secs.includes(id);
   saveDevBarPrefs(prefs);
-  bar.classList.remove("is-collapsed", "is-minimized");
-  const panel = $("dev-detail-panel");
-  if (panel) panel.hidden = false;
-  const minBtn = $("dev-minimize");
-  if (minBtn) {
-    minBtn.textContent = "–";
-    minBtn.title = "Sbalit panel";
-    minBtn.setAttribute("aria-expanded", "true");
-  }
   bar.querySelectorAll("details.dev-sec[data-sec]").forEach((el) => {
     el.open = secs.includes(el.dataset.sec);
   });
-  syncDevPad();
 }
 
 /** Úvod bez storybooku: klidné běžné lokace (bez kaple – první dojem nemá děsit). */
@@ -2249,13 +2794,9 @@ function setScreen(name) {
     }
     if (name === "landing") state.landingAuthOpen = false; /* návrat = znovu continue, ne účet */
     if (name === "origins") {
-      /* Ukázat scénu (peek) se nepřenáší do dalšího vstupu */
-      document.querySelector('[data-screen="origins"]')?.classList.remove("is-peek");
-      const pk = document.querySelector(".peek-btn");
-      if (pk) {
-        pk.setAttribute("aria-pressed", "false");
-        pk.textContent = "Ukázat scénu";
-      }
+      /* peek se nepřenáší do dalšího vstupu */
+      exitPeekMode();
+      setPeekButtonState(document.querySelector(".peek-btn"), false);
     }
   }
   state.screen = name;
@@ -2276,6 +2817,10 @@ function setScreen(name) {
   if (name === "confirm") updateStatsPreview();
   render();
   if (reveal) showLandingQuote();
+  /* After layout: pull floating chrome into the 16:9 stage on ultrawide. */
+  if (name === "origins") {
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  }
 }
 
 function laneStateKey() {
@@ -2979,19 +3524,22 @@ function choiceIsPicked(choice) {
 /**
  * Okraj scrollu → fade (nahoru / dolů).
  * opts.topEl / bottomEl = samostatné překryvy (Postava: pod sticky Kraj/Živnost);
- * bez nich třídy fade-top / fade-bottom na el (mask, např. choice-stack).
+ * opts.mask = true → i při overlays nastav fade-top/bottom (prolog: mask na obsahu, šipky mimo).
+ * bez overlays: třídy fade-top / fade-bottom na el.
  */
 function bindScrollFade(el, opts = {}) {
   if (!el) return;
   const topEl = opts.topEl || null;
   const bottomEl = opts.bottomEl || null;
+  const useOverlay = !!(topEl || bottomEl);
   const update = () => {
     const canUp = el.scrollTop > 2;
     const canDown = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
-    if (topEl || bottomEl) {
+    if (useOverlay) {
       topEl?.classList.toggle("is-on", canUp);
       bottomEl?.classList.toggle("is-on", canDown);
-    } else {
+    }
+    if (!useOverlay || opts.mask) {
       el.classList.toggle("fade-top", canUp);
       el.classList.toggle("fade-bottom", canDown);
     }
@@ -3002,6 +3550,53 @@ function bindScrollFade(el, opts = {}) {
   }
   update();
   requestAnimationFrame(update);
+}
+
+/** Prolog scroll pane: content + ▾ hints outside the CSS mask. */
+function originScrollHints() {
+  return (
+    `<div class="scroll-hint top" aria-hidden="true"><span class="scroll-hint-glyph">▾</span></div>` +
+    `<div class="scroll-hint bottom" aria-hidden="true"><span class="scroll-hint-glyph">▾</span></div>`
+  );
+}
+
+function bindPrologPaneFade(pane) {
+  if (!pane) return;
+  const scroller = pane.classList.contains("origin-flow")
+    ? pane
+    : pane.querySelector(".origin-body") || pane.querySelector(".choice-stack");
+  if (!scroller) return;
+  bindScrollFade(scroller, {
+    topEl: pane.querySelector(":scope > .scroll-hint.top"),
+    bottomEl: pane.querySelector(":scope > .scroll-hint.bottom"),
+    mask: true,
+  });
+}
+
+/** Prolog: mobile scrolls `.origin-flow` only (chrome stays put); desktop = body + choices. */
+function bindPrologScrollFades(box) {
+  if (!box) return;
+  const oneScroll =
+    window.matchMedia("(max-aspect-ratio: 1/1)").matches ||
+    window.matchMedia("(min-aspect-ratio: 1/1) and (max-height: 520px)").matches;
+  const flow = box.querySelector(".origin-flow");
+  const bodyPane = box.querySelector(".origin-scroll-pane.body-pane");
+  const choicePane = box.querySelector(".origin-scroll-pane.choices-pane");
+  const clear = (el) => el?.classList.remove("fade-top", "fade-bottom");
+  if (oneScroll && flow) {
+    clear(box);
+    clear(box.querySelector(".origin-body"));
+    clear(box.querySelector(".choice-stack"));
+    bodyPane?.querySelectorAll(".scroll-hint").forEach((h) => h.classList.remove("is-on"));
+    choicePane?.querySelectorAll(".scroll-hint").forEach((h) => h.classList.remove("is-on"));
+    bindPrologPaneFade(flow);
+  } else {
+    clear(box);
+    clear(flow);
+    flow?.querySelectorAll(":scope > .scroll-hint").forEach((h) => h.classList.remove("is-on"));
+    bindPrologPaneFade(bodyPane);
+    bindPrologPaneFade(choicePane);
+  }
 }
 
 /** Fade u Postavy: jen dole (nahoře sticky Kraj/Živnost musí zůstat celé). */
@@ -3054,6 +3649,34 @@ function renderOrigins() {
     : screenChrome({ label: "Prolog", segsHtml: flowSegsHtml(state.originStep) });
   const stepChanged = lastOriginStep !== state.originStep;
   lastOriginStep = state.originStep;
+  /*
+   * Opakovaný render stejného kroku (např. po kliku na volbu) nesmí přepsat innerHTML
+   * uprostřed náběhu — jen obnoví picked. Jinak druhé volání smaže span.w.
+   */
+  if (!stepChanged && box.dataset.revealed === "1") {
+    box.querySelectorAll("[data-origin-choice]").forEach((btn) => {
+      const i = Number(btn.dataset.originChoice);
+      const c = step.choices[i];
+      if (!c) return;
+      const picked = choiceIsPicked(c);
+      btn.classList.toggle("picked", picked);
+      btn.setAttribute("aria-pressed", String(picked));
+    });
+    const replyNeed = !!(state.prologReply && step.pick === "class");
+    let replyEl = box.querySelector(".origin-reply");
+    if (replyNeed) {
+      if (!replyEl) {
+        replyEl = document.createElement("p");
+        replyEl.className = "prose-beat origin-reply";
+        box.querySelector(".origin-main")?.appendChild(replyEl);
+      }
+      replyEl.innerHTML = nbspCzech(state.prologReply);
+    } else {
+      replyEl?.remove();
+    }
+    bindPrologScrollFades(box);
+    return;
+  }
   /* mezivěta po reakci na zvon: krok „domov“ na ni navazuje */
   const lead = step.lead ? step.lead[pickedClass() || "none"] : "";
   const bridge = state.prologBridges?.[state.originStep - 1] || ""; /* Svatavina odpověď nebo následek předchozí volby */
@@ -3065,31 +3688,48 @@ function renderOrigins() {
     .map((para) => `<p class="prose-beat origin-text">${nbspCzech(para, { tail: true })}</p>`)
     .join("");
   const bodyHtml = LOM.Kodex.annotate(bodyRaw, state.kodexSeen, { prefs: state.prefs });
+  const choicesHtml = step.choices
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => (step.pick === "origin" ? originChoiceAllowed(c) : true))
+    .map(({ c, i }, n) => {
+      const picked = choiceIsPicked(c);
+      const letter = letters[n] || String(n + 1);
+      return `<button type="button" class="choice btn-action${picked ? " picked" : ""}" style="--i:${n}" data-origin-choice="${i}" aria-pressed="${picked}">
+              <span class="choice-letter" aria-hidden="true">${letter}</span>
+              <span class="choice-main">
+                <strong class="choice-copy">${choiceBodyHtml(c)}</strong>
+                ${c.hint ? `<span class="btn-hint">${c.hint}</span>` : ""}
+              </span>
+            </button>`;
+    })
+    .join("");
   box.innerHTML = `
-    ${chrome}
-    <div class="origin-body">${bodyHtml}</div>
-    ${state.prologReply && step.pick === "class" ? `<p class="prose-beat origin-reply">${nbspCzech(state.prologReply)}</p>` : ""}
-    <div class="choice-stack">
-      ${step.choices
-        .map((c, i) => ({ c, i }))
-        .filter(({ c }) => (step.pick === "origin" ? originChoiceAllowed(c) : true))
-        .map(({ c, i }, n) => {
-          const picked = choiceIsPicked(c);
-          const letter = letters[n] || String(n + 1);
-          return `<button type="button" class="choice btn-action${picked ? " picked" : ""}" style="--i:${n}" data-origin-choice="${i}" aria-pressed="${picked}">
-            <span class="choice-letter" aria-hidden="true">${letter}</span>
-            <span class="choice-main">
-              <strong class="choice-copy">${choiceBodyHtml(c)}</strong>
-              ${c.hint ? `<span class="btn-hint">${c.hint}</span>` : ""}
-            </span>
-          </button>`;
-        })
-        .join("")}
+    <div class="origin-chrome">${chrome}</div>
+    <div class="origin-flow">
+      ${originScrollHints()}
+      <div class="origin-main">
+        <div class="origin-scroll-pane body-pane">
+          <div class="origin-body">${bodyHtml}</div>
+          ${originScrollHints()}
+        </div>
+        ${state.prologReply && step.pick === "class" ? `<p class="prose-beat origin-reply">${nbspCzech(state.prologReply)}</p>` : ""}
+      </div>
+      <div class="origin-scroll-pane choices-pane">
+        <div class="choice-stack">
+          ${choicesHtml}
+        </div>
+        ${originScrollHints()}
+      </div>
     </div>
     `;
-  box.classList.toggle("step-in", stepChanged);
-  if (stepChanged) revealText(box.querySelector(".origin-body"));
-  bindScrollFade(box.querySelector(".choice-stack"));
+  box.dataset.revealed = "1";
+  revealText(box.querySelector(".origin-body"));
+  const reply = box.querySelector(".origin-reply");
+  if (reply) revealText(reply, { delay: 120 });
+  box.querySelectorAll(".choice-main").forEach((el, n) => {
+    revealText(el, { step: 22, delay: 220 + n * 70 });
+  });
+  bindPrologScrollFades(box);
 }
 
 /**
@@ -5925,9 +6565,12 @@ document.body.addEventListener("click", (e) => {
   }
   if (act === "prolog-peek") {
     const scr = document.querySelector('[data-screen="origins"]');
-    const on = scr.classList.toggle("is-peek");
-    t.setAttribute("aria-pressed", String(on));
-    t.textContent = on ? "Zpět k textu" : "Ukázat scénu";
+    const peeking =
+      !!scr &&
+      (scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding"));
+    if (peeking) exitPeekMode();
+    else enterPeekMode();
+    setPeekButtonState(t, !peeking);
     return;
   }
   if (act === "origin-back") {
@@ -6233,6 +6876,7 @@ document.body.addEventListener("input", (e) => {
 });
 
 initDevBar();
+initPrologPeekGestures();
 window.addEventListener("resize", syncDevPad);
 window.addEventListener("orientationchange", () => setTimeout(syncDevPad, 50));
 syncDevPad();

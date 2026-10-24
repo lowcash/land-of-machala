@@ -35,6 +35,7 @@ player-footer   ← full-bleed sibling (not inside max-width)
 
 - Landing: brand + 1 tagline + auth (`landing-auth-only`), vertically centred, no boxes or chronicle quotes. Footer: Settings · FAQ · Terms (fullscreen); FAQ = exclusive accordion. Auth alt = `btn-ghost`.
 - `screenChrome()` for auth (“Account” + sub), prologue and Character; flow track segments; prologue = livelihood → region → bell → origin, then **Character**: summary + name, “Replay prologue”; manual tiles only from the storybook.
+- Prologue action box: **soft melt plate** (oversized feathered dark shade + light blur under the reading area — not a hard glass panel). Portrait: picture in the upper half with a smooth fade into the text.
 - Character: tiles, click again = deselect; no pick = pilgrim defaults. Dice = name only. Flash stats; origin shows an effects line from data.
 - Legal (indie): account deactivation, 14-day restore, then delete.
 

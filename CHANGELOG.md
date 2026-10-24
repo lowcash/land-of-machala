@@ -7,6 +7,7 @@ Format: dated sections; versions follow `APP_VERSION` in `prototype/app.js` when
 ## Unreleased
 
 ### Prologue
+- Action box uses a **soft melt plate**: oversized dark shade with a long feathered edge and a light blur under the text (no hard glass panel). Portrait phones keep the picture in the upper half with a smooth fade into the text; scroll edges fade with matching up/down hints.
 - Public demo ends after the four prologue choices (no character screen): a short “demo version” modal offers to play the prologue again.
 - Storybook default preset is **Prolog · Svatava (S1)** only (other presets removed for now; modes still available via knobs).
 - Public Pages shows a slim floating bar (drag, collapse, opacity) with **place = tavern** and **four times of day** only — no preset list, mode, image style, or systems panel. Private storybook keeps the full bar.
