@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<!-- noclehárna interier -->
+<g id="wall">
+  <rect width="1600" height="600" fill="#6e4a34"/>
+  <g class="t" opacity=".38"><path d="M0 160h1600M0 320h1600M0 480h1600"/></g>
+  <g fill="#4a3020" opacity=".45"><rect x="0" y="0" width="80" height="600"/><rect x="1520" y="0" width="80" height="600"/></g>
+</g>
+<g id="ceiling">
+  <rect class="o" x="-10" y="0" width="1620" height="76" fill="#3a2418"/>
+  <rect class="o" x="-10" y="76" width="1620" height="22" fill="#5a3824"/>
+  <rect class="o" x="180" y="0" width="40" height="260" fill="#4a3020"/>
+  <rect class="o" x="1380" y="0" width="40" height="260" fill="#4a3020"/>
+</g>
+<g id="window">
+  <rect class="o" x="700" y="150" width="200" height="150" rx="6" fill="#7a92a8"/>
+  <path class="t" d="M800 150v150M700 225h200"/>
+  <rect class="o" x="688" y="140" width="224" height="16" fill="#3a2418"/>
+</g>
+<g id="floor">
+  <rect width="1600" height="300" y="600" fill="#3a2818"/>
+  <rect class="o" x="-10" y="596" width="1620" height="12" fill="#24160f"/>
+  <g class="t" opacity=".45"><path d="M0 700h1600M0 790h1600M0 870h1600"/></g>
+</g>
+<g id="bunks-left">
+  <path class="o" d="M110 220V600M470 220V600" fill="none"/>
+  <rect class="o" x="100" y="250" width="380" height="26" fill="#5a3820"/>
+  <rect class="o" x="100" y="420" width="380" height="26" fill="#5a3820"/>
+  <rect class="o" x="130" y="276" width="340" height="78" rx="6" fill="#c9b080"/>
+  <rect class="o" x="130" y="446" width="340" height="100" rx="6" fill="#b8a070"/>
+  <rect class="o" x="140" y="286" width="80" height="36" rx="4" fill="#d8c9a0"/>
+  <rect class="o" x="140" y="456" width="80" height="44" rx="4" fill="#d8c9a0"/>
+  <path class="t" d="M110 250h360M110 420h360"/>
+</g>
+<g id="bunks-right">
+  <path class="o" d="M1130 220V600M1490 220V600" fill="none"/>
+  <rect class="o" x="1120" y="250" width="380" height="26" fill="#5a3820"/>
+  <rect class="o" x="1120" y="420" width="380" height="26" fill="#5a3820"/>
+  <rect class="o" x="1150" y="276" width="340" height="78" rx="6" fill="#c9b080"/>
+  <rect class="o" x="1150" y="446" width="340" height="100" rx="6" fill="#b8a070"/>
+  <rect class="o" x="1400" y="286" width="80" height="36" rx="4" fill="#d8c9a0"/>
+  <rect class="o" x="1400" y="456" width="80" height="44" rx="4" fill="#d8c9a0"/>
+</g>
+<g id="stove">
+  <path class="o" d="M680 600V320q0-40 40-40h160q40 0 40 40v280z" fill="#6a5a4a"/>
+  <g class="t" opacity=".6"><path d="M680 380h240M680 460h240M680 540h240"/></g>
+  <path class="o" d="M720 600V390q0-20 20-20h120q20 0 20 20v210z" fill="#1e120c"/>
+  <ellipse cx="800" cy="470" rx="40" ry="28" fill="#ff8a1f" opacity=".78"/>
+  <ellipse cx="800" cy="458" rx="20" ry="12" fill="#ffd45e" opacity=".85"/>
+  <rect class="o" x="750" y="260" width="100" height="26" rx="4" fill="#4a3a30"/>
+  <path class="t" d="M800 180v80"/>
+</g>
+<g id="crate">
+  <rect class="o" x="560" y="520" width="90" height="80" fill="#6b4220"/>
+  <path class="t" d="M560 560h90M605 520v80"/>
+</g>
+</svg>

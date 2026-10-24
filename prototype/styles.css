@@ -115,39 +115,89 @@ html, body {
   min-width: var(--game-min);
 }
 
+/* plovoucí box: chrome sticky; šířka stejná i při minimalizaci */
 .proto-bar {
+  --dev-opacity: 0.92;
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: calc(0.5rem + var(--safe-t));
+  left: 0.5rem;
+  right: auto;
   z-index: 100;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.25rem 0.5rem;
-  padding-top: calc(0.25rem + var(--safe-t));
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - 1rem - var(--safe-t));
+  padding: 0;
   box-sizing: border-box;
-  border-bottom: 1px solid var(--line);
-  background: rgba(13, 9, 8, 0.96);
+  border: 1px solid rgba(185, 168, 148, 0.35);
+  border-radius: 8px;
+  background: rgba(13, 9, 8, var(--dev-opacity));
+  backdrop-filter: blur(calc(8px * var(--dev-opacity)));
+  -webkit-backdrop-filter: blur(calc(8px * var(--dev-opacity)));
   font-size: 0.68rem;
   color: var(--muted);
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, calc(0.45 * var(--dev-opacity)));
+}
+.proto-bar.is-dragging { cursor: grabbing; }
+.proto-bar.is-collapsed .dev-scroll,
+.proto-bar.is-minimized .dev-scroll { display: none !important; }
+/* zavřený = stejná šířka jako otevřený (jen bez těla) */
+.proto-bar .dev-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(13, 9, 8, var(--dev-opacity));
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.proto-bar .dev-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  max-height: 40dvh;
   -webkit-overflow-scrolling: touch;
+  padding: 0.35rem 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
-/* sbalená: jen první řádek (Scéna, Reset, Detail, Stav); status panel necháme podle tlačítka */
-.proto-bar.is-collapsed .dev-detail { display: none !important; }
-.proto-bar.is-collapsed .dev-row:first-child { flex-wrap: nowrap; }
+.proto-bar .dev-drag {
+  flex-shrink: 0;
+  cursor: grab;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.15rem 0.25rem;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.proto-bar .dev-drag:active { cursor: grabbing; }
+.proto-bar .dev-opacity {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  min-width: 3.5rem;
+}
+.proto-bar .dev-opacity input[type="range"] {
+  width: 3.5rem;
+  accent-color: var(--accent);
+}
 .proto-bar .dev-main { flex: 1 1 auto; min-width: 0; }
 .proto-bar .dev-main select { flex: 1 1 auto; min-width: 0; max-width: none; }
-.proto-bar .dev-btn { flex-shrink: 0; }
+.proto-bar .dev-btn { flex-shrink: 0; padding: 0.3rem 0.45rem; white-space: nowrap; }
 .proto-nav { display: flex; flex-wrap: nowrap; gap: 0.25rem; flex-shrink: 0; }
-.proto-bar .dev-btn { padding: 0.3rem 0.45rem; white-space: nowrap; }
 body:not(.has-dev) .proto-bar,
 .proto-bar[hidden] { display: none !important; }
 .dev-link { color: var(--accent); white-space: nowrap; flex-shrink: 0; }
-.proto-bar { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
 .dev-row { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; }
 .dev-knob { display: inline-flex; flex-direction: column; gap: 0.1rem; font-size: 0.6rem; color: var(--muted); }
 .dev-knob select, .dev-main select { font: inherit; font-size: 0.7rem; padding: 0.2rem; background: rgba(0,0,0,0.4); color: var(--fg); border: 1px solid var(--line); max-width: 11rem; }
@@ -157,33 +207,61 @@ body:not(.has-dev) .proto-bar,
 .dev-toggles { gap: 0.2rem 1rem; }
 .dev-detail { display: flex; flex-direction: column; gap: 0.25rem; }
 .dev-sec { padding: 0; }
-.dev-sec > summary { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg); list-style: none; padding: 0.2rem 0.1rem; }
+.dev-sec > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  list-style: none;
+  padding: 0.2rem 0.1rem;
+  line-height: 1.25;
+}
 .dev-sec > summary::-webkit-details-marker { display: none; }
-.dev-sec > summary::before { content: ""; }
 .dev-sec[open] > summary { margin-bottom: 0.25rem; }
-/* jedna šipka pro hlavní panel i kategorie */
-.chev, .dev-sec > summary::before {
-  display: inline-block;
+/* chevron: stejná výška řádku jako text (align-items:center, bez margin-top) */
+.dev-sec > summary::before {
+  content: "";
+  box-sizing: border-box;
   width: 0.4rem;
   height: 0.4rem;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
+  /* viditelný šev „>“ leží v půlce čtverce: posun o půl diagonály ho vystředí k textu */
+  transform: translate(-0.14rem, 0) rotate(-45deg);
+  transform-origin: 50% 50%;
   transition: transform 0.15s;
   flex-shrink: 0;
-  margin: 0 0.1rem;
+  margin: 0;
 }
-.dev-toggle { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.1rem; border: 0; background: none; color: var(--fg); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.dev-toggle[aria-expanded="true"] .chev,
-.dev-sec[open] > summary::before { transform: rotate(45deg); }
+.dev-sec[open] > summary::before { transform: translate(0, -0.14rem) rotate(45deg); }
 .dev-note { margin: 0; color: var(--muted); }
 .dev-status { margin: 0; max-height: 60vh; overflow: auto; }
-.dev-status ul { margin: 0.3rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; }
-.dev-status li { display: grid; grid-template-columns: minmax(9rem, 14rem) 5rem 1fr; gap: 0.5rem; align-items: center; }
-.dev-status em { opacity: 0.7; font-style: normal; }
-.dev-total, .dev-legend { margin: 0.2rem 0; }
-.dev-bar { display: block; height: 0.4rem; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.dev-status ul.dev-sys-list,
+.dev-status ul { margin: 0.3rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
+/* úzký floating panel: jméno+pct nahoře, pruh, poznámka — ne tři pevné sloupce */
+.dev-status li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name pct"
+    "bar bar"
+    "note note";
+  gap: 0.12rem 0.45rem;
+  align-items: baseline;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.12);
+}
+.dev-status li:last-child { border-bottom: none; }
+.dev-sys-name { grid-area: name; font-weight: 600; color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+.dev-sys-pct { grid-area: pct; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.dev-status .dev-bar { grid-area: bar; display: block; height: 0.35rem; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
 .dev-bar b { display: block; height: 100%; background: #8fbf6a; }
+.dev-sys-note, .dev-status em { grid-area: note; opacity: 0.7; font-style: normal; font-size: 0.92em; line-height: 1.3; }
+.dev-total, .dev-legend { margin: 0.2rem 0; }
 .sys-funguje { color: #8fbf6a; font-weight: 600; }
 .sys-maketa { color: #d49a4a; font-weight: 600; }
 .sys-chybí { color: #c0604a; font-weight: 600; }
@@ -323,16 +401,9 @@ button.linkish,
   flex-direction: column;
   overflow: hidden;
 }
-/* DEV: viewport od top:0 (lišta přes notch); obsah odsazen o naměřenou výšku lišty */
+/* DEV panel plovoucí — neukrajuje horní okraj scény */
 body.has-dev .view-full {
   top: 0;
-}
-body.has-dev .landing-frame {
-  padding-top: calc(var(--dev-pad) + var(--space-2));
-}
-body.has-dev .game-frame {
-  /* lišta + vzduch - nepřepisovat celý padding na nulu */
-  padding-top: calc(var(--dev-pad) + clamp(1.25rem, 4vh, 2.25rem));
 }
 
 /* Landing */
@@ -348,26 +419,26 @@ body.has-dev .game-frame {
   background-color: #3a2818;
   background-image:
     linear-gradient(90deg, rgba(18,10,6,0.55), rgba(18,10,6,0.22) 42%, rgba(18,10,6,0.5)),
-    url("../resources/locations/placeholder/village.svg");
+    url("../resources/locations/village.svg");
   background-size: cover;
   background-position: center;
 }
-/* landing - světlejší, ať SVG není černá deska; text drží kontrast karty */
-.landing-screen:not(.game-screen) .landing-bg {
+/* landing bez data-sky: jemný tón; se sky vrstvou = fáze (nebe/světlo), ne filter */
+.landing-screen:not(.game-screen) .landing-bg:not([data-sky]) {
   filter: brightness(0.88) saturate(0.95) contrast(1.02);
 }
-.landing-screen:not(.game-screen) .landing-bg::after {
+.landing-screen:not(.game-screen) .landing-bg:not([data-sky])::after {
   content: "";
   position: absolute;
   inset: 0;
   background: rgba(10, 6, 4, 0.12);
   pointer-events: none;
 }
-/* herní scény - lehčí filtr, ať bg není černá deska */
-.game-screen .landing-bg {
+/* herní scény bez sky: jemný tón; se data-sky = fáze (nebe/světlo) */
+.game-screen .landing-bg:not([data-sky]) {
   filter: brightness(0.88) saturate(0.92) contrast(1.02);
 }
-.game-screen .landing-bg::after {
+.game-screen .landing-bg:not([data-sky])::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -409,30 +480,33 @@ body.has-dev .game-frame {
   backdrop-filter: blur(var(--panel-blur));
   -webkit-backdrop-filter: blur(var(--panel-blur));
 }
-/* intro + formulář = jeden panel; oddělovač; footer zvlášť */
+/* intro + formulář = jeden panel; hierarchie brand → tagline → citát; footer zvlášť */
 .landing-intro {
   display: grid;
-  gap: 0.45rem;
+  gap: 0;
   justify-items: center;
   text-align: center;
-  padding: 0 0 0.75rem;
+  padding: 0.15rem 0 0.9rem;
   margin: 0;
   border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.landing-intro .brand {
+  font-size: 1.05rem;
+  letter-spacing: 0.22em;
+  padding-top: 0;
+}
+.landing-tagline {
+  margin: 0.35rem 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  max-width: 18rem;
 }
 .landing-card-body {
   display: grid;
   gap: var(--gap);
-  padding-top: 0.75rem;
-}
-.landing-auth-only .brand {
-  text-align: center;
-}
-.landing-tagline {
-  margin: 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.35;
+  padding-top: 0.85rem;
 }
 .landing-auth-only .auth-card {
   width: 100%;
@@ -444,8 +518,9 @@ body.has-dev .game-frame {
   gap: 0.45rem;
   justify-items: center;
 }
+/* citát = epigraf pod značkou, ne třetí stejně silný řádek */
 .landing-quote {
-  margin: 0.35rem 0 0;
+  margin: 0.85rem 0 0;
   display: grid;
   justify-items: center;
   width: 100%;
@@ -453,25 +528,27 @@ body.has-dev .game-frame {
 }
 .landing-quote-inner {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.2rem;
   width: fit-content;
-  max-width: 100%;
+  max-width: 16rem;
   justify-items: stretch;
 }
 .landing-quote blockquote {
   margin: 0;
   text-align: center;
-  font-size: 1.05rem;
-  line-height: 1.4;
-  color: var(--fg);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--muted);
   font-style: italic;
+  text-wrap: balance;
 }
 .landing-quote figcaption {
   margin: 0;
   text-align: right;
-  font-style: italic;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgba(185, 168, 148, 0.85);
 }
 /* continue = celý box; účet schovaný, dokud neodhlásíš */
 .landing-continue #auth-forms { display: none; }
@@ -676,11 +753,43 @@ body.has-dev .game-frame {
   justify-self: start;
 }
 /* .acc-picked - viz blurb sekce (jen mobil) */
+/* volba: písmeno | text (ne písmeno uvnitř věty) */
+.choice.btn-action {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr;
+  align-items: start;
+  gap: 0.35rem 0.55rem;
+  text-align: left;
+}
 .choice-letter {
-  display: inline-block;
-  min-width: 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  min-height: 1.35rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   color: var(--accent);
   font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  background: transparent;
+}
+.choice-main {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.choice-copy {
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+.choice.picked .choice-letter {
+  color: var(--accent);
 }
 .auth-card h2 { margin: 0; font-weight: 500; }
 .sub { margin: 0; color: var(--muted); font-size: 0.95rem; }
@@ -854,22 +963,21 @@ input, select {
 .choice.btn-action {
   max-width: none;
   width: 100%;
-  padding: 0.65rem 0.75rem;
+  padding: 0.55rem 0.7rem;
   background: rgba(0,0,0,0.35);
 }
-/* narrativní beat: prolog = ráno/poledne (vlevo, stejné písmo; kurzíva jen u gest) */
+/* narrativní beat: kurzíva (atmosféra) + vlevo (čitelnost více odstavců); gesta = .choice-act */
 .prose-beat,
 .origin-text {
   margin: 0;
-  font-style: normal;
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: var(--fg);
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
   text-align: left;
   text-wrap: pretty;
 }
 .origin-reply {
-  font-style: italic;
   color: var(--muted);
 }
 .choice-stack .choice { letter-spacing: 0.02em; }
@@ -2737,16 +2845,16 @@ button.locked,
   background-position: center;
 }
 .thumb.context.town {
-  background-image: url("../resources/locations/placeholder/city.svg");
+  background-image: url("../resources/locations/city.svg");
 }
 .thumb.context.place {
-  background-image: url("../resources/locations/placeholder/healer.svg");
+  background-image: url("../resources/locations/healer.svg");
 }
 .thumb.context.wild {
-  background-image: url("../resources/locations/placeholder/forest.svg");
+  background-image: url("../resources/locations/forest.svg");
 }
 .thumb.context.land {
-  background-image: url("../resources/locations/placeholder/plains.svg");
+  background-image: url("../resources/locations/plains.svg");
 }
 .item-tile:not(.can-equip) {
   cursor: help;
@@ -3420,13 +3528,229 @@ button,
 .loot-overlay[data-morning] .screen-chrome {
   justify-self: stretch;
 }
+/* ráno modal: průhlednější overlay + tón fáze, ať prosvítá scénové BG (seník/chalupa/…) */
+.loot-overlay[data-morning] {
+  background: rgba(8, 5, 4, 0.42);
+  backdrop-filter: blur(2.5px);
+  -webkit-backdrop-filter: blur(2.5px);
+}
+.loot-overlay[data-morning][data-phase="morning"] {
+  background: linear-gradient(180deg, rgba(40, 28, 14, 0.28), rgba(12, 8, 6, 0.48));
+}
+.loot-overlay[data-morning][data-phase="noon"] {
+  background: linear-gradient(180deg, rgba(55, 42, 18, 0.22), rgba(18, 12, 8, 0.45));
+}
+.loot-overlay[data-morning][data-phase="afternoon"] {
+  background: linear-gradient(180deg, rgba(28, 18, 12, 0.38), rgba(10, 6, 4, 0.52));
+}
+.loot-overlay[data-morning][data-phase="evening"] {
+  background: linear-gradient(180deg, rgba(48, 22, 12, 0.4), rgba(8, 4, 10, 0.58));
+}
+.loot-overlay[data-morning][data-phase="night"] {
+  background: linear-gradient(180deg, rgba(8, 10, 22, 0.5), rgba(4, 4, 10, 0.62));
+}
+/* fáze: stejný rámeček u modalu i landing/prolog/postava panelů */
+body[data-phase="morning"] :is(.auth-card, .landing-panel, .loot-overlay[data-morning] .morning-sheet) {
+  border-color: rgba(186, 160, 120, 0.55);
+  box-shadow: inset 0 3px 0 rgba(212, 180, 120, 0.55), 0 10px 32px rgba(0, 0, 0, 0.4);
+}
+body[data-phase="noon"] :is(.auth-card, .landing-panel, .loot-overlay[data-morning] .morning-sheet) {
+  border-color: rgba(220, 170, 70, 0.65);
+  box-shadow: inset 0 3px 0 rgba(255, 200, 90, 0.7), 0 10px 32px rgba(0, 0, 0, 0.4);
+}
+body[data-phase="afternoon"] :is(.auth-card, .landing-panel, .loot-overlay[data-morning] .morning-sheet) {
+  border-color: rgba(160, 120, 90, 0.55);
+  box-shadow: inset 0 3px 0 rgba(180, 120, 70, 0.45), 0 10px 32px rgba(0, 0, 0, 0.4);
+}
+body[data-phase="evening"] :is(.auth-card, .landing-panel, .loot-overlay[data-morning] .morning-sheet) {
+  border-color: rgba(200, 110, 70, 0.6);
+  box-shadow: inset 0 3px 0 rgba(220, 100, 50, 0.55), 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+body[data-phase="night"] :is(.auth-card, .landing-panel, .loot-overlay[data-morning] .morning-sheet) {
+  border-color: rgba(90, 110, 160, 0.5);
+  box-shadow: inset 0 3px 0 rgba(100, 120, 180, 0.4), 0 10px 32px rgba(0, 0, 0, 0.5);
+}
+.confirm-sheet .confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  justify-items: stretch;
+}
+.confirm-sheet .confirm-actions .btn {
+  width: 100%;
+  box-sizing: border-box;
+}
 .loot-overlay[data-morning] .morning-body {
   display: grid;
   gap: 0.55rem;
 }
+/*
+ * Fáze dne = vrstvy na stejném SVG (ideas/faze-dne-vizual), ne filter:
+ * data-sky=out → nebe + slunce/měsíc; in → světlo místnosti; tavern → okno + světlo.
+ */
+.landing-bg[data-sky] {
+  filter: none;
+}
+.landing-bg[data-sky="out"]::before,
+.landing-bg[data-sky="out"]::after,
+.landing-bg[data-sky="in"]::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+/* nebe jen horní pás — slunce/měsíc nikdy na cestě / zemi */
+.landing-bg[data-sky="out"]::before {
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 38%;
+}
+.landing-bg[data-sky="out"]::after,
+.landing-bg[data-sky="in"]::after {
+  z-index: 2;
+  inset: 0;
+}
+
+/* venku: slunce/měsíc jen v pásu nebe (souřadnice = % pásu) */
+.landing-bg[data-sky="out"][data-phase="morning"]::before {
+  background:
+    radial-gradient(circle at 82% 35%, rgba(255, 232, 170, 0.95) 0 7%, transparent 22%),
+    linear-gradient(180deg, rgba(170, 205, 240, 0.5) 0%, rgba(255, 210, 160, 0.22) 70%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="noon"]::before {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 250, 210, 1) 0 9%, transparent 28%),
+    linear-gradient(180deg, rgba(120, 175, 235, 0.42) 0%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="afternoon"]::before {
+  background:
+    radial-gradient(circle at 18% 48%, rgba(255, 200, 120, 0.9) 0 8%, transparent 24%),
+    linear-gradient(180deg, rgba(110, 140, 180, 0.38) 0%, rgba(200, 150, 100, 0.18) 75%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="evening"]::before {
+  background:
+    radial-gradient(circle at 14% 55%, rgba(255, 140, 60, 0.95) 0 10%, transparent 28%),
+    linear-gradient(180deg, rgba(70, 40, 80, 0.4) 0%, rgba(200, 90, 50, 0.35) 80%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="night"]::before {
+  background:
+    radial-gradient(circle at 78% 32%, rgba(230, 235, 255, 0.9) 0 4%, transparent 12%),
+    radial-gradient(circle at 22% 40%, rgba(255, 255, 255, 0.5) 0 0.9%, transparent 2%),
+    radial-gradient(circle at 40% 22%, rgba(255, 255, 255, 0.4) 0 0.7%, transparent 1.6%),
+    radial-gradient(circle at 90% 55%, rgba(255, 255, 255, 0.45) 0 0.8%, transparent 1.8%),
+    linear-gradient(180deg, rgba(8, 12, 32, 0.7) 0%, rgba(12, 16, 36, 0.2) 100%);
+}
+.landing-bg[data-sky="out"][data-phase="morning"]::after {
+  background: rgba(255, 220, 180, 0.07);
+}
+.landing-bg[data-sky="out"][data-phase="noon"]::after {
+  background: rgba(255, 245, 210, 0.05);
+}
+.landing-bg[data-sky="out"][data-phase="afternoon"]::after {
+  background: rgba(30, 18, 10, 0.18);
+}
+.landing-bg[data-sky="out"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(50, 20, 10, 0.2), rgba(10, 6, 16, 0.38));
+}
+.landing-bg[data-sky="out"][data-phase="night"]::after {
+  background: rgba(4, 6, 18, 0.42);
+}
+
+/* interiér (ne krčma): jen světlo místnosti */
+.landing-bg[data-sky="in"][data-phase="morning"]::after {
+  background: rgba(40, 28, 14, 0.1);
+}
+.landing-bg[data-sky="in"][data-phase="noon"]::after {
+  background: rgba(255, 220, 150, 0.07);
+}
+.landing-bg[data-sky="in"][data-phase="afternoon"]::after {
+  background: rgba(18, 10, 6, 0.18);
+}
+.landing-bg[data-sky="in"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(50, 22, 10, 0.22), rgba(16, 8, 6, 0.36));
+}
+.landing-bg[data-sky="in"][data-phase="night"]::after {
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 150, 50, 0.1), rgba(4, 6, 14, 0.5) 72%);
+}
+
+/* pečený render (prolog S1/S2): žádný CSS tón ani nebe — světlo je v obraze */
+.landing-bg[data-sky="bake"] {
+  background-size: cover;
+  background-position: center 40%;
+  filter: none;
+}
+.landing-bg[data-sky="bake"]::before,
+.landing-bg[data-sky="bake"]::after,
+.landing-bg[data-sky="none"]::before,
+.landing-bg[data-sky="none"]::after {
+  content: none;
+}
+.landing-bg[data-sky="none"] {
+  filter: none;
+  background-image: none;
+}
+
+/* krčma: stejný cover jako ostatní BG (1600×900); ::before = nebe ve okně (přibližně) */
+.landing-bg[data-bg="tavern"],
+.landing-bg[data-sky="tavern"] {
+  background-size: cover;
+  background-position: center;
+}
+.landing-bg[data-bg="tavern"]::before {
+  content: "";
+  position: absolute;
+  /* SVG viewBox 1600×900: okno 300,200 150×190 */
+  left: 18.75%;
+  top: 22.22%;
+  width: 9.375%;
+  height: 21.11%;
+  border-radius: 50% / 42%;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.25);
+}
+.landing-bg[data-bg="tavern"][data-phase="morning"]::before {
+  background: radial-gradient(circle at 70% 28%, #ffe9a8 0 18%, transparent 42%), linear-gradient(180deg, #c8dcf5 0%, #8eb0d8 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="noon"]::before {
+  background: radial-gradient(circle at 72% 30%, #fff6c8 0 22%, transparent 48%), linear-gradient(180deg, #9ec4f0 0%, #6a9ad4 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="afternoon"]::before {
+  background: radial-gradient(circle at 68% 32%, #ffd089 0 16%, transparent 40%), linear-gradient(180deg, #8aa4c8 0%, #5a7298 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="evening"]::before {
+  background: radial-gradient(circle at 65% 40%, #ffb060 0 20%, transparent 45%), linear-gradient(180deg, #c07048 0%, #3a2a58 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="night"]::before {
+  background: radial-gradient(circle at 70% 28%, #f0e8c0 0 12%, transparent 28%), linear-gradient(180deg, #1a2240 0%, #0c1020 100%);
+}
+.landing-bg[data-bg="tavern"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.landing-bg[data-bg="tavern"][data-phase="morning"]::after {
+  background: rgba(40, 28, 14, 0.08);
+}
+.landing-bg[data-bg="tavern"][data-phase="noon"]::after {
+  background: rgba(255, 220, 140, 0.06);
+}
+.landing-bg[data-bg="tavern"][data-phase="afternoon"]::after {
+  background: rgba(18, 10, 6, 0.16);
+}
+.landing-bg[data-bg="tavern"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(60, 24, 10, 0.22), rgba(20, 10, 6, 0.35));
+}
+.landing-bg[data-bg="tavern"][data-phase="night"]::after {
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 140, 40, 0.12), rgba(4, 6, 14, 0.55) 70%);
+}
 .loot-overlay[data-morning] .morning-body .prose-beat strong {
   color: var(--accent);
   font-weight: 600;
+  font-style: normal;
 }
 .loot-overlay[data-morning] .morning-demo-note {
   margin: 0;
@@ -3493,3 +3817,83 @@ button,
 .proto-bar:has(.dev-sec[data-sec="stav"][open]) { max-height: 92dvh; }
 .dev-status { max-height: none; }
 .origin-reply { margin: 0.25rem 0 0.5rem; font-style: italic; color: var(--muted); }
+
+.dev-checks { gap: 0.15rem 0.7rem; margin-top: 0.1rem; }
+[data-knob-mode][hidden] { display: none !important; }
+
+/* Prolog: text pod obrazem, ne přes něj. Spodní lišta; bez backdrop-filter (na úzkém/zmenšeném view
+   zrcadlil pozadí do rohů) – čitelnost drží sytější přechod. Portrét: obraz nahoře, text dole.
+   Nízký landscape (telefon na šířku): obraz vlevo, text vpravo. */
+[data-screen="origins"] .landing-frame.prolog-frame {
+  justify-content: flex-end;
+  max-width: min(64rem, 100%);
+  padding-top: 0;
+}
+[data-screen="origins"] .prolog-frame .auth-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: linear-gradient(180deg, rgba(18, 12, 10, 0.62), rgba(18, 12, 10, 0.9) 22%);
+  border-width: 1px 0 0;
+}
+[data-screen="origins"] .prolog-frame #origins-box {
+  height: min(28rem, 50dvh);
+  min-height: 17rem;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "chrome chrome" "body choices" "reply choices";
+  column-gap: var(--stack);
+  row-gap: var(--space-2);
+}
+[data-screen="origins"] .prolog-frame #origins-box > :first-child { grid-area: chrome; }
+[data-screen="origins"] .prolog-frame #origins-box .origin-body { grid-area: body; min-height: 0; overflow-y: auto; }
+[data-screen="origins"] .prolog-frame #origins-box .origin-reply { grid-area: reply; }
+[data-screen="origins"] .prolog-frame #origins-box .choice-stack { grid-area: choices; }
+[data-screen="origins"] .prolog-frame #origins-box .skip-link { grid-column: 1 / -1; }
+/* portrét (telefon na výšku): obraz v horní polovině, Svatava vlevo od středu; text pod ním, jeden sloupec */
+@media (max-aspect-ratio: 1/1) {
+  [data-screen="origins"] .landing-bg { bottom: auto; height: 46dvh; background-position: 38% center; }
+  [data-screen="origins"] .landing-bg::after {
+    content: ""; position: absolute; inset: auto 0 0; height: 30%; pointer-events: none;
+    background: linear-gradient(180deg, transparent, var(--bg));
+  }
+  [data-screen="origins"] { background: var(--bg); }
+  [data-screen="origins"] .landing-frame.prolog-frame { max-width: 100%; padding: 0; }
+  [data-screen="origins"] .prolog-frame .auth-card { background: transparent; border: 0; }
+  [data-screen="origins"] .prolog-frame #origins-box {
+    height: calc(56dvh - var(--safe-b)); min-height: 0;
+    display: flex; flex-direction: column;
+  }
+}
+/* telefon na šířku (nízké okno): obraz vlevo, text vpravo */
+@media (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"] .landing-bg { right: 46%; }
+  [data-screen="origins"] .landing-frame.prolog-frame { max-width: 100%; padding: 0; }
+  [data-screen="origins"] .prolog-frame .auth-card {
+    width: 46%; margin-left: auto; border-width: 0 0 0 1px;
+    background: linear-gradient(90deg, rgba(18, 12, 10, 0.62), rgba(18, 12, 10, 0.92) 12%);
+  }
+  [data-screen="origins"] .prolog-frame #origins-box {
+    height: calc(100dvh - var(--safe-b)); min-height: 0;
+    display: flex; flex-direction: column;
+  }
+}
+
+/* Prolog: „Ukázat scénu“ skryje text, obraz zůstane celý; druhé klepnutí vrátí text */
+.peek-btn {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--space-3) + var(--safe-t));
+  right: calc(var(--space-3) + var(--safe-r));
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  background: rgba(18, 12, 10, 0.7);
+}
+
+[data-screen="origins"] .prolog-frame { transition: opacity 0.2s ease; }
+[data-screen="origins"].is-peek .prolog-frame { opacity: 0; pointer-events: none; visibility: hidden; }
+[data-screen="origins"].is-peek .landing-bg { bottom: 0; height: auto; right: 0; }
+[data-screen="origins"].is-peek .landing-bg::after { content: none; }
+@media (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"]:not(.is-peek) .peek-btn { right: calc(46% + var(--space-3)); }
+}

@@ -1,1 +1,6 @@
 .claude/worktrees/
+tools/stage3d/out/
+render/scratch/
+.DS_Store
+render/scenes/*/3d/
+render/refs/chars/3d/

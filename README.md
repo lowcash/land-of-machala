@@ -10,6 +10,10 @@ This public build is a **prologue demo**: tavern → four choices → name → m
 
 Dialogue and UI copy in the game are in Czech.
 
+## Changelog
+
+What is new and how the game grows: [CHANGELOG.md](CHANGELOG.md).
+
 ## Docs
 
 See [docs/OVERVIEW.md](docs/OVERVIEW.md). Numbers and tables come from the code and tests, not from hand-written docs.

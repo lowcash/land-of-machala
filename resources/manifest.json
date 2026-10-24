@@ -4,7 +4,7 @@
     {
       "id": "locations-placeholder-zastava",
       "kind": "background",
-      "path": "resources/locations/placeholder/zastava.svg",
+      "path": "resources/locations/zastava.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -13,7 +13,7 @@
     {
       "id": "locations-placeholder-camp",
       "kind": "background",
-      "path": "resources/locations/placeholder/camp.svg",
+      "path": "resources/locations/camp.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -21,7 +21,7 @@
     {
       "id": "locations-placeholder-chapel",
       "kind": "background",
-      "path": "resources/locations/placeholder/chapel.svg",
+      "path": "resources/locations/chapel.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -29,7 +29,7 @@
     {
       "id": "locations-placeholder-city",
       "kind": "background",
-      "path": "resources/locations/placeholder/city.svg",
+      "path": "resources/locations/city.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -37,7 +37,7 @@
     {
       "id": "locations-placeholder-default",
       "kind": "background",
-      "path": "resources/locations/placeholder/default.svg",
+      "path": "resources/locations/default.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -45,7 +45,7 @@
     {
       "id": "locations-placeholder-forest",
       "kind": "background",
-      "path": "resources/locations/placeholder/forest.svg",
+      "path": "resources/locations/forest.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -53,7 +53,7 @@
     {
       "id": "locations-placeholder-gate",
       "kind": "background",
-      "path": "resources/locations/placeholder/gate.svg",
+      "path": "resources/locations/gate.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -61,7 +61,7 @@
     {
       "id": "locations-placeholder-healer",
       "kind": "background",
-      "path": "resources/locations/placeholder/healer.svg",
+      "path": "resources/locations/healer.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -69,7 +69,7 @@
     {
       "id": "locations-placeholder-hills",
       "kind": "background",
-      "path": "resources/locations/placeholder/hills.svg",
+      "path": "resources/locations/hills.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -77,7 +77,7 @@
     {
       "id": "locations-placeholder-market",
       "kind": "background",
-      "path": "resources/locations/placeholder/market.svg",
+      "path": "resources/locations/market.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -85,7 +85,7 @@
     {
       "id": "locations-placeholder-plains",
       "kind": "background",
-      "path": "resources/locations/placeholder/plains.svg",
+      "path": "resources/locations/plains.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -93,7 +93,7 @@
     {
       "id": "locations-placeholder-road",
       "kind": "background",
-      "path": "resources/locations/placeholder/road.svg",
+      "path": "resources/locations/road.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -101,7 +101,7 @@
     {
       "id": "locations-placeholder-smith",
       "kind": "background",
-      "path": "resources/locations/placeholder/smith.svg",
+      "path": "resources/locations/smith.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -109,15 +109,159 @@
     {
       "id": "locations-placeholder-tavern",
       "kind": "background",
-      "path": "resources/locations/placeholder/tavern.svg",
+      "path": "resources/locations/tavern.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
     },
     {
+      "id": "locations-tavern-v2-prolog-s1-morning",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s1-morning-16x9.jpeg",
+      "size": "1365x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-morning; style v2 (illustrated); BG tavern-prolog-v2-s1-morning"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s1-morning",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s1-morning-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-morning; style v3 (photoreal); BG tavern-prolog-v3-s1-morning"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s1-noon",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s1-noon-16x9.jpeg",
+      "size": "1365x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-noon; style v2 (illustrated); BG tavern-prolog-v2-s1-noon"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s1-noon",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s1-noon-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-noon; style v3 (photoreal); BG tavern-prolog-v3-s1-noon"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s1-evening",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s1-evening-16x9.jpeg",
+      "size": "1365x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-evening; style v2 (illustrated); BG tavern-prolog-v2-s1-evening"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s1-evening",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s1-evening-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-evening; style v3 (photoreal); BG tavern-prolog-v3-s1-evening"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s1-night",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s1-night-16x9.jpeg",
+      "size": "1365x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-night; style v2 (illustrated); BG tavern-prolog-v2-s1-night"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s1-night",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s1-night-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s1-night; style v3 (photoreal); BG tavern-prolog-v3-s1-night"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s2-morning",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s2-morning-16x9.jpeg",
+      "size": "1376x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-morning; style v2 (illustrated); BG tavern-prolog-v2-s2-morning"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s2-morning",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s2-morning-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-morning; style v3 (photoreal); BG tavern-prolog-v3-s2-morning"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s2-noon",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s2-noon-16x9.jpeg",
+      "size": "1376x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-noon; style v2 (illustrated); BG tavern-prolog-v2-s2-noon"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s2-noon",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s2-noon-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-noon; style v3 (photoreal); BG tavern-prolog-v3-s2-noon"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s2-evening",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s2-evening-16x9.jpeg",
+      "size": "1376x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-evening; style v2 (illustrated); BG tavern-prolog-v2-s2-evening"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s2-evening",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s2-evening-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-evening; style v3 (photoreal); BG tavern-prolog-v3-s2-evening"
+    },
+    {
+      "id": "locations-tavern-v2-prolog-s2-night",
+      "kind": "background",
+      "path": "resources/locations/tavern/v2/prolog-s2-night-16x9.jpeg",
+      "size": "1376x768",
+      "status": "final",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-night; style v2 (illustrated); BG tavern-prolog-v2-s2-night"
+    },
+    {
+      "id": "locations-tavern-v3-prolog-s2-night",
+      "kind": "background",
+      "path": "resources/locations/tavern/v3/prolog-s2-night-16x9.jpeg",
+      "size": "1376x768",
+      "status": "candidate",
+      "source": "gemini-from-stage3d",
+      "note": "prolog s2-night; style v3 (photoreal); BG tavern-prolog-v3-s2-night"
+    },
+    {
       "id": "locations-placeholder-townhall",
       "kind": "background",
-      "path": "resources/locations/placeholder/townhall.svg",
+      "path": "resources/locations/townhall.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -125,7 +269,7 @@
     {
       "id": "locations-placeholder-village",
       "kind": "background",
-      "path": "resources/locations/placeholder/village.svg",
+      "path": "resources/locations/village.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg"
@@ -133,7 +277,7 @@
     {
       "id": "locations-placeholder-senik",
       "kind": "background",
-      "path": "resources/locations/placeholder/senik.svg",
+      "path": "resources/locations/senik.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -142,7 +286,7 @@
     {
       "id": "locations-placeholder-nocleh",
       "kind": "background",
-      "path": "resources/locations/placeholder/nocleh.svg",
+      "path": "resources/locations/nocleh.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -151,7 +295,7 @@
     {
       "id": "locations-placeholder-chalupa",
       "kind": "background",
-      "path": "resources/locations/placeholder/chalupa.svg",
+      "path": "resources/locations/chalupa.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -160,7 +304,7 @@
     {
       "id": "locations-placeholder-hrbitov",
       "kind": "background",
-      "path": "resources/locations/placeholder/hrbitov.svg",
+      "path": "resources/locations/hrbitov.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -169,7 +313,7 @@
     {
       "id": "locations-placeholder-pastvina",
       "kind": "background",
-      "path": "resources/locations/placeholder/pastvina.svg",
+      "path": "resources/locations/pastvina.svg",
       "size": "1600x900",
       "status": "placeholder",
       "source": "hand-svg",
@@ -178,7 +322,7 @@
     {
       "id": "enemies-placeholder-bandit",
       "kind": "enemy",
-      "path": "resources/enemies/placeholder/bandit.svg",
+      "path": "resources/enemies/bandit.svg",
       "size": "1024x1024",
       "status": "placeholder",
       "source": "hand-svg"
@@ -186,7 +330,7 @@
     {
       "id": "enemies-placeholder-boar",
       "kind": "enemy",
-      "path": "resources/enemies/placeholder/boar.svg",
+      "path": "resources/enemies/boar.svg",
       "size": "1024x1024",
       "status": "placeholder",
       "source": "hand-svg"
@@ -194,7 +338,7 @@
     {
       "id": "enemies-placeholder-brigand",
       "kind": "enemy",
-      "path": "resources/enemies/placeholder/brigand.svg",
+      "path": "resources/enemies/brigand.svg",
       "size": "1024x1024",
       "status": "placeholder",
       "source": "hand-svg"
@@ -202,7 +346,7 @@
     {
       "id": "enemies-placeholder-wolf",
       "kind": "enemy",
-      "path": "resources/enemies/placeholder/wolf.svg",
+      "path": "resources/enemies/wolf.svg",
       "size": "1024x1024",
       "status": "placeholder",
       "source": "hand-svg"
@@ -219,7 +363,7 @@
     {
       "id": "props-placeholder-barrel",
       "kind": "prop",
-      "path": "resources/props/placeholder/barrel.svg",
+      "path": "resources/props/barrel.svg",
       "size": "256x256",
       "status": "placeholder",
       "source": "hand-svg"
@@ -227,7 +371,7 @@
     {
       "id": "props-placeholder-grave-marker",
       "kind": "prop",
-      "path": "resources/props/placeholder/grave-marker.svg",
+      "path": "resources/props/grave-marker.svg",
       "size": "256x256",
       "status": "placeholder",
       "source": "hand-svg"
@@ -235,7 +379,7 @@
     {
       "id": "props-placeholder-lantern",
       "kind": "prop",
-      "path": "resources/props/placeholder/lantern.svg",
+      "path": "resources/props/lantern.svg",
       "size": "256x256",
       "status": "placeholder",
       "source": "hand-svg"
@@ -243,7 +387,7 @@
     {
       "id": "props-placeholder-pile",
       "kind": "prop",
-      "path": "resources/props/placeholder/pile.svg",
+      "path": "resources/props/pile.svg",
       "size": "256x256",
       "status": "placeholder",
       "source": "hand-svg"
@@ -255,6 +399,267 @@
       "size": "128x128",
       "status": "placeholder",
       "source": "hand-svg"
+    },
+    {
+      "id": "stage-mountains",
+      "kind": "stage",
+      "path": "resources/stage/mountains.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-hills",
+      "kind": "stage",
+      "path": "resources/stage/hills.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-ground",
+      "kind": "stage",
+      "path": "resources/stage/ground.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-house",
+      "kind": "stage",
+      "path": "resources/stage/house.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-barn",
+      "kind": "stage",
+      "path": "resources/stage/barn.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-stall",
+      "kind": "stage",
+      "path": "resources/stage/stall.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-chapel",
+      "kind": "stage",
+      "path": "resources/stage/chapel.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-tavern",
+      "kind": "stage",
+      "path": "resources/stage/tavern.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-fence",
+      "kind": "stage",
+      "path": "resources/stage/fence.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-tree",
+      "kind": "stage",
+      "path": "resources/stage/tree.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-well",
+      "kind": "stage",
+      "path": "resources/stage/well.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-haystack",
+      "kind": "stage",
+      "path": "resources/stage/haystack.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim Nic)"
+    },
+    {
+      "id": "stage-wall",
+      "kind": "stage",
+      "path": "resources/stage/wall.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-floor",
+      "kind": "stage",
+      "path": "resources/stage/floor.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-bar",
+      "kind": "stage",
+      "path": "resources/stage/bar.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-table",
+      "kind": "stage",
+      "path": "resources/stage/table.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-stool",
+      "kind": "stage",
+      "path": "resources/stage/stool.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-fireplace",
+      "kind": "stage",
+      "path": "resources/stage/fireplace.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-shelf",
+      "kind": "stage",
+      "path": "resources/stage/shelf.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-door",
+      "kind": "stage",
+      "path": "resources/stage/door.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-sign",
+      "kind": "stage",
+      "path": "resources/stage/sign.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-bench",
+      "kind": "stage",
+      "path": "resources/stage/bench.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "atom skladby scény (režim —)"
+    },
+    {
+      "id": "stage-person",
+      "kind": "stage",
+      "path": "resources/stage/person.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "postava jako vrstva skladby (režim —)"
+    },
+    {
+      "id": "stage-bust",
+      "kind": "stage",
+      "path": "resources/stage/bust.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "postava jako vrstva skladby (režim —)"
+    },
+    {
+      "id": "stage-bust2",
+      "kind": "stage",
+      "path": "resources/stage/bust2.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "varianta postavy (jiný oděv)"
+    },
+    {
+      "id": "stage-bust3",
+      "kind": "stage",
+      "path": "resources/stage/bust3.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "varianta postavy (jiný oděv)"
+    },
+    {
+      "id": "stage-person2",
+      "kind": "stage",
+      "path": "resources/stage/person2.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "varianta postavy (jiný oděv)"
+    },
+    {
+      "id": "stage-bust-side",
+      "kind": "stage",
+      "path": "resources/stage/bust-side.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "postava z profilu / zezadu"
+    },
+    {
+      "id": "stage-bust-back",
+      "kind": "stage",
+      "path": "resources/stage/bust-back.svg",
+      "size": "vector",
+      "status": "placeholder",
+      "source": "hand-svg",
+      "note": "postava z profilu / zezadu"
     }
   ]
 }

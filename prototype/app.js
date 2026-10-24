@@ -125,11 +125,12 @@ function screenChrome(opts) {
     : opts.backAct
       ? `data-act="${opts.backAct}"`
       : "";
+  /* šipky = btn-back (stejný jazyk jako Zpět ve hře), ne ghost */
   const backBtn = backAttrs
-    ? `<button type="button" class="btn btn-ghost progress-arrow" ${backAttrs} ${opts.canBack === false ? "disabled" : ""} title="Zpět" aria-label="Zpět">←</button>`
+    ? `<button type="button" class="btn btn-back progress-arrow" ${backAttrs} ${opts.canBack === false ? "disabled" : ""} title="Zpět" aria-label="Zpět">←</button>`
     : `<span class="progress-arrow-spacer" aria-hidden="true"></span>`;
   const fwdBtn = opts.fwdAct
-    ? `<button type="button" class="btn btn-ghost progress-arrow" data-act="${opts.fwdAct}" ${opts.canFwd ? "" : "disabled"} title="Další" aria-label="Další">→</button>`
+    ? `<button type="button" class="btn btn-back progress-arrow" data-act="${opts.fwdAct}" ${opts.canFwd ? "" : "disabled"} title="Další" aria-label="Další">→</button>`
     : `<span class="progress-arrow-spacer" aria-hidden="true"></span>`;
   const center = `
     <div class="progress-center">
@@ -304,15 +305,30 @@ function actionBtn({
   </button>`;
 }
 
-/* jednotná provizorní sada ručních SVG (resources/locations/placeholder/); AI legacy smazáno */
-const BG_DIR = "../resources/locations/placeholder/";
+/* jednotná provizorní sada ručních SVG (resources/locations/); status placeholder je v manifestu */
+const BG_DIR = "../resources/locations/";
 const BG = Object.fromEntries(
   ["city", "healer", "smith", "zastava", "forest", "plains", "hills", "road", "village", "chapel", "tavern", "townhall", "gate", "market", "camp", "default", "senik", "hrbitov", "pastvina", "chalupa", "nocleh"].map((k) => [k, `${BG_DIR}${k}.svg`])
 );
 BG.bank = BG.zastava; /* starý klíč místa `bank` → stejné SVG */
+/* Prolog: pečené záběry styl × S1/S2 × fáze (světlo v obraze → sky bake); afternoon → evening.
+   Styl v3 (fotorealismus, kandidát) je výchozí, v2 (ilustrace) zůstává přepínatelná ve storybooku. */
+const PROLOG_BAKE_PHASES = ["morning", "noon", "evening", "night"];
+const PROLOG_STYLES = ["v3", "v2"];
+const DEFAULT_PROLOG_STYLE = "v3";
+const BG_BAKE = new Set();
+for (const style of PROLOG_STYLES) {
+  for (const shot of ["s1", "s2"]) {
+    for (const ph of PROLOG_BAKE_PHASES) {
+      const key = `tavern-prolog-${style}-${shot}-${ph}`;
+      BG[key] = `${BG_DIR}tavern/${style}/prolog-${shot}-${ph}-16x9.jpeg`;
+      BG_BAKE.add(key);
+    }
+  }
+}
 
 /* nepřátelé: provizorní SVG podle id, jinak vlk */
-const enemyImg = (id) => `../resources/enemies/placeholder/${["wolf", "boar", "bandit", "brigand"].includes(id) ? id : "wolf"}.svg`;
+const enemyImg = (id) => `../resources/enemies/${["wolf", "boar", "bandit", "brigand"].includes(id) ? id : "wolf"}.svg`;
 
 /* Mini-mapa - data v js/data/map.js (docs/reference/map.md) */
 const MAP_MAX = LOM.MAP_MAX;
@@ -971,18 +987,23 @@ function continueGame() {
   setScreen("town");
 }
 
-/** Storybook scéna Landing: ukázkové pokračování (Hynek); neváže se na save ani jméno z Postavy. */
+/** Storybook Landing: vždy Hynek (ne save, ne jméno z Postavy / inputu). */
 const LANDING_DEMO_CONTINUE = { name: "Hynek", job: "Pacholek", level: 1 };
 
-/** Je co pokračovat? (save nebo demo scéna Landing) */
+/** Storybook právě ukazuje landing (scéna nebo knob Režim=Landing). */
+function landingIsStorybook() {
+  return !!state.activeScenario && state.screen === "landing";
+}
+
+/** Je co pokračovat? (storybook landing = vždy; jinak save) */
 function landingHasContinue() {
-  if (state.activeScenario === "start-landing") return true;
+  if (landingIsStorybook() || state.activeScenario === "start-landing") return true;
   return !!readSave();
 }
 
-/** Data pro tlačítko Pokračovat (demo Hynek, jinak uložení). */
+/** Data pro tlačítko Pokračovat: ve storybooku vždy Hynek. */
 function landingContinueData() {
-  if (state.activeScenario === "start-landing") return LANDING_DEMO_CONTINUE;
+  if (landingIsStorybook() || state.activeScenario === "start-landing") return LANDING_DEMO_CONTINUE;
   const r = readSave();
   if (!r) return null;
   const d = r.state;
@@ -1037,7 +1058,9 @@ function syncContinue() {
   syncLandingMode();
 }
 
-const FLOW_SEGS = ORIGIN_STEPS.length + 1; /* prolog kroky + Původ */
+/** Prozatím: po 4 krocích prologu konec ukázky (bez obrazovky Postava). Veřejný export má i PUBLIC_DEMO. */
+const DEMO_END_AFTER_PROLOG = true;
+const FLOW_SEGS = DEMO_END_AFTER_PROLOG ? ORIGIN_STEPS.length : ORIGIN_STEPS.length + 1; /* +1 = Původ, když není jen ukázka */
 
 function flowSegsHtml(activeIdx) {
   return Array.from({ length: FLOW_SEGS }, (_, i) => {
@@ -1050,15 +1073,9 @@ function $(id) {
   return document.getElementById(id);
 }
 
-/** DEV lišta = overlay; měříme --dev-pad (nekrátí viewport) */
+/** DEV panel je plovoucí overlay — neukrajuje layout (--dev-pad = 0). */
 function syncDevPad() {
-  const bar = document.querySelector(".proto-bar");
-  const root = document.documentElement;
-  if (!document.body.classList.contains("has-dev") || !bar || bar.hidden) {
-    root.style.setProperty("--dev-pad", "0px");
-    return;
-  }
-  root.style.setProperty("--dev-pad", `${bar.offsetHeight}px`);
+  document.documentElement.style.setProperty("--dev-pad", "0px");
 }
 
 /** Veřejný export přepíše na true: ukázka končí po prologu (bez landingu a bez pokračování do hry). */
@@ -1130,16 +1147,19 @@ function closeMorningBeat() {
 
 /**
  * Ráno po prologu: beat před hubem.
- * demo: true = konec ukázky („Zkusit prolog znovu“) – jen PUBLIC_DEMO / scéna start-morning.
+ * demo: true = konec ukázky („Zkusit prolog znovu“) – PUBLIC_DEMO / knob Demo / scéna start-morning.
  * textOrParts: string nebo pole odstavců (HTML smí <strong>).
+ * Overlay bere fázi z clocku (knob Doba) a nechá prosvítit scénové BG (seník/chalupa/…).
  */
 function openMorningBeat(textOrParts, { demo = false } = {}) {
   closeMorningBeat();
-  /* dnes: chlast → poledne; střízlivý → ráno (další fáze = [kvalita-spanku]) */
-  const wakeLabel = prologDrank() ? "Poledne" : "Ráno";
+  const wakePhaseId = LOM.phaseOf?.(state.clock)?.id || (prologDrank() ? "noon" : "morning");
+  const ph = (LOM.PHASES || []).find((p) => p.id === wakePhaseId) || { id: wakePhaseId, label: wakePhaseId, icon: "" };
+  const wakeLabel = ph.label.charAt(0).toUpperCase() + ph.label.slice(1);
   const el = document.createElement("aside");
   el.className = "loot-overlay";
   el.dataset.morning = "1";
+  el.dataset.phase = wakePhaseId;
   el.setAttribute("role", "dialog");
   el.setAttribute("aria-label", demo ? "Konec ukázky" : wakeLabel);
   const parts = Array.isArray(textOrParts) ? textOrParts : [textOrParts];
@@ -1150,8 +1170,8 @@ function openMorningBeat(textOrParts, { demo = false } = {}) {
   const cta = demo
     ? `<button type="button" class="btn btn-primary morning-cta" data-act="demo-restart">Zkusit prolog znovu</button>`
     : `<button type="button" class="btn btn-primary morning-cta" data-act="morning-continue">Vstát</button>`;
-  /* chrome + .prose-beat = stejné jako Prolog */
-  el.innerHTML = `<div class="loot-sheet confirm-sheet morning-sheet">
+  /* fáze = label + atmosféra (tón), bez emoji */
+  el.innerHTML = `<div class="loot-sheet confirm-sheet morning-sheet" data-phase="${wakePhaseId}">
       ${screenChrome({ label: wakeLabel })}
       <div class="morning-body origin-body">${body}</div>
       ${demo ? `<p class="muted morning-demo-note">${nbspCzech("Další část je ve vývoji. Můžeš zkusit prolog znovu.", { tail: true })}</p>` : ""}
@@ -1169,13 +1189,19 @@ const DEV_VIS_KEY = "lom.dev";
 const DEV_KNOB_SEC = {
   class: "postava",
   race: "postava",
+  origin: "postava",
+  drank: "postava",
   level: "postava",
   hp: "postava",
   gold: "postava",
   bag: "postava",
-  view: "svet",
+  mode: "svet",
+  place: "svet",
   at: "svet",
   phase: "svet",
+  prologShot: "svet",
+  prologStyle: "svet",
+  demoEnd: "postava",
   spots: "svet",
   quests: "svet",
   corpse: "svet",
@@ -1185,8 +1211,21 @@ const DEV_KNOB_SEC = {
   encounter: "boj",
 };
 
+/* slider 0 = panel zmizí; 1–100 = použitelný rozsah průhlednosti 20–80 % (mimo něj se vzhled skoro nemění) */
+const DEV_OP_MIN = 0.2;
+const DEV_OP_MAX = 0.8;
+const devSliderToOpacity = (v) => (v <= 0 ? 0 : DEV_OP_MIN + ((DEV_OP_MAX - DEV_OP_MIN) * Math.min(100, v)) / 100);
+const devOpacityToSlider = (o) => (o <= 0 ? 0 : Math.max(1, Math.min(100, Math.round(((o - DEV_OP_MIN) / (DEV_OP_MAX - DEV_OP_MIN)) * 100))));
+
 function loadDevBarPrefs() {
-  const out = { collapsed: true, sections: { postava: false, svet: false, boj: false, ladeni: false, stav: true } };
+  const out = {
+    collapsed: true,
+    minimized: false,
+    opacity: 0.8,
+    x: null,
+    y: null,
+    sections: { postava: false, svet: false, boj: false, ladeni: false, stav: false },
+  };
   try {
     const raw = localStorage.getItem(DEV_BAR_KEY);
     if (raw === "1" || raw === "0") {
@@ -1196,6 +1235,10 @@ function loadDevBarPrefs() {
     if (raw) {
       const j = JSON.parse(raw);
       if (typeof j.collapsed === "boolean") out.collapsed = j.collapsed;
+      if (typeof j.minimized === "boolean") out.minimized = j.minimized;
+      if (typeof j.opacity === "number") out.opacity = Math.min(DEV_OP_MAX, Math.max(0, j.opacity));
+      if (typeof j.x === "number") out.x = j.x;
+      if (typeof j.y === "number") out.y = j.y;
       if (j.sections && typeof j.sections === "object") {
         for (const k of Object.keys(out.sections)) if (typeof j.sections[k] === "boolean") out.sections[k] = j.sections[k];
       }
@@ -1236,17 +1279,48 @@ function applyDevVisibility(show) {
 
 function initDevBar() {
   const bar = document.querySelector(".proto-bar");
-  const detailBtn = $("dev-detail");
   const panel = $("dev-detail-panel");
-  if (!bar || !detailBtn || !panel) return;
+  if (!bar || !panel) return;
 
   let prefs = loadDevBarPrefs();
-  const applyCollapsed = () => {
-    bar.classList.toggle("is-collapsed", prefs.collapsed);
-    panel.hidden = prefs.collapsed;
-    detailBtn.setAttribute("aria-expanded", String(!prefs.collapsed));
+  const applyChrome = () => {
+    /* minimized (starý klíč) = sbaleno */
+    const closed = !!(prefs.collapsed || prefs.minimized);
+    prefs.collapsed = closed;
+    prefs.minimized = false;
+    bar.classList.toggle("is-collapsed", closed);
+    bar.classList.toggle("is-minimized", closed);
+    panel.hidden = closed;
+    bar.style.setProperty("--dev-opacity", String(prefs.opacity));
+    if (prefs.x != null && prefs.y != null) {
+      bar.style.left = `${prefs.x}px`;
+      bar.style.top = `${prefs.y}px`;
+      bar.style.right = "auto";
+    }
+    const op = $("dev-opacity");
+    if (op) op.value = String(devOpacityToSlider(prefs.opacity));
+    const minBtn = $("dev-minimize");
+    if (minBtn) {
+      minBtn.textContent = closed ? "+" : "–";
+      minBtn.title = closed ? "Rozbalit panel" : "Sbalit panel";
+      minBtn.setAttribute("aria-expanded", String(!closed));
+    }
     syncDevPad();
+    requestAnimationFrame(() => clampBar());
   };
+  /* panel musí zůstat celý ve viewportu (devtools, resize, sbalení/rozbalení mění rozměry) */
+  const clampBar = () => {
+    if (prefs.x == null || prefs.y == null) return;
+    const vw = window.visualViewport?.width || window.innerWidth;
+    const vh = window.visualViewport?.height || window.innerHeight;
+    const r = bar.getBoundingClientRect();
+    const x = Math.max(0, Math.min(vw - Math.min(r.width, vw), prefs.x));
+    const y = Math.max(0, Math.min(vh - Math.min(r.height, vh), prefs.y));
+    bar.style.left = `${x}px`;
+    bar.style.top = `${y}px`;
+  };
+  window.addEventListener("resize", clampBar);
+  window.visualViewport?.addEventListener("resize", clampBar);
   const applySections = () => {
     bar.querySelectorAll("details.dev-sec[data-sec]").forEach((el) => {
       const id = el.dataset.sec;
@@ -1254,23 +1328,63 @@ function initDevBar() {
     });
   };
 
-  detailBtn.addEventListener("click", () => {
+  $("dev-minimize")?.addEventListener("click", () => {
     prefs.collapsed = !prefs.collapsed;
+    prefs.minimized = false;
     saveDevBarPrefs(prefs);
-    applyCollapsed();
+    applyChrome();
   });
+  $("dev-opacity")?.addEventListener("input", (e) => {
+    prefs.opacity = devSliderToOpacity(Number(e.target.value));
+    bar.style.setProperty("--dev-opacity", String(prefs.opacity));
+    saveDevBarPrefs(prefs);
+  });
+  /* přesun po obrazovce */
+  const drag = $("dev-drag");
+  if (drag) {
+    let dragging = false;
+    let ox = 0;
+    let oy = 0;
+    const onMove = (e) => {
+      if (!dragging) return;
+      const x = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - ox));
+      const y = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - oy));
+      prefs.x = x;
+      prefs.y = y;
+      bar.style.left = `${x}px`;
+      bar.style.top = `${y}px`;
+      bar.style.right = "auto";
+    };
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      bar.classList.remove("is-dragging");
+      saveDevBarPrefs(prefs);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    drag.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      dragging = true;
+      bar.classList.add("is-dragging");
+      const rect = bar.getBoundingClientRect();
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      e.preventDefault();
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    });
+  }
   bar.querySelectorAll("details.dev-sec[data-sec]").forEach((el) => {
     el.addEventListener("toggle", () => {
       prefs.sections[el.dataset.sec] = el.open;
       saveDevBarPrefs(prefs);
-      syncDevPad();
     });
   });
 
   applyDevVisibility(shouldShowDevBar());
   applySections();
-  applyCollapsed();
-  if (window.ResizeObserver) new ResizeObserver(syncDevPad).observe(bar);
+  applyChrome();
 
   document.addEventListener("keydown", (e) => {
     if (!(e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d"))) return;
@@ -1284,22 +1398,133 @@ function initDevBar() {
   });
 }
 
-function setGameBg(key) {
+/** Storybook: poslední knob Místo (landing/prolog/postava ho berou). */
+let storyPlaceId = "town";
+
+/** place id (knob) → klíč v BG / PLACE.bg */
+function bgKeyFromPlaceId(placeId) {
+  if (placeId && PLACE[placeId]?.bg) return PLACE[placeId].bg;
+  if (placeId === "town") return "village";
+  if (placeId === "exits") return "road";
+  if (placeId && BG[placeId]) return placeId;
+  return "village";
+}
+
+/** out = nebe/slunce; in = interiér (světlo místnosti); tavern = okno + světlo; bake = pečený render (bez CSS tónu) */
+function skyKindForBg(bgKey) {
+  if (BG_BAKE.has(bgKey)) return "bake";
+  if (bgKey === "tavern") return "tavern";
+  const indoor = new Set(["smith", "healer", "townhall", "senik", "nocleh", "chalupa", "zastava"]);
+  return indoor.has(bgKey) ? "in" : "out";
+}
+
+function applyBgToEls(els, key) {
+  /* null / "" = záměrně bez pozadí (předvolba bez pečeného bake) */
+  if (!key) {
+    els.forEach((el) => {
+      el.dataset.bg = "";
+      el.dataset.sky = "none";
+      el.style.backgroundImage = "none";
+      el.style.backgroundColor = "#140e0c";
+    });
+    return;
+  }
   const url = BG[key] || BG.default;
-  document.querySelectorAll(".game-screen .landing-bg").forEach((el) => {
-    el.style.backgroundImage = `linear-gradient(90deg, rgba(10,6,4,0.62), rgba(10,6,4,0.22) 42%, rgba(10,6,4,0.58)), url("${url}")`;
+  const sky = skyKindForBg(key);
+  const shade =
+    sky === "bake"
+      ? null
+      : sky === "out"
+        ? `linear-gradient(180deg, rgba(8,12,28,0.2) 0%, transparent 42%), linear-gradient(90deg, rgba(10,6,4,0.48), rgba(10,6,4,0.08) 48%, rgba(10,6,4,0.42))`
+        : `linear-gradient(90deg, rgba(18,10,6,0.45), rgba(18,10,6,0.12) 42%, rgba(18,10,6,0.4))`;
+  els.forEach((el) => {
+    el.dataset.bg = key || "";
+    el.dataset.sky = sky;
+    el.style.backgroundImage = shade ? `${shade}, url("${url}")` : `url("${url}")`;
+    el.style.backgroundColor = "";
   });
 }
 
-/** Úvod: klidné běžné lokace (bez kaple/hradu – první dojem nemá děsit). */
+/** Knoby s `onMode` jen v daném režimu (Záběr v Prologu, Demo v Probuzení). */
+function syncKnobModeVisibility() {
+  const mode = document.querySelector('select[data-knob="mode"]')?.value;
+  document.querySelectorAll("[data-knob-mode]").forEach((el) => (el.hidden = el.dataset.knobMode !== mode));
+}
+
+function setGameBg(key) {
+  applyBgToEls([...document.querySelectorAll(".game-screen .landing-bg")], key);
+  syncPhaseLook();
+}
+
+/** Fáze pro pečený prolog (afternoon nemá bake → evening). */
+function prologBakePhase() {
+  const ph = LOM.phaseOf?.(state.clock)?.id || "evening";
+  if (ph === "afternoon") return "evening";
+  return PROLOG_BAKE_PHASES.includes(ph) ? ph : "evening";
+}
+/**
+ * Prolog / Postava: pečená krčma S1/S2 × doba. Storybook: jen `tavern`; jiné místo → bez pozadí.
+ */
+function prologBgKey() {
+  const place = state.activeScenario ? storyPlaceId : "tavern";
+  if (place !== "tavern") return null;
+  const step = ORIGIN_STEPS[state.originStep];
+  const shot = step?.pick === "class" ? "s1" : "s2";
+  return `tavern-prolog-${state.prologStyle || DEFAULT_PROLOG_STYLE}-${shot}-${prologBakePhase()}`;
+}
+function setPrologBg() {
+  applyBgToEls(
+    [...document.querySelectorAll('[data-screen="origins"] .landing-bg, [data-screen="confirm"] .landing-bg')],
+    prologBgKey()
+  );
+  syncPhaseLook();
+}
+
+/** Fáze dne: data-phase + CSS vrstvy (nebe/světlo), ne jen filter ([faze-dne-vizual]). */
+function syncPhaseLook() {
+  const ph = LOM.phaseOf?.(state.clock)?.id || "afternoon";
+  document.body.dataset.phase = ph;
+  document.querySelectorAll(".landing-bg").forEach((el) => {
+    el.dataset.phase = ph;
+  });
+}
+
+/**
+ * Storybook: rozbalit jen sekce ke scéně (ostatní zavřít).
+ * Odhalení (ladeni) jen když je ve `secs` — prolog ho neotevírá.
+ */
+function focusDevForScenario(secs = []) {
+  const bar = document.querySelector(".proto-bar");
+  if (!bar || bar.hidden || !secs.length) return;
+  const prefs = loadDevBarPrefs();
+  prefs.collapsed = false;
+  prefs.minimized = false;
+  for (const id of Object.keys(prefs.sections)) prefs.sections[id] = secs.includes(id);
+  saveDevBarPrefs(prefs);
+  bar.classList.remove("is-collapsed", "is-minimized");
+  const panel = $("dev-detail-panel");
+  if (panel) panel.hidden = false;
+  const minBtn = $("dev-minimize");
+  if (minBtn) {
+    minBtn.textContent = "–";
+    minBtn.title = "Sbalit panel";
+    minBtn.setAttribute("aria-expanded", "true");
+  }
+  bar.querySelectorAll("details.dev-sec[data-sec]").forEach((el) => {
+    el.open = secs.includes(el.dataset.sec);
+  });
+  syncDevPad();
+}
+
+/** Úvod bez storybooku: klidné běžné lokace (bez kaple – první dojem nemá děsit). */
 const LANDING_BGS = ["village", "plains", "road", "hills", "tavern", "market", "forest"];
 let landingBgKey = null;
 function setLandingBg() {
-  if (!landingBgKey) landingBgKey = LANDING_BGS[Math.floor(Math.random() * LANDING_BGS.length)];
-  const url = BG[landingBgKey] || BG.village;
-  document.querySelectorAll('.landing-screen:not(.game-screen) .landing-bg').forEach((el) => {
-    el.style.backgroundImage = `linear-gradient(90deg, rgba(18,10,6,0.55), rgba(18,10,6,0.22) 42%, rgba(18,10,6,0.5)), url("${url}")`;
-  });
+  const key = state.activeScenario
+    ? bgKeyFromPlaceId(storyPlaceId)
+    : landingBgKey || (landingBgKey = LANDING_BGS[Math.floor(Math.random() * LANDING_BGS.length)]);
+  applyBgToEls([...document.querySelectorAll('[data-screen="landing"] .landing-bg')], key);
+  syncPhaseLook();
 }
 
 const ENEMY_INTRO = {
@@ -1646,13 +1871,39 @@ function openPrologAgainModal() {
   el.innerHTML = `<div class="loot-sheet confirm-sheet">
       ${screenChrome({ label: "Prolog" })}
       <p>${nbspCzech("Vrátit se na začátek prologu? Volby zůstanou – můžeš je projít a změnit.", { tail: true })}</p>
-      <div class="loot-actions">
+      <div class="loot-actions confirm-actions">
         <button type="button" class="btn btn-ghost" data-act="start-back">Zůstat</button>
         <button type="button" class="btn btn-primary" data-act="prolog-again">Na začátek</button>
       </div>
     </div>`;
   el.classList.remove("hidden");
   el.querySelector("[data-act=start-back]")?.focus();
+}
+
+/** Konec ukázky po 4 krocích prologu (bez Postavy): demo + znovu. */
+function openDemoPrologEndModal() {
+  const el = ensureStartModal();
+  el.setAttribute("aria-label", "Ukázková verze");
+  el.innerHTML = `<div class="loot-sheet confirm-sheet">
+      ${screenChrome({ label: "Ukázka" })}
+      <p>${nbspCzech("Toto je ukázková verze — další část je ve vývoji. Prolog si můžeš projít znovu.", { tail: true })}</p>
+      <div class="loot-actions confirm-actions">
+        <button type="button" class="btn btn-primary" data-act="demo-restart">Projít prolog znovu</button>
+      </div>
+    </div>`;
+  el.classList.remove("hidden");
+  el.querySelector("[data-act=demo-restart]")?.focus();
+}
+
+/** Po poslední volbě prologu: ukázka končí, jinak Postava. */
+function afterPrologChoices() {
+  if (DEMO_END_AFTER_PROLOG || PUBLIC_DEMO) {
+    openDemoPrologEndModal();
+    return;
+  }
+  state.prologStory = true;
+  updateStatsPreview();
+  setScreen("confirm");
 }
 
 function goPrologAgain() {
@@ -1922,14 +2173,12 @@ function setAuth(mode) {
   const chrome = $("auth-chrome");
   if (chrome) {
     if (showContinue) {
-      chrome.innerHTML = screenChrome({
-        label: "Vítej zpět",
-        sub: "Pokračuj ve své cestě",
-      });
+      /* bez sub: CTA „Pokračovat jako …“ říká zbytek */
+      chrome.innerHTML = screenChrome({ label: "Vítej zpět" });
     } else {
       chrome.innerHTML = screenChrome({
-        label: mode === "signin" ? "Účet – přihlášení" : "Účet – registrace",
-        sub: mode === "signin" ? "E-mail a heslo (cloud později)" : "Nový účet, nebo hraj jako host",
+        label: mode === "signin" ? "Přihlášení" : "Registrace",
+        sub: mode === "signin" ? "E-mail a heslo" : "Nový účet, nebo host",
       });
     }
   }
@@ -1989,6 +2238,15 @@ function setScreen(name) {
       overlay.classList.add("hidden");
     }
     if (name === "landing") state.landingAuthOpen = false; /* návrat = znovu continue, ne účet */
+    if (name === "origins") {
+      /* Ukázat scénu (peek) se nepřenáší do dalšího vstupu */
+      document.querySelector('[data-screen="origins"]')?.classList.remove("is-peek");
+      const pk = document.querySelector(".peek-btn");
+      if (pk) {
+        pk.setAttribute("aria-pressed", "false");
+        pk.textContent = "Ukázat scénu";
+      }
+    }
   }
   state.screen = name;
   document.querySelectorAll("[data-screen]").forEach((el) => {
@@ -2004,7 +2262,7 @@ function setScreen(name) {
     setLandingBg();
     setAuth(state.auth);
   }
-  if (name === "origins" || name === "confirm") setGameBg("tavern");
+  if (name === "origins" || name === "confirm") setPrologBg();
   if (name === "confirm") updateStatsPreview();
   render();
   if (reveal) showLandingQuote();
@@ -2763,6 +3021,7 @@ function renderOrigins() {
   const step = ORIGIN_STEPS[state.originStep];
   const box = $("origins-box");
   if (!box || !step) return;
+  setPrologBg();
   const letters = ["A", "B", "C", "D", "E", "F"];
   const maxReached = Math.max(state.originStep, state.originReached || 0);
   state.originReached = maxReached;
@@ -2808,8 +3067,11 @@ function renderOrigins() {
           const picked = choiceIsPicked(c);
           const letter = letters[n] || String(n + 1);
           return `<button type="button" class="choice btn-action${picked ? " picked" : ""}" style="--i:${n}" data-origin-choice="${i}" aria-pressed="${picked}">
-            <strong><span class="choice-letter">${letter}</span> ${choiceBodyHtml(c)}</strong>
-            ${c.hint ? `<span class="btn-hint">${c.hint}</span>` : ""}
+            <span class="choice-letter" aria-hidden="true">${letter}</span>
+            <span class="choice-main">
+              <strong class="choice-copy">${choiceBodyHtml(c)}</strong>
+              ${c.hint ? `<span class="btn-hint">${c.hint}</span>` : ""}
+            </span>
           </button>`;
         })
         .join("")}
@@ -5221,9 +5483,7 @@ document.body.addEventListener("click", (e) => {
       state.originReached = Math.max(state.originReached, state.originStep);
       renderOrigins();
     } else {
-      state.prologStory = true;
-      updateStatsPreview();
-      setScreen("confirm");
+      afterPrologChoices();
     }
     return;
   }
@@ -5653,6 +5913,13 @@ document.body.addEventListener("click", (e) => {
     goPrologAgain();
     return;
   }
+  if (act === "prolog-peek") {
+    const scr = document.querySelector('[data-screen="origins"]');
+    const on = scr.classList.toggle("is-peek");
+    t.setAttribute("aria-pressed", String(on));
+    t.textContent = on ? "Zpět k textu" : "Ukázat scénu";
+    return;
+  }
   if (act === "origin-back") {
     if (state.originStep > 0) {
       state.originStep -= 1;
@@ -5665,9 +5932,7 @@ document.body.addEventListener("click", (e) => {
         state.originStep += 1;
         renderOrigins();
       } else if (state.originStep === ORIGIN_STEPS.length - 1 && state.prologDone.origin) {
-        state.prologStory = true;
-        updateStatsPreview();
-        setScreen("confirm");
+        afterPrologChoices();
       }
     }
   }
@@ -6164,19 +6429,42 @@ function applyScenario(id, knobs = devKnobs) {
   lastOriginStep = -1;
   lastRevealed = "";
   landingQuoteShown = false;
-  landingBgKey = null; /* nová scéna = nové pozadí úvodu */
+  landingBgKey = null; /* nová scéna = nové náhodné pozadí úvodu (mimo storybook) */
   const base = LOM.SCENARIOS.find((x) => x.id === id);
   if (!base) return;
   const sc = { ...base };
-  for (const k of LOM.KNOBS) if (knobs[k.id]) k.apply(sc, knobs[k.id]);
-  let view = sc.view || (sc.fight ? "combat" : "town");
-  if (view === "combat") sc.fight = { ...(sc.fight || {}), enemy: sc.fight?.enemy || "wolf" };
-  else sc.fight = null;
+  /* "0" / falsey hodnoty knobu musí platit (zlato 0, vystřízlivělý, demo vypnuto, událost —) */
+  for (const k of LOM.KNOBS) if (Object.prototype.hasOwnProperty.call(knobs, k.id)) k.apply(sc, knobs[k.id]);
+
+  /* Režim × Místo (legacy screen/event/view mapujeme) */
+  let mode = sc.mode;
+  let place = sc.place || "town";
+  if (!mode) {
+    if (sc.event === "wake" || sc.morningModal) mode = "wake";
+    else if (sc.screen === "game") mode = "play";
+    else if (sc.screen === "landing" || sc.screen === "origins" || sc.screen === "confirm") mode = sc.screen;
+    else if (sc.view === "landing" || sc.view === "origins" || sc.view === "confirm") mode = sc.view;
+    else if (sc.view === "demo-morning") {
+      mode = "wake";
+      place = place || "hayloft";
+    } else if (sc.view === "combat" || sc.fight) mode = "combat";
+    else if (sc.view && PLACE_VIEWS.includes(sc.view)) {
+      mode = "play";
+      place = sc.view;
+    } else mode = sc.fight ? "combat" : "play";
+  }
+  if (mode === "combat" || sc.fight) {
+    sc.fight = { ...(sc.fight || {}), enemy: sc.fight?.enemy || "wolf" };
+    mode = "combat";
+  } else sc.fight = null;
+  const wakeEvent = mode === "wake";
+  storyPlaceId = place;
 
   const keep = { audio: state.audio, prefs: state.prefs, dev: state.dev };
   Object.keys(state).forEach((k) => delete state[k]);
   Object.assign(state, makeState(), keep);
   state.activeScenario = id; /* dev scéna: ukládání vypnuté */
+  state.prologStyle = sc.prologStyle || DEFAULT_PROLOG_STYLE;
   if (sc.seed != null) state.seed = sc.seed;
   state.name = "Testovací Poutník";
   state.guest = true;
@@ -6203,7 +6491,7 @@ function applyScenario(id, knobs = devKnobs) {
   else if (sc.bag) state.bag = bagFromIds(sc.bag);
   if (sc.phase || sc.day) state.clock = { day: sc.day || 1, tick: sc.phase ? LOM.PHASES.findIndex((p) => p.id === sc.phase) * LOM.TICKS_PER_PHASE : state.clock.tick };
   /* poloha: boj bez zadání je v lese; jinak ve městě */
-  const at = sc.at || (view === "combat" ? [2, 5] : [3, 3]);
+  const at = sc.at || (mode === "combat" ? [2, 5] : [3, 3]);
   state.mapX = at[0];
   state.mapY = at[1];
   discoverCell(at[0], at[1]);
@@ -6247,55 +6535,72 @@ function applyScenario(id, knobs = devKnobs) {
   state.placeView = "hub";
   clearPlaceThread();
   state.log = TOWN_PROSE;
-  if (view === "combat") {
+  if (mode === "combat") {
     startCombat(null, { enemyId: sc.fight.enemy, seed: sc.seed, enemyHpPct: sc.fight.enemyHpPct, loot: sc.fight.loot });
     setScreen("combat");
-  } else if (view === "landing") {
+  } else if (mode === "landing") {
+    state.landingAuthOpen = false;
     setAuth("register");
     setScreen("landing");
-  } else if (view === "origins") {
-    state.prologDone = { class: false, race: false, origin: false };
-    state.originStep = 0;
-    state.originReached = 0;
+    focusDevForScenario(["svet"]);
+  } else if (mode === "origins") {
+    state.prologDone = sc.prologDone
+      ? { class: !!sc.prologDone.class, race: !!sc.prologDone.race, origin: !!sc.prologDone.origin }
+      : { class: false, race: false, origin: false };
+    if (sc.picks?.class) state.picks.class = sc.picks.class;
+    const step = Math.max(0, Math.min(ORIGIN_STEPS.length - 1, sc.originStep | 0));
+    state.originStep = step;
+    state.originReached = Math.max(step, state.prologDone.class ? 1 : 0);
     setScreen("origins");
-  } else if (view === "confirm") {
+    focusDevForScenario(["svet", "postava"]);
+  } else if (mode === "confirm") {
     state.prologStory = true; /* scéna Postava = shrnutí po prologu, ne ruční výběr */
     if (state.picks.race === "local" && !state.picks.origin) {
       state.picks.origin = "native";
       state.prologDone.origin = true;
     }
+    /* jméno ve storybooku: ukázka, ne zbytek z minulé hry / inputu */
+    state.name = "Hynek";
+    const nameIn = $("input-name");
+    if (nameIn) nameIn.value = "Hynek";
     setScreen("confirm");
-  } else if (view === "demo-morning") {
-    state.prologReact = sc.prologReact || "hide";
-    state.prologDone = sc.prologDone || { class: true, race: true, origin: true };
-    const patch = state.picks.origin ? LOM.Origin.apply(state, state.picks.origin) : {};
-    if (patch.origin) state.origin = patch.origin;
-    if (patch.standing) state.standing = patch.standing;
-    const wakeId = wakePlaceId();
-    state.mapX = 3;
-    state.mapY = 3;
-    discoverCell(3, 3);
-    state.mode = "place";
-    state.place = PLACE[wakeId] ? wakeId : null;
-    state.placeView = "hub";
-    const paras = morningBeatParagraphs(patch.intro);
-    const morningPlain = paras.map((p) => String(p).replace(/<\/?strong>/g, "")).join(" ");
-    state.log = nbspCzech(state.place ? `${morningPlain} ${placeProse(state.place)}` : morningPlain);
-    setScreen("town");
-    /* Zkusit prolog znovu jen u scény označené demoEnd (ne u každého rána) */
-    openMorningBeat(paras, { demo: !!sc.demoEnd || PUBLIC_DEMO });
+    focusDevForScenario(["svet", "postava"]);
   } else {
-    state.mode = view === "exits" ? "exits" : PLACE_VIEWS.includes(view) ? "place" : "town";
+    /* play | wake: místo + doba; wake otevře modal Probuzení. Demo = CTA. */
+    if (wakeEvent) {
+      state.prologReact = sc.prologReact || "hide";
+      state.prologDone = sc.prologDone || { class: true, race: true, origin: true };
+    }
+    const patch = state.picks.origin ? LOM.Origin.apply(state, state.picks.origin) : {};
+    if (wakeEvent) {
+      if (patch.origin) state.origin = patch.origin;
+      if (patch.standing) state.standing = patch.standing;
+    }
+    state.mode = place === "exits" ? "exits" : PLACE_VIEWS.includes(place) ? "place" : "town";
     if (state.mode === "place") {
-      state.place = view;
-      state.visits[view] = 0;
-      const morning = sc.withMorning ? `${prologMorning()} ` : "";
-      state.log = nbspCzech(`${morning}${placeProse(view)}`);
+      state.place = place;
+      state.visits[place] = 0;
       if (sc.placeView) state.placeView = sc.placeView;
+    }
+    if (wakeEvent) {
+      const paras = morningBeatParagraphs(patch.intro);
+      const morningPlain = paras.map((p) => String(p).replace(/<\/?strong>/g, "")).join(" ");
+      const baseLog = state.mode === "place" ? placeProse(place) : TOWN_PROSE;
+      state.log = nbspCzech(`${morningPlain} ${baseLog}`);
+      setScreen("town");
+      syncPhaseLook();
+      openMorningBeat(paras, { demo: !!sc.demoEnd || PUBLIC_DEMO });
+      focusDevForScenario(["svet", "postava"]);
+    } else if (state.mode === "place") {
+      const morning = sc.withMorning ? `${prologMorning()} ` : "";
+      state.log = nbspCzech(`${morning}${placeProse(place)}`);
+      setScreen("town");
     } else if (sc.withMorning) {
       state.log = nbspCzech(`${prologMorning()} ${TOWN_PROSE}`);
+      setScreen("town");
+    } else {
+      setScreen("town");
     }
-    setScreen("town");
   }
   syncDevUi();
 }
@@ -6324,31 +6629,65 @@ function renderDevStatus() {
       .map((stt) => {
         const items = list.filter((x) => x.status === stt);
         if (!items.length) return "";
-        return `<details class="dev-sec dev-sys-sec"${stt === "funguje" ? "" : " open"}><summary><span class="sys-${stt}">${stt}</span> ${items.length}</summary><ul>${items
+        return `<details class="dev-sec dev-sys-sec"${stt === "funguje" ? "" : " open"}><summary><span class="sys-${stt}">${stt}</span> ${items.length}</summary><ul class="dev-sys-list">${items
           .map(
             (x) =>
-              `<li><strong>${x.name}${x.phase ? ` <span class="dev-phase">${x.phase}</span>` : ""}</strong><i class="dev-bar"><b style="width:${x.pct}%"></b></i><em>${x.pct} % ${x.note ? "· " + x.note : ""}</em></li>`
+              `<li><span class="dev-sys-name">${x.name}${x.phase ? ` <span class="dev-phase">${x.phase}</span>` : ""}</span><span class="dev-sys-pct">${x.pct}&nbsp;%</span><i class="dev-bar" aria-hidden="true"><b style="width:${x.pct}%"></b></i>${x.note ? `<em class="dev-sys-note">${x.note}</em>` : ""}</li>`
           )
           .join("")}</ul></details>`;
       })
       .join("")}`;
 }
 
-/** Popisek „(scéna: …)“ u knobu ukazuje, co nastavuje vybraná scéna; hodnota „“ = nechat ji. */
-function syncKnobLabels() {
-  const base = LOM.SCENARIOS.find((x) => x.id === ($("dev-scenario")?.value || state.activeScenario));
-  if (!base) return;
-  document.querySelectorAll("select[data-knob]").forEach((sel) => {
-    const k = LOM.KNOBS.find((x) => x.id === sel.dataset.knob);
-    if (!k) return;
-    const v = k.from(base);
-    const label = k.opts.find(([o]) => o === v)?.[1];
-    sel.options[0].textContent = label ? `scéna: ${label}` : "scéna: –";
+/** Aktuální přepínače = zdroj pravdy (select + checkbox knoby). */
+function knobsFromUi() {
+  const out = {};
+  document.querySelectorAll("[data-knob]").forEach((el) => {
+    if (el.matches?.('input[type="checkbox"]')) out[el.dataset.knob] = el.checked ? "1" : "0";
+    else out[el.dataset.knob] = el.value;
   });
+  return out;
 }
 
-function allDevKnobSelects() {
-  return [...document.querySelectorAll("select[data-knob]")];
+function knobControlHtml(k) {
+  const modeAttr = k.onMode ? ` data-knob-mode="${k.onMode}"` : "";
+  if (k.type === "check") {
+    const tipCls = k.tip ? " has-tip" : "";
+    const tipAttr = k.tip ? ` data-tip="${String(k.tip).replace(/"/g, "&quot;")}"` : "";
+    return `<label class="dev-chk${tipCls}"${tipAttr}${modeAttr}><input type="checkbox" data-knob="${k.id}" /> ${k.label}</label>`;
+  }
+  return `<label class="dev-knob"${modeAttr}>${k.label}<select data-knob="${k.id}">${(k.opts || [])
+    .map(([v, l]) => `<option value="${v}">${l}</option>`)
+    .join("")}</select></label>`;
+}
+
+/**
+ * Předvolba scény naplní přepínače. Přepínače pak řídí hru;
+ * Reset = znovu naplnit z předvolby.
+ */
+function fillKnobsFromScenario(sc) {
+  if (!sc || !window.LOM?.KNOBS) return;
+  LOM.KNOBS.forEach((k) => {
+    if (k.type === "check") {
+      const el = document.querySelector(`input[type="checkbox"][data-knob="${k.id}"]`);
+      if (el) el.checked = !!k.from(sc);
+      return;
+    }
+    const sel = document.querySelector(`select[data-knob="${k.id}"]`);
+    if (!sel) return;
+    let v = k.from(sc);
+    if (v === "" || v == null) v = k.opts[0]?.[0] ?? "";
+    const vs = String(v);
+    if (![...sel.options].some((o) => o.value === vs)) {
+      const opt = document.createElement("option");
+      opt.value = vs;
+      opt.textContent = vs;
+      sel.appendChild(opt);
+    }
+    sel.value = vs;
+  });
+  syncKnobModeVisibility();
+  devKnobs = knobsFromUi();
 }
 
 /** Shrnutí voleb pro labely (Rodák u Zdejší se neuvádí). */
@@ -6407,34 +6746,31 @@ function initDevStorybook() {
   Object.entries(bySec).forEach(([sec, list]) => {
     const host = document.querySelector(`[data-knob-sec="${sec}"]`);
     if (!host) return;
-    host.innerHTML = list
-      .map(
-        (k) =>
-          `<label class="dev-knob">${k.label}<select data-knob="${k.id}"><option value="">scéna</option>${k.opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></label>`
-      )
-      .join("");
+    /* vrstvy a objekty skladby jdou pod výběry scény (Místo, Pohled, Doba), ne do vlastní sekce */
+    const stageChecks = list.filter((k) => k.stage && k.type === "check");
+    host.innerHTML = list.filter((k) => !stageChecks.includes(k)).map(knobControlHtml).join("");
+    const checks = document.querySelector(`[data-knob-sec="${sec}-checks"]`);
+    if (checks) checks.innerHTML = stageChecks.map(knobControlHtml).join("");
   });
-  const onKnobChange = (e) => {
-    if (!e.target.dataset?.knob) return;
-    devKnobs = Object.fromEntries(allDevKnobSelects().filter((n) => n.value).map((n) => [n.dataset.knob, n.value]));
+  const applyFromKnobs = () => {
+    devKnobs = knobsFromUi();
     refreshScenarioOptionLabels(devKnobs);
     applyScenario(sel.value, devKnobs);
   };
-  document.querySelectorAll("[data-knob-sec]").forEach((el) => el.addEventListener("change", onKnobChange));
-
-  const clearKnobs = () => {
-    devKnobs = {};
-    allDevKnobSelects().forEach((n) => (n.value = ""));
+  const loadPreset = () => {
+    const sc = LOM.SCENARIOS.find((x) => x.id === sel.value);
+    fillKnobsFromScenario(sc);
+    applyFromKnobs();
   };
-  sel.addEventListener("change", () => {
-    clearKnobs();
-    applyScenario(sel.value, {});
-    syncKnobLabels();
-  });
-  $("dev-reset")?.addEventListener("click", () => {
-    clearKnobs();
-    applyScenario(sel.value, {});
-  });
+  document.querySelectorAll("[data-knob-sec]").forEach((el) =>
+    el.addEventListener("change", (e) => {
+      if (!e.target.dataset?.knob) return;
+      if (e.target.dataset.knob === "mode") syncKnobModeVisibility();
+      applyFromKnobs();
+    })
+  );
+  sel.addEventListener("change", loadPreset);
+  $("dev-reset")?.addEventListener("click", loadPreset);
   renderDevStatus();
   const togglesEl = $("dev-toggles");
   if (togglesEl) {
@@ -6457,7 +6793,9 @@ function initDevStorybook() {
       render();
     });
   }
-  syncKnobLabels();
+  /* výchozí scéna = Prolog · Svatava (S1) */
+  if (LOM.SCENARIOS.some((x) => x.id === "start-origins")) sel.value = "start-origins";
+  loadPreset();
   syncDevUi();
 }
 initDevStorybook();

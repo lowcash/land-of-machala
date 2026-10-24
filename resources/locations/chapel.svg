@@ -4,8 +4,7 @@
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a42"/><stop offset="1" stop-color="#7fa592"/></linearGradient>
 <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe4d6" stop-opacity="0"/><stop offset=".6" stop-color="#cfe4d6" stop-opacity=".6"/><stop offset="1" stop-color="#cfe4d6" stop-opacity="0"/></linearGradient>
 </defs>
-<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
-<circle cx="1280" cy="170" r="70" fill="#e6efdc" opacity=".85"/></g>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
 <g id="far-trees">
 <g class="o" fill="#1d3a2c"><path d="M-20 520l60-260 60 260zM90 540l70-300 70 300zM1290 540l70-290 70 290zM1400 520l60-280 60 280zM1500 550l60-250 60 250z"/></g>
 <rect y="380" width="1600" height="200" fill="url(#fog)"/>

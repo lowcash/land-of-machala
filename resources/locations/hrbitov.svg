@@ -8,7 +8,7 @@
 <path class="o" d="M-20 700q360-60 720 20t760-20v220h-1480z" fill="#3a4a30"/>
 <!-- ze -->
 <path class="o" d="M80 560h1440v40H80z" fill="#6a6a62"/>
-<!-- náhrobky -->
+<!-- nÃ¡hrobky -->
 <g class="o" fill="#8a8a82">
   <path d="M220 700V520q0-40 40-40h40q40 0 40 40v180z"/>
   <path d="M420 700V480q0-50 50-50h30q50 0 50 50v220z"/>
@@ -16,11 +16,10 @@
   <path d="M980 700V510q0-45 45-45h50q45 0 45 45v190z"/>
   <path d="M1240 700V490q0-55 35-55h70q35 0 35 55v210z"/>
 </g>
-<!-- kYí~ -->
+<!-- kYÃ­~ -->
 <path class="o" d="M780 420v-160M720 360h120" fill="none"/>
 <path class="o" d="M760 420h40v280h-40z" fill="#5a4a3a"/>
-<!-- kaple v dálce -->
+<!-- kaple v dÃ¡lce -->
 <path class="o" d="M1280 520V360l80-50 80 50v160z" fill="#7a6a5a"/>
 <path class="o" d="M1360 310v50" class="t"/>
-<circle cx="300" cy="180" r="50" fill="#d0d8e0" opacity=".7"/>
 </svg>

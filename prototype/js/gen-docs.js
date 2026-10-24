@@ -172,14 +172,9 @@ blocks.scenes = md(
   ["skupina", "id", "název", "co zkusit"],
   [...SCENARIOS].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group)).map((sc) => [`${GROUPS.indexOf(sc.group) + 1} ${sc.group}`, `\`${sc.id}\``, cell(sc.label), cell(sc.note)])
 );
-/* doporučená trasa: jen pracovní sada Prolog */
+/* doporučená trasa: prozatím jen S1 (ukázka končí po 4 krocích) */
 const TOUR = [
-  ["start-landing", "landing (private only)"],
-  ["start-origins", "prolog choices"],
-  ["start-confirm", "character summary + name"],
-  ["start-morning", "wake hayloft + demo restart CTA"],
-  ["morning-cottage", "wake cottage + Vstát"],
-  ["morning-lodging", "wake lodging + Vstát"],
+  ["start-origins", "prolog choices · konec ukázky po 4 krocích"],
 ];
 blocks.tour = md(
   ["#", "scéna", "proč"],
@@ -400,12 +395,17 @@ function writeTexty() {
     .map((m) => m[1].replace(/\s+/g, " ").trim())
     .filter((t) => t && !t.startsWith("{{") && /[A-Za-zÁ-ž]/.test(t) && t.length < 60);
   const UI_KNOWN = [
+    "Land of Machala",
+    "Textová poutnická RPG v zemi Machala.",
     "Vstoupit do hry",
     "Projít prolog znovu",
+    "Na začátek",
+    "Zůstat",
     "Vstát",
     "Zkusit prolog znovu",
+    "Další část je ve vývoji. Můžeš zkusit prolog znovu.",
     "Pokračovat jako",
-    "Odhlásit – jiná postava",
+    "Jiná postava",
     "Vytvořit účet",
     "Už mám účet",
     "Hrát jako host",
@@ -415,20 +415,45 @@ function writeTexty() {
     "Chlap",
     "Ženská",
     "Ráno",
+    "Poledne",
     "Vítej zpět",
+    "Přihlášení",
+    "Registrace",
+    "E-mail a heslo",
+    "Nový účet, nebo host",
+    "Prolog",
     "Postava",
     "Nastavení",
     "FAQ",
     "Podmínky",
   ];
-  const uiSet = new Set([...UI_KNOWN, ...uiFromHtml.filter((t) => /^(Vstoupit|Projít|Pokračovat|Odhlásit|Vytvořit|Hrát|Jak |Kdo |Chlap|Ženská|Nastavení|FAQ|Podmínky)/.test(t))]);
+  const LANDING_COPY = [
+    "Textová poutnická RPG v zemi Machala.",
+    "„Mlčeti zlato.“ — lidové rčení",
+    "„Musíme obdělávat svou zahradu.“ — Voltaire, Candide",
+    "„Účet existuje. Poplatek také.“ — Gertruda, Zástava",
+    "„Platit budete tak jako tak.“ — Svatava z Přívozu, hostinská",
+    "„Nemám peníze.“ — Lowcash",
+  ];
+  const uiSet = new Set([
+    ...UI_KNOWN,
+    ...LANDING_COPY,
+    ...uiFromHtml.filter((t) =>
+      /^(Vstoupit|Projít|Pokračovat|Odhlásit|Jiná|Vytvořit|Hrát|Jak |Kdo |Chlap|Ženská|Nastavení|FAQ|Podmínky|Textová|Land of)/.test(t)
+    ),
+  ]);
   const uiBlock = [...uiSet].sort((a, b) => a.localeCompare(b, "cs")).map((t) => `- ${t}`).join("\n");
+  const landingBlock = LANDING_COPY.map((t) => `- ${t}`).join("\n");
   const out = `# Herní texty (výpis)
 
 Generováno z dat a prologu (\`node prototype/js/gen-docs.js\`). **Soukromé.** Ve hře žádné em-dash \`—\`.
 Pokročilá hesla: [slovnik.md](slovnik.md) (stejný zdroj: \`js/data/kodex.js\`).
 
 **Značka Kodexu:** \`«tvar»〔id〕\` = ve hře tooltip (\`abbr.kodex\`). Kontroluj, že nic důležitého nechybí v Kodexu.
+
+## Landing (brand / tagline / citáty)
+
+${landingBlock}
 
 ## Prolog
 
@@ -440,7 +465,7 @@ ${originsBlock}
 
 ## UI (obrazovky)
 
-Tlačítka a labely (kontrola tónu; ne úplný dump DOMu).
+Tlačítka, labely a krátké věty (kontrola tónu; ne úplný dump DOMu).
 
 ${uiBlock}
 

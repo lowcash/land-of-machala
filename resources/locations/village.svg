@@ -3,8 +3,7 @@
 <defs>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2c868"/><stop offset="1" stop-color="#fbeec0"/></linearGradient>
 </defs>
-<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
-<circle cx="260" cy="170" r="70" fill="#fff6c8" opacity=".9"/></g>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
 <g id="hill"><path class="o" d="M-10 480q300-110 640-40t620-30q200-30 360 30v460h-1620z" fill="#b8c060"/></g>
 <g id="cottage-a"><rect class="o" x="220" y="440" width="300" height="190" fill="#e8d4a0"/><path class="o" d="M180 460L370 290l190 170z" fill="#c8963a"/>
 <g class="t" opacity=".6"><path d="M260 445l110-130M470 445L370 315M330 400l60-70"/></g>

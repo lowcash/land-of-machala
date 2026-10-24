@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<!-- chalupa interier: jen mistnost; fazi ladí CSS -->
+<g id="wall">
+  <rect width="1600" height="600" fill="#c4a070"/>
+  <g class="t" opacity=".35"><path d="M0 150h1600M0 300h1600M0 450h1600"/></g>
+  <g fill="#a88858" opacity=".45"><rect x="0" y="0" width="90" height="600"/><rect x="1510" y="0" width="90" height="600"/></g>
+</g>
+<g id="ceiling">
+  <rect class="o" x="-10" y="0" width="1620" height="70" fill="#6b4220"/>
+  <rect class="o" x="-10" y="70" width="1620" height="24" fill="#8a5a30"/>
+  <path class="o" d="M200 94L800 40l600 54" fill="none"/>
+</g>
+<g id="window">
+  <rect class="o" x="200" y="180" width="200" height="160" rx="8" fill="#8aa8c8"/>
+  <path class="t" d="M300 180v160M200 260h200"/>
+  <rect class="o" x="190" y="170" width="220" height="18" fill="#5a3820"/>
+</g>
+<g id="hearth">
+  <path class="o" d="M640 600V280q0-50 50-50h220q50 0 50 50v320z" fill="#7a6a5a"/>
+  <g class="t" opacity=".55"><path d="M640 360h320M640 440h320M640 520h320"/></g>
+  <path class="o" d="M700 600V360q0-30 30-30h140q30 0 30 30v240z" fill="#2a1710"/>
+  <ellipse cx="800" cy="480" rx="50" ry="36" fill="#ff8a1f" opacity=".7"/>
+  <ellipse cx="800" cy="465" rx="24" ry="16" fill="#ffd45e" opacity=".75"/>
+  <rect class="o" x="620" y="250" width="360" height="28" fill="#5a3820"/>
+</g>
+<g id="floor">
+  <rect width="1600" height="300" y="600" fill="#8a5a30"/>
+  <rect class="o" x="-10" y="596" width="1620" height="12" fill="#4a2e16"/>
+  <g class="t" opacity=".5"><path d="M0 690h1600M0 780h1600M0 860h1600M240 602v298M800 602v298M1360 602v298"/></g>
+</g>
+<g id="table">
+  <ellipse class="o" cx="1180" cy="620" rx="200" ry="36" fill="#a86a32"/>
+  <path class="o" d="M1020 628l-14 140h40l18-120zM1340 628l14 140h-40l-18-120z" fill="#6b3a1d"/>
+  <rect class="o" x="1140" y="560" width="80" height="50" rx="6" fill="#e8d9a8"/>
+</g>
+<g id="bench">
+  <rect class="o" x="160" y="560" width="280" height="28" fill="#6b4220"/>
+  <path class="o" d="M180 588v50h28v-50zM390 588v50h28v-50z" fill="#5a3820"/>
+</g>
+<g id="shelf">
+  <rect class="o" x="1280" y="200" width="220" height="18" fill="#5a3820"/>
+  <g class="o"><path d="M1310 200v-50h40v50z" fill="#4f8a62"/><path d="M1380 200v-70h36v70z" fill="#c94f3a"/><path d="M1440 200v-40h40v40z" fill="#e0b24a"/></g>
+</g>
+<g id="door">
+  <path class="o" d="M480 600V340q0-16 16-16h120q16 0 16 16v260z" fill="#5a3820"/>
+  <path class="t" d="M546 324v276"/>
+  <circle class="o" cx="580" cy="470" r="9" fill="#c9a84a"/>
+</g>
+</svg>

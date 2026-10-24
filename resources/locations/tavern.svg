@@ -17,9 +17,9 @@
 <path class="o" d="M190 124l110 80v-80zM1410 124l-110 80v-80z" fill="#6b3a1d"/>
 </g>
 <g id="window">
-<rect class="o" x="300" y="200" width="150" height="190" rx="70" fill="#3b4f7a"/>
+<!-- sklo: neutrální denní nebe; fázi ladí CSS overlay (data-bg=tavern + data-phase) -->
+<rect class="o" x="300" y="200" width="150" height="190" rx="70" fill="#9eb6d4"/>
 <path class="t" d="M375 200v190M300 295h150"/>
-<circle cx="415" cy="250" r="16" fill="#f6e7a8" opacity=".9"/>
 </g>
 <g id="fireplace">
 <ellipse cx="800" cy="470" rx="520" ry="300" fill="url(#glow)"/>

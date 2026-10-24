@@ -4,7 +4,6 @@
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fa8e0"/><stop offset="1" stop-color="#d8eef0"/></linearGradient>
 </defs>
 <g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
-<circle cx="1300" cy="150" r="70" fill="#fff2b0" opacity=".9"/>
 <g fill="#ffffff" opacity=".9"><ellipse cx="320" cy="170" rx="170" ry="38"/><ellipse cx="430" cy="146" rx="100" ry="34"/><ellipse cx="860" cy="260" rx="150" ry="30"/></g></g>
 <g id="far-hill"><path class="o" d="M-10 520q300-110 600-30t560-30q220-50 460 30v440h-1620z" fill="#a9cf6a"/></g>
 <g id="windmill"><path class="o" d="M1130 480l20-140h60l20 140z" fill="#e8d9b0"/><path class="o" d="M1120 345l60-70 60 70z" fill="#a8452a"/>

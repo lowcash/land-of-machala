@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<!-- senik interier -->
+<g id="wall">
+  <rect width="1600" height="600" fill="#9a7040"/>
+  <g fill="#7a5530" opacity=".4">
+    <rect x="60" y="0" width="36" height="600"/><rect x="360" y="0" width="36" height="600"/>
+    <rect x="1200" y="0" width="36" height="600"/><rect x="1500" y="0" width="36" height="600"/>
+  </g>
+  <g class="t" opacity=".4"><path d="M0 140h1600M0 280h1600M0 420h1600M0 540h1600"/></g>
+</g>
+<g id="roof-beams">
+  <rect class="o" x="-10" y="0" width="1620" height="64" fill="#5a3820"/>
+  <path class="o" d="M100 64L800 8l700 56" fill="none"/>
+  <rect class="o" x="140" y="64" width="48" height="220" fill="#6b4220"/>
+  <rect class="o" x="776" y="64" width="48" height="200" fill="#6b4220"/>
+  <rect class="o" x="1410" y="64" width="48" height="220" fill="#6b4220"/>
+  <path class="o" d="M188 180h1200" fill="none"/>
+</g>
+<g id="loft-gap">
+  <path class="o" d="M420 64V220h760V64" fill="#4a2e16" opacity=".35"/>
+</g>
+<g id="window">
+  <rect class="o" x="1220" y="200" width="180" height="150" rx="6" fill="#8aa4c0"/>
+  <path class="t" d="M1310 200v150M1220 275h180"/>
+  <rect class="o" x="1210" y="190" width="200" height="16" fill="#4a2e16"/>
+</g>
+<g id="floor">
+  <rect width="1600" height="300" y="600" fill="#6a4424"/>
+  <rect class="o" x="-10" y="596" width="1620" height="14" fill="#3a2414"/>
+  <g class="t" opacity=".5"><path d="M0 690h1600M0 780h1600M0 860h1600M200 600v300M900 600v300M1400 600v300"/></g>
+</g>
+<g id="hay">
+  <path class="o" d="M40 600q80-180 240-140 140 50 160 160z" fill="#d4b45a"/>
+  <path class="o" d="M200 600q40-100 160-80 100 40 90 110z" fill="#e0c060"/>
+  <path class="o" d="M1100 600q90-200 280-150 180 60 200 180z" fill="#d4b45a"/>
+  <path class="o" d="M1320 600q30-90 140-70 100 35 80 100z" fill="#c9a84a"/>
+  <path class="o" d="M560 600q70-120 220-50 90 55 50 110z" fill="#c9a84a" opacity=".95"/>
+</g>
+<g id="ladder">
+  <path class="o" d="M960 600V160M1020 600V160" fill="none"/>
+  <g class="t"><path d="M960 220h60M960 300h60M960 380h60M960 460h60M960 540h60"/></g>
+</g>
+<g id="door">
+  <path class="o" d="M700 600V340q0-18 18-18h150q18 0 18 18v260z" fill="#4a2e16"/>
+  <path class="t" d="M793 322v278"/>
+  <circle class="o" cx="840" cy="480" r="11" fill="#c9a84a"/>
+</g>
+<g id="pitchfork">
+  <path class="t" d="M280 420v200M260 420h40M250 400l30 20 30-20"/>
+</g>
+</svg>

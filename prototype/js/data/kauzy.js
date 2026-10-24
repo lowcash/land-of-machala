@@ -1,5 +1,5 @@
 /*
- * Kauzy - jediný zdroj pravdy (docs/story/zvon.md je záměr, tohle je kód). Pilot: Zvon z kaple.
+ * Kauzy - jediný zdroj pravdy (docs/story/bell.md je záměr, tohle je kód). Pilot: Zvon z kaple.
  * Kauza je data: NPC (spolehlivost, signál), varianty (pravda podle seedu), fámy (kdo co tvrdí, jak se ověří),
  * verdikty (dopad na důvěru a svět). Pravda fámy se rozhoduje podle varianty: true | half | false | none (nikdy se nerozhodne).
  * Spolehlivost `rel` = výchozí jistota zdroje; `tell` = jak často prozradí nepravdu drobným signálem (a = napůl, b = lež).

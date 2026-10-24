@@ -4,8 +4,7 @@
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8dce8"/><stop offset="1" stop-color="#e8d8b0"/></linearGradient>
 </defs>
 <!-- vesnický trh: dřevo, plátno, hlína — bez jarmarečních pruhů -->
-<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
-<circle cx="1280" cy="140" r="55" fill="#f0e0a8" opacity=".85"/></g>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
 <g id="hills"><path class="o" d="M-10 420q280-90 560-30t540-20q260-40 520 40v500h-1620z" fill="#9aaa58"/></g>
 <g id="cottages">
 <path class="o" d="M40 380h220v160H40z" fill="#e0c898"/><path class="o" d="M20 390l130-100 130 100z" fill="#a87838"/>
