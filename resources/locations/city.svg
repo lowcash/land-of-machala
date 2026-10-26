@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2a1a14;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a1a14;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fa8d4"/><stop offset="1" stop-color="#f1e3b4"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<g fill="#fff6dc" opacity=".85"><ellipse cx="300" cy="150" rx="150" ry="34"/><ellipse cx="400" cy="130" rx="90" ry="30"/><ellipse cx="1300" cy="200" rx="170" ry="34"/></g></g>
+<g id="tower">
+<rect class="o" x="720" y="200" width="160" height="380" fill="#d8c39a"/>
+<path class="o" d="M700 210L800 60l100 150z" fill="#b0452c"/>
+<circle class="o" cx="800" cy="300" r="38" fill="#f6ecc8"/><path class="t" d="M800 300v-24M800 300l16 10"/>
+<path class="o" d="M770 580v-90q0-30 30-30t30 30v90z" fill="#5a3a2a"/>
+<g class="t" opacity=".5"><path d="M720 400h160M720 480h160"/></g>
+</g>
+<g id="houses-back">
+<rect class="o" x="400" y="380" width="230" height="210" fill="#d9a86a"/>
+<path class="o" d="M380 390L515 280l135 110z" fill="#8f3b27"/>
+<rect class="o" x="450" y="430" width="50" height="60" fill="#3b4f7a"/><rect class="o" x="540" y="430" width="50" height="60" fill="#3b4f7a"/>
+<rect class="o" x="980" y="370" width="250" height="220" fill="#c9d6a8"/>
+<path class="o" d="M960 380L1105 260l145 120z" fill="#b0452c"/>
+<rect class="o" x="1030" y="430" width="50" height="60" fill="#3b4f7a"/><rect class="o" x="1130" y="430" width="50" height="60" fill="#3b4f7a"/>
+<path class="t" d="M1055 430v60M1155 430v60M475 430v60M565 430v60"/>
+</g>
+<g id="houses-front">
+<rect class="o" x="30" y="330" width="290" height="290" fill="#e6cf9c"/>
+<path class="o" d="M0 345L175 190l175 155z" fill="#c4552e"/>
+<g class="t" opacity=".5"><path d="M30 440h290M30 540h290"/></g>
+<rect class="o" x="80" y="400" width="60" height="80" fill="#3b4f7a"/><rect class="o" x="210" y="400" width="60" height="80" fill="#3b4f7a"/>
+<path class="o" d="M130 620v-90q0-34 36-34t36 34v90z" fill="#5a3a2a"/>
+<rect class="o" x="1300" y="320" width="300" height="300" fill="#e0b88a"/>
+<path class="o" d="M1270 335L1450 180l180 155z" fill="#8f3b27"/>
+<g class="t" opacity=".5"><path d="M1300 430h300M1300 530h300"/></g>
+<rect class="o" x="1350" y="390" width="60" height="80" fill="#3b4f7a"/><rect class="o" x="1480" y="390" width="60" height="80" fill="#3b4f7a"/>
+<path class="o" d="M1410 620v-90q0-34 36-34t36 34v90z" fill="#5a3a2a"/>
+</g>
+<g id="ground"><rect class="o" x="-10" y="600" width="1620" height="310" fill="#cdb98c"/>
+<g class="t" opacity=".5"><path d="M0 660q200 12 400 0t400 0t400 0t400 0M0 740q200 12 400 0t400 0t400 0t400 0M0 820q200 12 400 0t400 0t400 0t400 0"/><path d="M120 600l-40 60M360 600l20 60M600 600l-30 60M900 600l30 60M1140 600l-20 60M1400 600l40 60M240 660l-50 80M520 660l30 80M760 660l-20 80M1040 660l40 80M1300 660l-30 80M1500 660l50 80"/></g></g>
+<g id="well"><ellipse class="o" cx="800" cy="680" rx="90" ry="24" fill="#8a8a82"/><path class="o" d="M710 680v-40q0-14 90-14t90 14v40q0 24-90 24t-90-24z" fill="#a8a69a"/><ellipse class="o" cx="800" cy="640" rx="90" ry="20" fill="#4f86a8"/>
+<path class="o" d="M730 636v-80h12v80zM858 636v-80h12v80z" fill="#6b3a1d"/><path class="o" d="M720 560l80-40 80 40z" fill="#8f3b27"/></g>
+<g id="tree"><path class="o" d="M1560 640q-6-60 0-120h30q6 60 0 120z" fill="#6b3a1d"/><circle class="o" cx="1575" cy="470" r="80" fill="#5f9a46"/></g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2a2410;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a2410;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb8c8"/><stop offset="1" stop-color="#f0e0b0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<g fill="#fff6dc" opacity=".8"><ellipse cx="1180" cy="140" rx="200" ry="30"/><ellipse cx="300" cy="200" rx="140" ry="26"/></g></g>
+<g id="far-hills"><path class="o" d="M-10 480q200-180 420-60t320-70q200-130 400-10t340-60q120 20 130 80v500h-1620z" fill="#a89a5a"/></g>
+<g id="rock"><path class="o" d="M1020 520l60-150 70 40 40-90 90 60 60 140z" fill="#8a8a82"/><g class="t" opacity=".6"><path d="M1150 410l-20 110M1240 380l10 140"/></g></g>
+<g id="mid-hills"><path class="o" d="M-10 620q260-190 520-90t480-30q260-100 480 0t340-10v420h-1820z" fill="#8a8a3e"/>
+<g class="t" opacity=".5"><path d="M200 600q40-30 80 0M700 580q40-30 80 0M1300 560q40-30 80 0"/></g></g>
+<g id="cairn"><g class="o" fill="#9a9a90"><ellipse cx="330" cy="660" rx="70" ry="30"/><ellipse cx="330" cy="620" rx="50" ry="24"/><ellipse cx="330" cy="584" rx="32" ry="20"/></g></g>
+<g id="bushes"><g class="o" fill="#6a7a34"><circle cx="1400" cy="660" r="44"/><circle cx="1450" cy="680" r="34"/><circle cx="650" cy="690" r="40"/></g></g>
+<g id="foreground"><path class="o" d="M-10 760q500-60 1000-20t620-10v180h-1620z" fill="#6e7a30"/><path d="M640 900q60-110 180-130h70q-20 30-80 130z" fill="#b8a468"/></g>
+</svg>

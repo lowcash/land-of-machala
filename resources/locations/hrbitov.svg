@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a6a7a"/><stop offset="1" stop-color="#9aa8b0"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<path class="o" d="M-20 580q400-120 800-40t840-60v440h-1640z" fill="#4a5a3a"/>
+<path class="o" d="M-20 700q360-60 720 20t760-20v220h-1480z" fill="#3a4a30"/>
+<!-- ze -->
+<path class="o" d="M80 560h1440v40H80z" fill="#6a6a62"/>
+<!-- náhrobky -->
+<g class="o" fill="#8a8a82">
+  <path d="M220 700V520q0-40 40-40h40q40 0 40 40v180z"/>
+  <path d="M420 700V480q0-50 50-50h30q50 0 50 50v220z"/>
+  <path d="M700 700V500q0-60 40-60h80q40 0 40 60v200z"/>
+  <path d="M980 700V510q0-45 45-45h50q45 0 45 45v190z"/>
+  <path d="M1240 700V490q0-55 35-55h70q35 0 35 55v210z"/>
+</g>
+<!-- kYí~ -->
+<path class="o" d="M780 420v-160M720 360h120" fill="none"/>
+<path class="o" d="M760 420h40v280h-40z" fill="#5a4a3a"/>
+<!-- kaple v dálce -->
+<path class="o" d="M1280 520V360l80-50 80 50v160z" fill="#7a6a5a"/>
+<path class="o" d="M1360 310v50" class="t"/>
+</svg>

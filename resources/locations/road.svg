@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2e2210;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2e2210;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a9ad8"/><stop offset="1" stop-color="#f6e2c0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/>
+<g fill="#fff6e8" opacity=".85"><ellipse cx="400" cy="180" rx="180" ry="32"/><ellipse cx="1200" cy="120" rx="150" ry="28"/></g></g>
+<g id="fields"><rect class="o" x="-10" y="440" width="1620" height="470" fill="#c9b058"/>
+<path class="o" d="M-10 440h1620v40h-1620z" fill="#7a9a50"/>
+<path class="o" d="M-10 560l560-120h140l-640 470z" fill="#8fae52"/>
+<path class="o" d="M1610 560l-560-120h-140l640 470z" fill="#d9b94a"/>
+<g class="t" opacity=".5"><path d="M100 520l380-70M1500 520l-380-70M60 640l440-160M1540 640l-440-160"/></g></g>
+<g id="distant-trees"><g class="o" fill="#4a7a3a"><circle cx="220" cy="430" r="44"/><circle cx="290" cy="440" r="36"/><circle cx="1330" cy="430" r="46"/><circle cx="1270" cy="442" r="34"/><circle cx="1500" cy="440" r="36"/></g></g>
+<g id="road"><path class="o" d="M740 440h120l440 470h-1000z" fill="#e0c088"/>
+<g class="t" opacity=".6"><path d="M800 460v60M800 560v80M800 690v100M800 820v80"/><path d="M700 640q-20 20-10 60M920 680q20 20 10 60"/></g>
+<g class="o" fill="#a08850"><ellipse cx="640" cy="780" rx="26" ry="14"/><ellipse cx="1000" cy="720" rx="20" ry="11"/></g></g>
+<g id="signpost"><rect class="o" x="1126" y="520" width="20" height="200" fill="#6b4a2a"/><path class="o" d="M1146 540h130l24 22-24 22h-130z" fill="#a8723a"/><path class="o" d="M1126 600h-130l-24 22 24 22h130z" fill="#8a5a2a"/></g>
+</svg>

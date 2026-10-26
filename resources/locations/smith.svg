@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#140c0a;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#140c0a;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<radialGradient id="glow" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="#ffb347" stop-opacity=".95"/><stop offset=".5" stop-color="#ff6a1c" stop-opacity=".4"/><stop offset="1" stop-color="#ff4a1c" stop-opacity="0"/></radialGradient>
+</defs>
+<g id="wall"><rect width="1600" height="650" fill="#4a3d3a"/>
+<g class="t" opacity=".5"><path d="M0 130h1600M0 270h1600M0 410h1600M0 550h1600M200 0v130M520 130v140M860 0v130M1180 130v140M1480 0v130M340 270v140M700 270v140M1040 270v140M1380 270v140"/></g></g>
+<g id="roof-beam"><rect class="o" x="-10" y="0" width="1620" height="70" fill="#2a1c14"/></g>
+<g id="forge">
+<ellipse cx="520" cy="470" rx="520" ry="320" fill="url(#glow)"/>
+<path class="o" d="M250 650V300q0-60 60-80l70-40q30-20 40-80h140q10 60 40 80l70 40q60 20 60 80v350z" fill="#7d6f68"/>
+<g class="t" opacity=".6"><path d="M250 330h360M250 410h360M250 490h360M250 570h360M320 330v80M440 410v80M540 490v80"/></g>
+<path class="o" d="M310 650V420q0-50 50-50h160q50 0 50 50v230z" fill="#1c0e08"/>
+<path class="o" d="M350 650q-40-20-20-90 30 10 40-30 40 40 20 80 30-20 40-60 40 50 10 100z" fill="#ff7a1f"/><path d="M380 650q-30-10-10-50 20 5 25-20 30 25 10 70z" fill="#ffd45e"/>
+<rect class="o" x="240" y="290" width="380" height="30" rx="6" fill="#3a2a22"/></g>
+<g id="tools-wall"><path class="t" d="M760 130v40M860 130v40M960 130v40"/>
+<g class="o"><path d="M740 170h40l10 100h-60z" fill="#8a8a92"/><path d="M850 170h20v140h-20z" fill="#6b4a2a"/><path d="M820 170h80v36h-80z" fill="#8a8a92"/><path d="M950 170h20v150h-20z" fill="#6b4a2a"/><path d="M940 320l30 40 30-40z" fill="#8a8a92"/></g></g>
+<g id="floor"><rect class="o" x="-10" y="640" width="1620" height="270" fill="#3a2c28"/><g class="t" opacity=".5"><path d="M0 730h1600M0 820h1600M300 648l-80 252M700 648l-30 252M1100 648l40 252M1450 648l90 252"/></g></g>
+<g id="anvil"><path class="o" d="M1100 700l30-110h-80q-30-20-20-30h300q-10 30-40 30h-70l30 110z" fill="#6a6a74"/><path class="o" d="M1140 700h110v20h-110z" fill="#4a4a54"/>
+<path class="o" d="M1210 500l20-60 40 14-12 56z" fill="#8a8a92"/></g>
+<g id="barrel"><ellipse class="o" cx="1450" cy="520" rx="76" ry="22" fill="#4a6a8a"/><path class="o" d="M1374 520q-12 90 0 170h152q12-80 0-170z" fill="#5a7a9a"/><ellipse class="o" cx="1450" cy="520" rx="76" ry="22" fill="#2a4a6a"/><path class="t" d="M1376 570q74 22 148 0M1376 650q74 22 148 0"/></g>
+<g id="bellows"><path class="o" d="M640 590l140-40v110l-140-10z" fill="#8a5a30"/><path class="o" d="M780 580h50v30h-50z" fill="#4a4a54"/></g>
+</svg>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#24160f;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#24160f;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<radialGradient id="glow" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".9"/><stop offset=".5" stop-color="#ff9a3c" stop-opacity=".35"/><stop offset="1" stop-color="#ff7a1c" stop-opacity="0"/></radialGradient>
+<radialGradient id="cand" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe9a0" stop-opacity=".85"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+</defs>
+<g id="wall">
+<rect width="1600" height="640" fill="#b4531f"/>
+<g fill="#9c4318" opacity=".55"><rect x="0" y="120" width="1600" height="6"/><rect x="0" y="260" width="1600" height="6"/><rect x="0" y="400" width="1600" height="6"/><rect x="0" y="540" width="1600" height="6"/></g>
+<g class="t" opacity=".5"><path d="M180 126v134M420 126v134M700 126v134M980 126v134M1240 126v134M1500 126v134M300 266v134M560 266v134M840 266v134M1120 266v134M1380 266v134M100 406v134M380 406v134M660 406v134M940 406v134M1200 406v134M1480 406v134"/></g>
+</g>
+<g id="ceiling-beams">
+<rect class="o" x="-10" y="0" width="1620" height="90" fill="#5a2f17"/>
+<rect class="o" x="120" y="0" width="70" height="640" fill="#6b3a1d"/>
+<rect class="o" x="1410" y="0" width="70" height="640" fill="#6b3a1d"/>
+<rect class="o" x="-10" y="90" width="1620" height="34" fill="#7a4522"/>
+<path class="o" d="M190 124l110 80v-80zM1410 124l-110 80v-80z" fill="#6b3a1d"/>
+</g>
+<g id="window">
+<!-- sklo: neutrální denní nebe; fázi ladí CSS overlay (data-bg=tavern + data-phase) -->
+<rect class="o" x="300" y="200" width="150" height="190" rx="70" fill="#9eb6d4"/>
+<path class="t" d="M375 200v190M300 295h150"/>
+</g>
+<g id="fireplace">
+<ellipse cx="800" cy="470" rx="520" ry="300" fill="url(#glow)"/>
+<path class="o" d="M590 640V260q0-70 80-90h260q80 20 80 90v380z" fill="#7d7a73"/>
+<g class="t" opacity=".7"><path d="M590 330h340M590 400h340M590 470h340M590 540h340M660 260v70M760 330v70M870 400v70M700 470v70"/></g>
+<path class="o" d="M640 640V360q0-60 60-60h120q60 0 60 60v280z" fill="#2a1710"/>
+<path class="o" d="M720 640q-50-10-40-80 30 10 30-40 40 30 30 70 20-20 30-50 40 40 20 100z" fill="#ff8a1f"/>
+<path d="M730 640q-30-10-20-50 20 5 25-20 25 25 15 70z" fill="#ffd45e"/>
+<rect class="o" x="560" y="215" width="400" height="36" rx="6" fill="#5a2f17"/>
+<g id="mantle-things"><rect class="o" x="620" y="170" width="46" height="46" rx="6" fill="#d9b24a"/><path class="o" d="M820 215l20-60 20 60z" fill="#c9582b"/><circle class="o" cx="900" cy="190" r="24" fill="#e8d9a8"/></g>
+</g>
+<g id="barrels-left">
+<g><ellipse class="o" cx="130" cy="420" rx="86" ry="24" fill="#8a4a22"/><path class="o" d="M44 420q-14 100 0 200h172q14-100 0-200z" fill="#a85a28"/><path class="t" d="M46 470q84 24 168 0M46 570q84 24 168 0"/><ellipse class="o" cx="130" cy="420" rx="86" ry="24" fill="#c07a3a"/></g>
+<g><ellipse class="o" cx="300" cy="500" rx="80" ry="22" fill="#8a4a22"/><path class="o" d="M220 500q-14 90 0 170h160q14-80 0-170z" fill="#a85a28"/><path class="t" d="M222 550q80 22 156 0M222 630q80 22 156 0"/><ellipse class="o" cx="300" cy="500" rx="80" ry="22" fill="#c07a3a"/></g>
+</g>
+<g id="lantern">
+<path class="t" d="M1100 90v120"/>
+<ellipse cx="1100" cy="260" rx="120" ry="120" fill="url(#cand)"/>
+<path class="o" d="M1076 210h48l10 20v50l-10 14h-48l-10-14v-50z" fill="#f2b84a"/>
+<path class="o" d="M1088 240h24v30h-24z" fill="#fff3b0"/>
+</g>
+<g id="shelf-right">
+<rect class="o" x="1260" y="250" width="260" height="20" fill="#5a2f17"/>
+<g class="o"><path d="M1290 250v-60h38v60z" fill="#4f8a62"/><path d="M1350 250v-80h40v80z" fill="#c94f3a"/><path d="M1420 250v-50h46v50z" fill="#e0b24a"/></g>
+</g>
+<g id="floor">
+<rect width="1600" height="260" y="640" fill="#7a4421"/>
+<rect class="o" x="-10" y="636" width="1620" height="12" fill="#4a2814"/>
+<g class="t" opacity=".6"><path d="M0 720h1600M0 800h1600M0 870h1600M200 648l-60 252M520 648l-30 252M860 648v252M1200 648l30 252M1500 648l60 252"/></g>
+</g>
+<g id="tables">
+<g id="table-a"><ellipse class="o" cx="1230" cy="640" rx="190" ry="40" fill="#a86a32"/><path class="o" d="M1070 645l-12 150h40l16-130zM1390 645l12 150h-40l-16-130z" fill="#6b3a1d"/>
+<ellipse cx="1180" cy="590" rx="70" ry="50" fill="url(#cand)"/><rect class="o" x="1166" y="590" width="28" height="44" fill="#f4e7c2"/><path class="o" d="M1180 560q-14 20 0 28 14-8 0-28z" fill="#ffc83a"/>
+<path class="o" d="M1290 600h40l-6 36h-28z" fill="#d9b24a"/><path class="o" d="M1340 612h36l-4 26h-28z" fill="#e8d9a8"/></g>
+<g id="table-b"><ellipse class="o" cx="470" cy="760" rx="170" ry="34" fill="#a86a32"/><path class="o" d="M330 765l-10 120h36l14-110zM610 765l10 120h-36l-14-110z" fill="#6b3a1d"/>
+<ellipse cx="470" cy="715" rx="60" ry="42" fill="url(#cand)"/><rect class="o" x="458" y="716" width="24" height="40" fill="#f4e7c2"/><path class="o" d="M470 688q-12 18 0 26 12-8 0-26z" fill="#ffc83a"/></g>
+</g>
+</svg>

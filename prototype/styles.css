@@ -1,0 +1,5968 @@
+/* --- soft reset: box model + list; heading/odstavce mají vlastní rytmus níž --- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button, input, select, textarea { font: inherit; color: inherit; margin: 0; }
+img, svg { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* scrollbary - tenké, bez systémové bílé desky */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(185, 168, 148, 0.4) transparent;
+}
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(185, 168, 148, 0.35);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 168, 83, 0.5);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:root {
+  --bg: #140e0c;
+  --fg: #f3e6d4;
+  /* jedna sklenice pro landing i prolog/Postava/status – měň jen tady */
+  --panel: rgba(18, 12, 10, 0.78);
+  --panel-blur: 8px;
+  --panel-solid: #1a1210; /* sticky / překryvy nad scrollem */
+  --line: rgba(212, 168, 83, 0.55);
+  --accent: #d4a853;
+  --accent-text: #1a1210;
+  --muted: #b9a894;
+  --log: rgba(42, 34, 28, 0.94);
+  --forest: rgba(36, 48, 40, 0.94);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  /* Visual viewport (JS sync); fallback = layout. Avoids mobile URL-bar crop. */
+  --vvw: 100vw;
+  --vvh: 100dvh;
+  --vv-top: 0px;
+  --vv-left: 0px;
+  /* Full visual viewport; chrome pads with --safe-* (PWA notch / home indicator). */
+  --shell-h: var(--vvh);
+  /* Shared scene bezel (letterbox bars, PWA unsafe bands, theme-color). */
+  --scene-void: #0a0806;
+  --scene-fade-ms: 420ms;
+  /* Shared with SCENE_FADE_EASE in app.js — peek melt/stage/letterbox/bg together. */
+  --scene-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dev-pad: 0px;
+  --hp: #c45c4a;
+  --mp: #5a8fc8;
+  --ok: #6a9e6a;
+  --font-display: "Palatino Linotype", Palatino, Georgia, serif;
+  --font-ui: "Palatino Linotype", Palatino, Georgia, serif;
+  --radius: 4px;
+  /* spacing palette - jen tyto; žadné ad-hoc rem u margin/padding/gap */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --gap: var(--space-3);   /* default uvnitř komponent */
+  --stack: var(--space-4); /* mezi většími bloky */
+  --content-max: 72rem; /* ~1150px - herní shell i landing */
+  --game-min: 20rem; /* 320px - nejmenší podporovaný telefon */
+  --shell-w: min(100%, 38rem); /* šířka akčního docku */
+  --col-w: min(100%, calc(var(--shell-w) + 2rem)); /* společná šířka boxů + logu + docku */
+  --footer-h: calc(3.4rem + var(--safe-b));
+  --bag-cell: 3.1rem; /* čtvercová buňka inventář + loot */
+  /* rarity (WoW-like) - barva jména / okraje itemu */
+  --rarity-poor: #9d9d9d;
+  --rarity-common: #f3e6d4;
+  --rarity-uncommon: #1eff00;
+  --rarity-rare: #0070dd;
+  --rarity-epic: #a335ee;
+  --rarity-legendary: #ff8000;
+}
+
+/* Rytmus = parent gap. Nuluj i user-agent / zbytečné offsety. */
+h1, h2, h3, h4, p, ul, ol, li, blockquote, figure, dl, dt, dd, pre {
+  margin: 0;
+}
+h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; }
+p, li { line-height: 1.45; }
+/* optické ořezání inkoustu (kde browser umí) - méně „vzduchu“ kolem titulků */
+.brand,
+.progress-label,
+.col-label,
+.panel-section-title,
+.pick-label,
+.dock-ico em {
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+.clip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clip-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+html, body {
+  height: 100%;
+  height: var(--vvh);
+  font-family: var(--font-ui);
+  /* Match theme-color / letterbox — avoid a cut band outside the shell. */
+  background: var(--scene-void);
+  color: var(--fg);
+  overflow: hidden;
+  min-width: var(--game-min);
+}
+
+/* plovoucí box: chrome sticky; šířka stejná i při minimalizaci */
+.proto-bar {
+  --dev-opacity: 0.8;
+  position: fixed;
+  top: calc(0.5rem + var(--safe-t));
+  left: calc(0.5rem + var(--safe-l));
+  right: auto;
+  /* Above scene melt / bake fades — drag handle always reachable. */
+  z-index: 200;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  width: min(22rem, calc(100vw - 1rem - var(--safe-l) - var(--safe-r)));
+  min-width: 2rem;
+  /* max-width jen viewport — ne 2rem při collapse (to by X sevřelo hned a width transition by nic nedělala) */
+  max-width: calc(100vw - 1rem - var(--safe-l) - var(--safe-r));
+  max-height: calc(100dvh - 1rem - var(--safe-t) - var(--safe-b));
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(185, 168, 148, 0.35);
+  border-radius: 8px;
+  /* pozadí + obsah (kromě drag) řídí --dev-opacity; handle zůstane vždy vidět.
+     Bez backdrop-filter: na mobilu WebKit zrcadlí výřez scény do 2×2 dlaždic. */
+  background: rgba(13, 9, 8, var(--dev-opacity));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: 0.68rem;
+  color: var(--muted);
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, calc(0.45 * var(--dev-opacity)));
+  /* height:auto + max-height — obě směry (otevřít i sbalit) jdou animovat */
+  height: auto;
+  transition:
+    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.28s ease,
+    box-shadow 0.28s ease;
+}
+.proto-bar.is-dragging { cursor: grabbing; transition: none; }
+/* sbaleno = jen čtverec; jen width + max-height (bez max-width:2rem → X hardcut) */
+.proto-bar.is-collapsed,
+.proto-bar.is-minimized {
+  width: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  border-radius: 8px;
+  padding: 0;
+}
+.proto-bar .dev-scroll {
+  transition:
+    opacity 0.28s ease,
+    max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s ease;
+  max-height: min(70vh, 36rem);
+  opacity: 1;
+}
+.proto-bar.is-collapsed .dev-scroll,
+.proto-bar.is-minimized .dev-scroll {
+  display: block !important;
+  max-height: 0 !important;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none;
+}
+.proto-bar.is-collapsed .dev-chrome,
+.proto-bar.is-minimized .dev-chrome {
+  padding: 0;
+  margin: 0;
+  border-bottom: none;
+  width: 100%;
+  min-height: 2rem;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: padding 0.28s ease, border-color 0.28s ease;
+}
+/* Ne display:none — ven z flow + fade, ať sbalení nejede hardcut */
+.proto-bar .dev-chrome > :not(.dev-drag) {
+  transition: opacity 0.22s ease;
+}
+.proto-bar.is-collapsed .dev-chrome > :not(.dev-drag),
+.proto-bar.is-minimized .dev-chrome > :not(.dev-drag) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.proto-bar.is-collapsed .dev-drag,
+.proto-bar.is-minimized .dev-drag {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg);
+}
+.proto-bar .dev-chrome {
+  --dev-chrome-h: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.45rem;
+  background: rgba(13, 9, 8, var(--dev-opacity));
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  min-height: var(--dev-chrome-h);
+}
+/* One optical row: drag / select / ↺ / opacity share the same height + center. */
+.proto-bar .dev-chrome > .dev-btn,
+.proto-bar .dev-chrome > .dev-main select,
+.proto-bar .dev-chrome > .dev-drag {
+  box-sizing: border-box;
+  height: var(--dev-chrome-h);
+  min-height: var(--dev-chrome-h);
+  margin: 0;
+}
+.proto-bar .dev-chrome > .dev-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.55rem;
+  line-height: 1;
+  font-size: 0.85rem;
+}
+.proto-bar .dev-chrome > .dev-main {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  height: var(--dev-chrome-h);
+}
+.proto-bar .dev-chrome > .dev-main select {
+  display: block;
+  padding: 0 0.4rem;
+  line-height: var(--dev-chrome-h);
+  font-size: 0.7rem;
+}
+.proto-bar .dev-chrome > .dev-opacity {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  height: var(--dev-chrome-h);
+  margin: 0;
+}
+.proto-bar .dev-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.35rem 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  /* max-height / opacity / transition: viz pravidla výš (collapse) */
+}
+/* drag handle = vždy čtverec; slider mění jen průhlednost boxu (pozadí), ne ovládání */
+.proto-bar .dev-drag {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none; /* touch drag must not turn into page scroll / pointercancel */
+  -webkit-user-select: none;
+  user-select: none;
+  border: 1px solid rgba(185, 168, 148, 0.45);
+  border-radius: 6px;
+  background: rgba(13, 9, 8, 0.92);
+  color: var(--fg);
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+  aspect-ratio: 1;
+}
+.proto-bar .dev-drag .dev-drag-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+.proto-bar .dev-drag .dev-drag-ico svg,
+.peek-btn > span svg { display: block; }
+.proto-bar .dev-drag:active,
+.proto-bar.is-dragging .dev-drag { cursor: grabbing; }
+.proto-bar .dev-opacity {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  min-width: 3.5rem;
+  cursor: pointer;
+}
+.proto-bar .dev-opacity input[type="range"] {
+  width: 3.5rem;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+.proto-bar .dev-main { flex: 1 1 auto; min-width: 0; }
+.proto-bar .dev-main select { flex: 1 1 auto; min-width: 0; max-width: none; cursor: pointer; }
+.proto-bar .dev-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.45rem;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1;
+  box-sizing: border-box;
+}
+/* Symbol-only (↺): square hit + slight down nudge (glyph ink sits high in UI fonts). */
+.proto-bar .dev-chrome > #dev-reset,
+.proto-bar .dev-world-clock-row > .dev-btn[data-world="reset"] {
+  padding: 0;
+  width: var(--dev-chrome-h, 2rem);
+  min-width: var(--dev-chrome-h, 2rem);
+  height: var(--dev-chrome-h, 2rem);
+  font-size: 0.95rem;
+  transform: translateY(0.04em);
+}
+.proto-bar button,
+.proto-bar select,
+.proto-bar summary,
+.proto-bar label,
+.proto-bar input[type="range"],
+.proto-bar input[type="checkbox"],
+.proto-bar .dev-chk {
+  cursor: pointer;
+}
+.proto-bar .dev-drag { cursor: grab; }
+.proto-bar .dev-drag:active,
+.proto-bar.is-dragging .dev-drag { cursor: grabbing; }
+/* veřejná ukázka: jen drag (toggle) / průhlednost + Místo + Doba */
+.proto-bar.is-public-demo .dev-main,
+.proto-bar.is-public-demo #dev-reset { display: none !important; }
+.proto-bar.is-public-demo .dev-chrome { border-bottom: none; }
+.proto-bar.is-public-demo:not(.is-collapsed):not(.is-minimized) .dev-chrome {
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.proto-bar.is-public-demo .dev-group,
+.proto-bar.is-public-demo .dev-sec[data-sec="postava"],
+.proto-bar.is-public-demo .dev-sec[data-sec="boj"],
+.proto-bar.is-public-demo .dev-sec[data-sec="ladeni"],
+.proto-bar.is-public-demo .dev-sec[data-sec="debug"],
+.proto-bar.is-public-demo .dev-sec[data-sec="stav"],
+.proto-bar.is-public-demo .dev-sec[data-sec="svet"] { display: none !important; }
+.proto-bar.is-public-demo .dev-sec[data-sec="cas"] > summary,
+.proto-bar.is-public-demo .dev-sec[data-sec="world"] > summary { display: none; }
+.proto-bar.is-public-demo .dev-sec[data-sec="cas"],
+.proto-bar.is-public-demo .dev-sec[data-sec="world"] { border: none; padding: 0; }
+.proto-bar.is-public-demo #dev-world-clock,
+.proto-bar.is-public-demo #dev-world-objects,
+.proto-bar.is-public-demo #dev-world-out { display: none !important; }
+.proto-nav { display: flex; flex-wrap: nowrap; gap: 0.25rem; flex-shrink: 0; }
+body:not(.has-dev) .proto-bar,
+.proto-bar[hidden] { display: none !important; }
+.dev-link { color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.dev-row { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; }
+.dev-knob { display: inline-flex; flex-direction: column; gap: 0.1rem; font-size: 0.6rem; color: var(--muted); }
+.dev-knob select, .dev-main select { font: inherit; font-size: 0.7rem; padding: 0.2rem; background: rgba(0,0,0,0.4); color: var(--fg); border: 1px solid var(--line); max-width: 11rem; }
+.dev-main { flex-direction: row; align-items: center; gap: 0.3rem; font-size: 0.7rem; }
+.dev-main select { max-width: 17rem; }
+/* Knob rows: select/button/check share one vertical center (not baseline drift). */
+.dev-row.dev-knobs,
+.dev-row.dev-checks,
+.dev-scene-compose .dev-scene-row {
+  align-items: center;
+}
+.dev-row .dev-btn,
+.dev-obj-acts .dev-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.55rem;
+  padding: 0.15rem 0.45rem;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.dev-knob select {
+  min-height: 1.55rem;
+  box-sizing: border-box;
+}
+.dev-chk { display: inline-flex; gap: 0.25rem; align-items: flex-start; white-space: nowrap; cursor: help; }
+/* Odhalení / Ladení: long labels → stack, wrap. */
+.dev-toggles {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+.dev-toggles .dev-chk {
+  white-space: normal;
+  line-height: 1.25;
+}
+.dev-detail { display: flex; flex-direction: column; gap: 0.25rem; }
+.dev-sec { padding: 0; }
+.dev-sec > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  list-style: none;
+  padding: 0.2rem 0.1rem;
+  line-height: 1.25;
+}
+.dev-sec > summary::-webkit-details-marker { display: none; }
+.dev-sec[open] > summary { margin-bottom: 0.25rem; }
+/* chevron: stejná výška řádku jako text (align-items:center, bez margin-top) */
+.dev-sec > summary::before {
+  content: "";
+  box-sizing: border-box;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  /* viditelný šev „>“ leží v půlce čtverce: posun o půl diagonály ho vystředí k textu */
+  transform: translate(-0.14rem, 0) rotate(-45deg);
+  transform-origin: 50% 50%;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+  margin: 0;
+}
+.dev-sec[open] > summary::before { transform: translate(0, -0.14rem) rotate(45deg); }
+.dev-note { margin: 0; color: var(--muted); }
+.dev-world-out {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.45rem;
+  max-height: 6rem;
+  overflow: auto;
+  font: 0.65rem/1.35 ui-monospace, monospace;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  white-space: pre-wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dev-world-clock-row {
+  width: 100%;
+  gap: 0.45rem;
+  align-items: center;
+}
+.dev-world-hour-knob {
+  flex: 1 1 8rem;
+  min-width: 7rem;
+}
+.dev-world-hour-knob input[type="range"] {
+  width: 100%;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent);
+  vertical-align: middle;
+}
+.dev-world-hour-label {
+  font: 0.72rem/1 ui-monospace, monospace;
+  color: var(--fg);
+  white-space: nowrap;
+  min-width: 6.5rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+}
+.dev-world-clock-row > .dev-btn {
+  align-self: center;
+}
+.dev-world-objects {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+.dev-obj {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid rgba(185, 168, 148, 0.28);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  width: 100%;
+  box-sizing: border-box;
+}
+.dev-obj-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+.dev-obj-name {
+  font-size: 0.72rem;
+  color: var(--fg);
+  font-weight: 600;
+}
+.dev-obj-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+.dev-obj-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+.dev-obj-state select {
+  font: inherit;
+  font-size: 0.68rem;
+  padding: 0.15rem 0.25rem;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  max-width: 8rem;
+}
+.dev-obj-prog {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dev-obj-bar {
+  flex: 1 1 auto;
+  height: 0.35rem;
+  border-radius: 99px;
+  background: rgba(185, 168, 148, 0.2);
+  overflow: hidden;
+}
+.dev-obj-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.dev-obj-prog-label {
+  font-size: 0.6rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.dev-obj-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.dev-status { margin: 0; max-height: 60vh; overflow: auto; }
+.dev-status ul.dev-sys-list,
+.dev-status ul { margin: 0.3rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
+/* úzký floating panel: jméno+pct nahoře, pruh, poznámka — ne tři pevné sloupce */
+.dev-status li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name pct"
+    "bar bar"
+    "note note";
+  gap: 0.12rem 0.45rem;
+  align-items: baseline;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.12);
+}
+.dev-status li:last-child { border-bottom: none; }
+.dev-sys-name { grid-area: name; font-weight: 600; color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+.dev-sys-pct { grid-area: pct; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.dev-status .dev-bar { grid-area: bar; display: block; height: 0.35rem; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.dev-bar b { display: block; height: 100%; background: #8fbf6a; }
+.dev-sys-note, .dev-status em { grid-area: note; opacity: 0.7; font-style: normal; font-size: 0.92em; line-height: 1.3; }
+.dev-total, .dev-legend { margin: 0.2rem 0; }
+.sys-funguje { color: #8fbf6a; font-weight: 600; }
+.sys-maketa { color: #d49a4a; font-weight: 600; }
+.sys-chybí { color: #c0604a; font-weight: 600; }
+.dev-tag { display: inline-block; opacity: 0.75; font-size: 0.75em; color: #8fbf6a; }
+.dev-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* --- Button system (znovupoužitelné typy) --- */
+button,
+.btn {
+  font: inherit;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.3);
+  color: var(--fg);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color var(--hover-ms, 0.28s) ease,
+    background var(--hover-ms, 0.28s) ease,
+    color var(--hover-ms, 0.28s) ease;
+}
+@media (hover: hover) {
+  button:hover:not(:disabled):not(.locked):not(.stat-icon):not(.origin-side-nav),
+  .btn:hover:not(:disabled):not(.locked):not(.stat-icon) {
+    border-color: var(--accent);
+    background: rgba(212, 168, 83, 0.14);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #e8c57a;
+    color: #1a1210;
+  }
+  .btn-primary:hover:not(:disabled) strong,
+  .btn-primary:hover:not(:disabled) .hl,
+  .btn-primary:hover:not(:disabled) .btn-hint {
+    color: #1a1210;
+  }
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) {
+    background: #e8c57a;
+    color: #1a1210;
+  }
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) .hl,
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) .btn-hint,
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) strong,
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) .hl,
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) .hl,
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) .btn-hint,
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) .btn-hint {
+    color: #1a1210;
+  }
+  .btn-back:hover:not(:disabled) {
+    background: rgba(212, 168, 83, 0.2);
+  }
+  .player-footer .dock-ico:hover:not(:disabled):not(.locked) {
+    background: rgba(212, 168, 83, 0.1);
+  }
+  /* stat ikony - tip ano, „klikací“ fill ne */
+  .stat-icon:hover {
+    border-color: rgba(212, 168, 83, 0.35);
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+button.primary,
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button.primary.wide,
+.btn-primary.wide { width: 100%; }
+button.back,
+.btn-back {
+  border-color: rgba(212, 168, 83, 0.85);
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(212, 168, 83, 0.08);
+}
+button.ghost,
+.btn-ghost {
+  background: transparent;
+  border-color: rgba(212, 168, 83, 0.45);
+  color: var(--accent);
+}
+button.linkish,
+.btn-link {
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  background: none;
+}
+/* krátká věta pod názvem - dock / volby */
+.btn-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  max-width: 11.5rem;
+}
+.btn-action strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+.btn-action .btn-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.25;
+  font-weight: 400;
+}
+.btn-action.btn-primary .btn-hint { color: rgba(26, 18, 16, 0.72); }
+.btn-action.here {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.15);
+}
+.hidden { display: none !important; }
+
+.view-full {
+  /*
+   * Edge-to-edge visual viewport (PWA / notch / home indicator).
+   * Interactive chrome pads with --safe-*; bake and letterbox fill the void.
+   */
+  position: fixed;
+  top: var(--vv-top);
+  left: var(--vv-left);
+  width: var(--vvw);
+  height: var(--vvh);
+  right: auto;
+  bottom: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.has-dev .view-full {
+  /* Same shell — floating bar overlays; do not shrink the stage. */
+  --shell-h: var(--vvh);
+}
+
+/* Landing */
+.landing-screen {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.landing-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #3a2818;
+  background-image:
+    linear-gradient(90deg, rgba(18,10,6,0.55), rgba(18,10,6,0.22) 42%, rgba(18,10,6,0.5)),
+    url("../resources/locations/village.svg");
+  background-size: cover;
+  background-position: center;
+}
+/* Částice prologu (js/ui/particles-view.js): canvas uvnitř bake, pod melt vrstvami (::after z-index 2) */
+.landing-bg > .bg-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+/* Dev scene compositor (js/ui/scene-view.js): stacked layers under particles */
+.landing-bg > .scene-compose {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transform-origin: center center;
+}
+.landing-bg > .scene-compose > .scene-compose-stage {
+  position: absolute;
+  overflow: hidden;
+}
+.landing-bg > .scene-compose.is-breathing {
+  will-change: transform;
+  animation: scene-compose-breath var(--scene-breath-period, 10s) ease-in-out infinite;
+}
+@keyframes scene-compose-breath {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(var(--scene-breath-x, 0px), var(--scene-breath-y, 0px))
+      scale(var(--scene-breath-zoom, 1));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-bg > .scene-compose.is-breathing {
+    animation: none;
+  }
+}
+.landing-bg > .scene-compose .scene-layer {
+  position: absolute;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* Layers cross-fade in and out (scene-view.js sets opacity); 0 ms under prefers-reduced-motion. */
+  transition: opacity var(--scene-fade-ms, 420ms) var(--scene-fade-ease, ease);
+}
+/* GL painter (parallax): one canvas covers the stage; the DOM layers above are the still fallback. */
+.landing-bg > .scene-compose .scene-gl {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Overscan (scene-view.js) scales the stage; the particles follow so flames stay on their candle. */
+.landing-bg.has-scene-compose > .bg-particles {
+  transform: scale(var(--scene-overscan, 1));
+}
+/* Bake stays as fallback under the plate layer (no wipe on toggle). */
+.landing-bg.has-scene-compose {
+  background-color: #140e0c;
+}
+.dev-scene-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+}
+.dev-scene-compose .dev-scene-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+}
+.dev-scene-compose .dev-scene-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.55rem;
+  margin: 0;
+  line-height: 1.2;
+}
+.dev-scene-compose .dev-scene-row .dev-knob {
+  align-self: center;
+}
+.dev-scene-compose .dev-scene-row--checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.5rem;
+}
+.dev-scene-compose label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 0;
+}
+.dev-scene-compose .dev-knob {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+}
+.dev-scene-compose .dev-knob select {
+  min-width: 7.5rem;
+  max-width: 11rem;
+}
+.dev-scene-compose .dev-scene-label {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.85;
+}
+/* Parallax tuning (dev): slider rows + debug chips (.dev-btn.active = on). */
+.dev-scene-compose .dev-scene-tune-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.dev-scene-compose .dev-knob.dev-range {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr) 3.2rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dev-scene-compose .dev-range input[type="range"] {
+  width: 100%;
+  min-width: 0;
+}
+.dev-scene-compose .dev-range output {
+  text-align: right;
+  font: 0.65rem ui-monospace, monospace;
+}
+.dev-scene-compose .dev-scene-row input[type="range"] {
+  flex: 0 1 4.5rem;
+  min-width: 2.5rem;
+}
+.dev-scene-readout {
+  margin: 0;
+  font: 0.65rem/1.35 ui-monospace, monospace;
+  color: var(--muted);
+  opacity: 0.9;
+}
+/* Bake / scene crossfade (outgoing frame); duration matches SCENE_FADE_MS in app.js */
+.landing-bg > .bg-crossfade {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: transparent;
+  opacity: 1;
+}
+/* Keep portrait / landscape melt fades above the crossfade layer */
+[data-screen="origins"] .landing-bg::after {
+  z-index: 2;
+}
+.landing-bg > .bg-crossfade.is-out {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-bg > .bg-crossfade {
+    transition: none !important;
+  }
+}
+/* landing bez data-sky: jemný tón; se sky vrstvou = fáze (nebe/světlo), ne filter */
+.landing-screen:not(.game-screen) .landing-bg:not([data-sky]) {
+  filter: brightness(0.88) saturate(0.95) contrast(1.02);
+}
+.landing-screen:not(.game-screen) .landing-bg:not([data-sky])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 4, 0.12);
+  pointer-events: none;
+}
+/* herní scény bez sky: jemný tón; se data-sky = fáze (nebe/světlo) */
+.game-screen .landing-bg:not([data-sky]) {
+  filter: brightness(0.88) saturate(0.92) contrast(1.02);
+}
+.game-screen .landing-bg:not([data-sky])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 4, 0.18);
+  pointer-events: none;
+}
+.landing-frame {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+  max-width: var(--content-max);
+  width: 100%;
+  margin: 0 auto;
+  /* Edge-to-edge shell → pad chrome for notch / home indicator. */
+  padding:
+    max(var(--space-3), var(--safe-t))
+    max(1rem, var(--safe-r))
+    max(1rem, var(--safe-b))
+    max(1rem, var(--safe-l));
+  min-height: 100%;
+}
+.landing-frame.narrow {
+  max-width: 520px;
+  justify-content: center;
+  gap: 1rem;
+}
+.landing-frame.landing-auth-only {
+  max-width: 26rem;
+  flex: 1;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+/* stejná komponenta jako .auth-card / status-box: --panel */
+.landing-panel {
+  border: 1px solid rgba(185, 168, 148, 0.2);
+  border-radius: 6px;
+  padding: 0.7rem 0.85rem;
+  background: var(--panel);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+/* intro + formulář = jeden panel; hierarchie brand → tagline → citát; footer zvlášť */
+.landing-intro {
+  display: grid;
+  gap: 0;
+  justify-items: center;
+  text-align: center;
+  padding: 0.15rem 0 0.9rem;
+  margin: 0;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.landing-intro .brand {
+  font-size: 1.05rem;
+  letter-spacing: 0.22em;
+  padding-top: 0;
+}
+.landing-tagline {
+  margin: 0.35rem 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  max-width: 18rem;
+}
+.landing-card-body {
+  display: grid;
+  gap: var(--gap);
+  padding-top: 0.85rem;
+}
+.landing-auth-only .auth-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+.landing-auth-only .landing-footer {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+/* citát = epigraf pod značkou, ne třetí stejně silný řádek */
+.landing-quote {
+  margin: 0.85rem 0 0;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.landing-quote-inner {
+  display: grid;
+  gap: 0.2rem;
+  width: fit-content;
+  max-width: 16rem;
+  justify-items: stretch;
+}
+.landing-quote blockquote {
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--muted);
+  font-style: italic;
+  text-wrap: balance;
+}
+.landing-quote figcaption {
+  margin: 0;
+  text-align: right;
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgba(185, 168, 148, 0.85);
+}
+/* continue = celý box; účet schovaný, dokud neodhlásíš */
+.landing-continue #auth-forms { display: none; }
+.landing-auth #auth-continue { display: none !important; }
+.auth-continue {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+  justify-items: stretch;
+  margin: 0;
+}
+.auth-continue .btn,
+.auth-continue .btn.wide,
+.auth-continue .btn-action {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
+.auth-continue .btn-action {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: center;
+  text-align: center;
+  padding: 0.75rem 1rem;
+}
+.auth-continue .btn-action .btn-hint {
+  font-weight: 400;
+}
+/* prolog + původ - kompaktnější (ne obří) */
+.landing-frame.narrow.origin-frame,
+.landing-frame.prolog-frame {
+  max-width: min(28rem, 100%);
+  width: 100%;
+}
+.flavor-quote {
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-style: italic;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.45;
+  max-width: none;
+  width: 100%;
+}
+.grow-card { width: 100%; }
+.brand {
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin: 0;
+  padding-top: 0.25rem;
+}
+.landing-grid {
+  /* volný prostor → obsah na svislý střed; sloupce k sobě dolů */
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: var(--stack);
+  align-items: end;
+  align-content: center;
+  width: 100%;
+  padding: 1.25rem 0;
+  min-height: 0;
+}
+#auth-register,
+#auth-signin {
+  display: grid;
+  gap: var(--space-3);
+}
+/* secondary pod primary - viditelná mezera před alt */
+.auth-alt {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(185, 168, 148, 0.22);
+}
+.auth-alt-btn {
+  width: 100%;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.55rem;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+.legal-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.legal-link:hover {
+  color: var(--accent);
+}
+.landing-left h1 {
+  font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+  line-height: 1.25;
+  font-style: italic;
+  font-weight: 500;
+  margin: 0;
+  max-width: 16ch;
+}
+.chronicles h2 {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+.chronicles ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  display: grid;
+  gap: var(--space-1);
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.stat-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0.65rem 0.75rem;
+}
+.stat-card span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.stat-card strong { font-size: 1.25rem; }
+.auth-card {
+  border: 1px solid rgba(185, 168, 148, 0.2);
+  background: var(--panel);
+  padding: 0.7rem 0.8rem;
+  display: grid;
+  gap: var(--space-2);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+.landing-left,
+.chronicles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+#origins-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+  min-height: 0;
+}
+.prolog-frame .grow-card,
+.origin-frame .grow-card {
+  min-height: 0;
+}
+/* prolog: pevná výška (nejvyšší krok = 5 voleb), nic neskáče; uvnitř scrolluje jen seznam voleb */
+.prolog-frame #origins-box {
+  height: min(42rem, calc(100dvh - var(--dev-pad) - 4rem));
+  min-height: 22rem;
+}
+.prolog-frame #origins-box .origin-body {
+  flex: 0 0 auto;
+  min-height: 5.25rem;
+}
+.prolog-frame #origins-box .choice-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.prolog-frame #origins-box .skip-link { flex: 0 0 auto; }
+.prolog-frame #origins-box .choice.btn-action { padding: 0.5rem 0.7rem; }
+.origin-top {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+}
+.nav-back.origin-back-top {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.65rem;
+  width: fit-content;
+  justify-self: start;
+}
+/* .acc-picked - viz blurb sekce (jen mobil) */
+/* volba: písmeno | text (ne písmeno uvnitř věty) */
+.choice.btn-action {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr;
+  align-items: start;
+  gap: 0.35rem 0.55rem;
+  text-align: left;
+}
+.choice-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  min-height: 1.35rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  background: transparent;
+}
+.choice-main {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.choice-copy {
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+.choice.picked .choice-letter {
+  color: var(--accent);
+}
+.auth-card h2 { margin: 0; font-weight: 500; }
+.sub { margin: 0; color: var(--muted); font-size: 0.95rem; }
+label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+label.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.85rem;
+  color: var(--fg);
+  line-height: 1.35;
+  min-height: 1.5rem;
+  cursor: pointer;
+}
+label.check input {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+/* rezervovaný řádek - registrace i přihlášení stejná výška */
+.auth-consent-slot {
+  min-height: 1.5rem;
+  display: grid;
+  align-items: center;
+}
+label.check .linkish {
+  display: inline;
+  font-size: inherit;
+  padding: 0;
+}
+input, select {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.4);
+  color: var(--fg);
+}
+/* range: globální padding 0.55/0.65 by ořezával thumb/track (~20–80 %) */
+input[type="range"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+.auth-links { text-align: center; margin: 0; font-size: 0.85rem; }
+.landing-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* Create / origins */
+.create-screen { position: relative; }
+.create-inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow: auto;
+}
+.panel.create {
+  width: min(440px, 100%);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 1.35rem;
+  display: grid;
+  gap: 0.75rem;
+  backdrop-filter: blur(8px);
+}
+.origin-name {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: stretch;
+}
+.name-row { display: flex; gap: 0.35rem; align-items: stretch; }
+.name-row input { flex: 1; }
+.gender-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.35rem 0 0.15rem;
+  border: 0;
+}
+.gender-legend {
+  width: 100%;
+  margin: 0 0 0.35rem;
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.gender-pick {
+  position: relative;
+  flex: 1 1 7rem;
+  max-width: 11rem;
+  display: grid;
+  place-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  font-weight: 600;
+}
+.gender-pick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.gender-pick:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(212, 168, 83, 0.35);
+}
+.gender-pick:hover {
+  border-color: rgba(212, 168, 83, 0.55);
+}
+.dice-btn {
+  flex: 0 0 auto;
+  min-width: 2.75rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+.dice-btn:hover {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.12);
+}
+.stats-preview {
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+  background: rgba(0,0,0,0.3);
+  display: grid;
+  gap: var(--space-2);
+}
+.stats-preview h3 {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.stats-preview dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 1rem;
+}
+.stats-preview dl div { display: flex; justify-content: space-between; gap: 0.5rem; }
+.stats-preview dt { color: var(--muted); margin: 0; }
+.stats-preview dd { margin: 0; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.choice-stack { display: grid; gap: 0.5rem; }
+.choice.btn-action {
+  max-width: none;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: rgba(0,0,0,0.35);
+}
+/* narrativní beat: kurzíva (atmosféra) + vlevo (čitelnost více odstavců); gesta = .choice-act */
+.prose-beat,
+.origin-text {
+  margin: 0;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: left;
+  text-wrap: pretty;
+}
+.origin-reply {
+  color: var(--muted);
+}
+.choice-stack .choice { letter-spacing: 0.02em; }
+.origin-body { display: grid; gap: 0.6rem; }
+/* Postava po prologu = shrnutí: výběr dlaždic se skryje, zůstane zvolené, popis a bonusy */
+.confirm-summary .pick-grid { display: none; }
+.confirm-summary .origin-acc-body { padding-top: 0.25rem; }
+.confirm-summary .blurb-box { min-height: 0; margin: 0.2rem 0 0.35rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; line-height: 1.35; }
+.confirm-summary .bonus-label, .confirm-summary #class-bonus:empty { display: none; }
+.confirm-summary .origin-acc { margin-bottom: 0.35rem; }
+.confirm-summary .origin-acc > summary { pointer-events: none; }
+.confirm-summary .origin-acc > summary::before { display: none; }
+.bonus-label[hidden] { display: none; }
+.choice-act { font-style: italic; font-weight: 400; color: var(--muted); }
+/*
+ * Scroll-edge fade: eased (smoothstep-like) stops, size animates 0 -> --fade-size
+ * when bindScrollFade toggles .fade-top / .fade-bottom (mask-image itself cannot transition).
+ */
+@property --fade-t { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-b { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --pf-t { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --pf-b { syntax: "<length>"; inherits: false; initial-value: 0px; }
+[data-fade],
+.fade-top,
+.fade-bottom,
+.log,
+.action-scroll {
+  --fade-size: 2.4rem;
+  --fade-mask:
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      rgba(0, 0, 0, 0.02) calc(var(--fade-t) * 0.1),
+      rgba(0, 0, 0, 0.1) calc(var(--fade-t) * 0.25),
+      rgba(0, 0, 0, 0.28) calc(var(--fade-t) * 0.42),
+      rgba(0, 0, 0, 0.52) calc(var(--fade-t) * 0.58),
+      rgba(0, 0, 0, 0.76) calc(var(--fade-t) * 0.74),
+      rgba(0, 0, 0, 0.93) calc(var(--fade-t) * 0.88),
+      #000 var(--fade-t),
+      #000 calc(100% - var(--fade-b)),
+      rgba(0, 0, 0, 0.93) calc(100% - var(--fade-b) * 0.88),
+      rgba(0, 0, 0, 0.76) calc(100% - var(--fade-b) * 0.74),
+      rgba(0, 0, 0, 0.52) calc(100% - var(--fade-b) * 0.58),
+      rgba(0, 0, 0, 0.28) calc(100% - var(--fade-b) * 0.42),
+      rgba(0, 0, 0, 0.1) calc(100% - var(--fade-b) * 0.25),
+      rgba(0, 0, 0, 0.02) calc(100% - var(--fade-b) * 0.1),
+      transparent 100%
+    );
+  -webkit-mask-image: var(--fade-mask);
+  mask-image: var(--fade-mask);
+  transition: --fade-t 0.28s ease, --fade-b 0.28s ease;
+}
+.fade-top { --fade-t: var(--fade-size); }
+.fade-bottom { --fade-b: var(--fade-size); }
+@media (prefers-reduced-motion: reduce) {
+  [data-fade], .fade-top, .fade-bottom, .log, .action-scroll { transition: none; }
+}
+.skip-link {
+  display: block;
+  text-align: center;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Game shell: status (malý) → log (většina) → dock (pinned). Scroll jen v .log */
+.game-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  /* Edge-to-edge shell; footer already adds safe-b. */
+  padding-top: var(--safe-t);
+  padding-left: var(--safe-l);
+  padding-right: var(--safe-r);
+}
+.game-screen .landing-bg {
+  position: absolute;
+  inset: 0;
+  transition: background-image 0.25s ease;
+}
+.game-screen .landing-bg { z-index: 0; }
+/* mid = vzduch mezi boxy a dockem; log kompaktní uprostřed */
+.mid-stage {
+  position: relative;
+  /* log má vždy čitelnou výšku (dock se při nedostatku místa zmenší a scrolluje uvnitř) */
+  flex: 1 1 0;
+  min-height: max(var(--log-floor, 6rem), calc((100dvh - var(--dev-pad)) * var(--log-min, 0)));
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+  z-index: 1;
+  padding: var(--space-2) 0;
+}
+.game-screen.is-combat .mid-stage {
+  justify-content: stretch;
+  padding: 0;
+}
+.enemy-stage {
+  /* bez stínového obdélníku - jen sprite (jako městský minimalistický log) */
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 3% 1% 0;
+  background: none;
+}
+.enemy-stage img {
+  width: min(88vw, 620px);
+  max-height: min(68vh, 520px);
+  height: auto;
+  object-fit: contain;
+  object-position: bottom right;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.55));
+  opacity: 1;
+  transition: opacity 0.55s ease, filter 0.55s ease, transform 0.55s ease;
+}
+/* po boji sprite zmizí - fokus na loot / odchod */
+.enemy-stage.is-over img {
+  opacity: 0;
+  filter: grayscale(0.4) drop-shadow(0 4px 12px rgba(0,0,0,0.35));
+  transform: translateY(0.5rem);
+  pointer-events: none;
+}
+.game-screen.is-combat .enemy-stage { display: flex; }
+.game-screen.is-combat .landing-bg {
+  filter: brightness(0.78) saturate(0.88) contrast(1.02);
+}
+.game-screen.is-combat .status-box {
+  background: rgba(18, 12, 10, 0.78);
+}
+.game-screen.is-combat .log.combat-log {
+  max-width: var(--col-w);
+  max-height: none;
+  flex: 1 1 auto;
+}
+.thumb.hero,
+.thumb.enemy {
+  width: 3rem;
+  height: 3rem;
+  background-size: cover;
+  background-position: center;
+}
+.game-frame {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  min-width: var(--game-min);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  /* vzduch od horního okraje obrazovky */
+  padding: clamp(1.1rem, 4vh, 2.25rem) var(--space-2) 0;
+  overflow: hidden;
+}
+.status-row {
+  display: grid;
+  /* jako ve WoW: dva stejně široké boxy u krajů logu, mezi nimi mezera */
+  --box-w: clamp(9.5rem, 42%, 15rem);
+  grid-template-columns: minmax(0, var(--box-w)) minmax(0, 1fr) minmax(0, var(--box-w));
+  gap: 0;
+  justify-content: center;
+  width: var(--col-w);
+  max-width: 100%;
+  margin: 0 auto;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 6;
+  overflow: visible;
+}
+.status-row > * { grid-row: 1; }
+.status-row > :first-child { grid-column: 1; }
+.status-row > :last-child { grid-column: 3; }
+.status-row.compact .status-box { padding: 0.3rem 0.4rem; }
+.status-row.compact .thumb { width: 2rem; height: 2rem; }
+.status-row.compact .stat-strip { display: block; font-size: 0.72rem; }
+.status-box {
+  border: 1px solid rgba(185, 168, 148, 0.22);
+  background: var(--panel);
+  padding: 0.3rem;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  gap: 0.3rem;
+  backdrop-filter: blur(6px);
+  overflow: visible;
+}
+.status-box.muted { color: var(--muted); }
+.box-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow: visible;
+}
+.box-title { margin: 0; }
+.box-foot { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.stat-strip { font-size: 0.78rem; color: var(--muted); margin: 0; }
+.muted { color: var(--muted); }
+/* telegraph - viz níže u combat FX */
+.bar {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.75rem;
+  margin: 0;
+}
+.bar-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: help;
+}
+.bar.hp .bar-ico { color: var(--hp); }
+.bar.mp .bar-ico { color: var(--mp); }
+.bar i {
+  display: block;
+  height: 0.45rem;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.bar i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--p, 50%);
+  background: var(--accent);
+}
+.bar.hp i::after { background: var(--hp); }
+.bar.mp i::after { background: var(--mp); }
+/* dummy řádek - vyrovná box bez energie (vlk) */
+.bar.bar-ghost {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.bar.bar-ghost i::after { background: transparent; }
+.bar.bar-ghost em { visibility: hidden; }
+/* XP / Lv - delší label než ikona HP */
+.bar.bar-xp {
+  grid-template-columns: 2.6rem 1fr auto;
+}
+.bar.bar-xp > span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* HP/energie: ikona bez chip-obalu = záměrná výjimka (bar = vizuál) */
+.thumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.35) center/cover no-repeat;
+}
+.thumb.enemy { background-color: rgba(80, 20, 20, 0.5); }
+.meta-line {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.log {
+  /* město i boj - průhledný shell, vidět pozadí (jako boj) */
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  max-height: none;
+  /* o úroveň níž než boxy: lehký odsazení ze stran */
+  width: calc(var(--col-w) - 2 * var(--space-3));
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  line-height: 1.45;
+  font-size: 0.92rem;
+  backdrop-filter: none;
+  -webkit-overflow-scrolling: touch;
+  /* always-on eased edge fade: shared mask block near .fade-top */
+  --fade-t: 0.7rem;
+  --fade-b: 0.7rem;
+}
+.log.combat-log {
+  margin: 0 auto;
+  max-width: 100%;
+  height: 100%;
+}
+.log-duel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 4rem;
+  /* odsazení ≈ výška fade masky */
+  padding: 0.4rem 0;
+}
+.log-bubble {
+  margin: 0;
+  max-width: min(90%, 26rem);
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(212, 168, 83, 0.35);
+  background: rgba(42, 34, 28, 0.52);
+  backdrop-filter: blur(2px);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  opacity: 0.85;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+/* neutrální děj - přes celou šířku; dialog oddělen mezerou */
+.log-bubble.scene {
+  align-self: stretch;
+  max-width: 100%;
+  margin: 0 0 0.35rem;
+  text-align: left;
+  border-color: rgba(185, 168, 148, 0.28);
+  background: rgba(42, 34, 28, 0.42);
+}
+.log-bubble.scene.result {
+  border-color: rgba(212, 168, 83, 0.5);
+  background: rgba(50, 40, 28, 0.62);
+  font-size: 0.95rem;
+  padding: 0.65rem 0.85rem;
+}
+.dock-lane-claim {
+  grid-column: 1 / -1;
+}
+.combat-claim-panel .lane-body {
+  display: grid;
+  gap: 0.45rem;
+}
+.combat-loot-line {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+.log-bubble.you {
+  align-self: flex-start;
+  margin-right: auto;
+  margin-left: 0;
+  border-color: rgba(212, 168, 83, 0.45);
+}
+.log-bubble.foe {
+  align-self: flex-end;
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+  border-color: rgba(196, 92, 74, 0.4);
+  background: rgba(36, 22, 20, 0.5);
+}
+.log-bubble.foe.pending {
+  opacity: 0;
+  transform: translateY(0.35rem);
+  pointer-events: none;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  margin: 0;
+  overflow: hidden;
+}
+.log-bubble.meta {
+  align-self: center;
+  max-width: 85%;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: rgba(18, 22, 18, 0.55);
+  border-style: dashed;
+}
+/* systémová / příběhová událost (fáma, ověření, verdikt, úkol, úroveň, lhůta) - trvalá řádka, ne toast */
+.log-bubble.sys {
+  align-self: stretch;
+  max-width: 100%;
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 0.3rem 0.6rem;
+  border-color: rgba(212, 168, 83, 0.5);
+  border-width: 1px 1px 1px 3px;
+  background: rgba(212, 168, 83, 0.12);
+  color: var(--accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  opacity: 1;
+}
+.log-bubble.sys .sys-ico { flex: none; }
+.log-bubble.sys strong { color: var(--fg); font-weight: 600; }
+.log-bubble.dim { opacity: 0.45; }
+.log-bubble.fresh {
+  opacity: 1;
+  animation: log-in 0.45s ease;
+}
+@keyframes log-in {
+  from { opacity: 0; transform: translateY(0.4rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.log .hl {
+  color: var(--accent);
+  font-weight: 600;
+}
+.log-bubble,
+.origin-text,
+.loot-lead,
+.equip-confirm-line {
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+.dock-stack {
+  /* bez tmavého rámu - jen prostor pro action-panel */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: auto auto 0;
+  padding: var(--space-2) 0;
+  border: none;
+  background: transparent;
+  /* výška: sticky + 4 směry bez zbytečného scrollu; na malém displeji se zmenší (scroll uvnitř) */
+  flex: 0 1 clamp(14.5rem, 48dvh, 22rem);
+  min-height: 0;
+  max-height: 58dvh;
+  overflow: hidden;
+  width: var(--col-w);
+  max-width: 100%;
+}
+.dock-stack .actions-dock {
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.equip-toast {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  background: rgba(212, 168, 83, 0.12);
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.progress-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.progress-nav {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+.progress-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.progress-arrow {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+/* jednotný sheet/chrome label: Prolog · Postava · Ráno · Poledne */
+.progress-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+}
+.progress-arrow-spacer {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.chrome-sub {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--fg);
+  font-weight: 500;
+  font-style: italic;
+}
+.screen-chrome {
+  margin: 0;
+}
+.panel-chrome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.22);
+}
+.panel-chrome .progress-label {
+  margin: 0;
+}
+.progress-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: min(100%, 12rem); /* 4 segs: 3× prolog + Původ */
+  pointer-events: none;
+}
+.progress-seg {
+  flex: 1;
+  height: 3px;
+  background: rgba(185,168,148,0.25);
+  border-radius: 0;
+}
+.progress-seg:first-child { border-radius: 2px 0 0 2px; }
+.progress-seg:last-child { border-radius: 0 2px 2px 0; }
+.progress-seg.done { background: rgba(212, 168, 83, 0.55); }
+.progress-seg.active {
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(212, 168, 83, 0.35);
+}
+.origin-picks {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed rgba(212,168,83,0.35);
+  background: rgba(0,0,0,0.25);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.origin-picks strong { color: var(--accent); }
+.toast-host {
+  /* Default: visual viewport (non-origins screens). */
+  position: fixed;
+  right: calc(0.75rem + var(--safe-r));
+  left: auto;
+  top: calc(0.75rem + var(--safe-t) + var(--dev-pad));
+  bottom: auto;
+  transform: none;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  width: min(90vw, 22rem);
+  pointer-events: none;
+}
+/*
+ * Origins: host is reparented into .origins-stage so letterbox/pillarbox bars
+ * stay empty (dev bar stays on body). Sit under the peek eye to avoid overlap.
+ */
+.origins-stage > .toast-host,
+.toast-host.in-stage {
+  position: absolute;
+  top: calc(var(--prolog-chrome, var(--space-3)) + 2.25rem + var(--space-2));
+  right: var(--prolog-chrome, var(--space-3));
+  width: min(calc(100% - 1.5rem), 22rem);
+  z-index: 6;
+}
+.toast-host .toast {
+  pointer-events: auto;
+  cursor: default;
+}
+.toast {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem 2rem 0.65rem 1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 0.9rem;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  text-align: left;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast-dismiss {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.3rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+}
+.toast-dismiss:hover { color: var(--accent); }
+.toast-rich {
+  min-width: min(90vw, 16rem);
+}
+.toast-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.toast-ico {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.toast-chips {
+  justify-content: flex-start;
+}
+.stat-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.stat-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(212,168,83,0.35);
+  background: rgba(0,0,0,0.3);
+  font-size: 0.85rem;
+  cursor: help;
+}
+.stat-icon .si,
+.stat-chip .si {
+  /* One square glyph box so emoji / symbol icons sit on the same grid. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.2em;
+  height: 1.2em;
+  font-size: 0.95rem;
+  line-height: 1;
+  text-align: center;
+}
+.stat-icon > strong,
+.stat-chip > strong { line-height: 1.2; }
+.stat-icon[data-stat="hp"] .si { color: var(--hp); }
+.stat-icon[data-stat="res"] .si { color: var(--mp); }
+.stat-icon[data-stat="str"] .si { color: #d46a5c; }
+.stat-icon[data-stat="dex"] .si { color: #c9b45a; }
+.stat-icon[data-stat="vit"] .si { color: #6a9e8a; }
+.stat-icon[data-stat="int"] .si { color: #8a7ec8; }
+/* inline bubble skrytý - tip jde do #float-tip (mimo backdrop-filter) */
+.stat-icon .tip-bubble { display: none !important; }
+.float-tip {
+  display: none;
+  position: fixed;
+  z-index: 500;
+  width: max-content;
+  max-width: min(14rem, 70vw);
+  padding: var(--space-2) 0.55rem;
+  border: 1px solid rgba(212, 168, 83, 0.4);
+  background: rgba(26, 18, 16, 0.88);
+  color: var(--fg);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
+  transform: translate(-50%, -100%);
+  border-radius: var(--radius);
+  /* Position is measured while visibility:hidden — no place→clamp jump. */
+}
+abbr.kodex {
+  position: relative;
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(212, 168, 83, 0.7);
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+/* ? mimo tok textu (nesmí posunout řádek); vysvětlení je ve #float-tip */
+abbr.kodex:hover::after,
+abbr.kodex:focus-visible::after {
+  content: "?";
+  position: absolute;
+  left: calc(100% + 0.12em);
+  top: -0.2em;
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent, #d4a853);
+  opacity: 0.95;
+  pointer-events: none;
+}
+.float-tip.show { display: block; }
+.float-tip.below { transform: translate(-50%, 0.35rem); }
+.float-tip .tip-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+.float-tip .tip-bit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.35rem;
+  border: 1px solid rgba(185, 168, 148, 0.28);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  max-width: 100%;
+}
+.float-tip .tip-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(185, 168, 148, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+/* stejný obal jako .stat-icon - konzistence všude */
+.stat-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(212,168,83,0.35);
+  background: rgba(0,0,0,0.3);
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.stat-chip em { font-style: normal; color: var(--muted); font-size: 0.78rem; }
+.blurb-box {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--accent);
+  background: rgba(0,0,0,0.25);
+  color: var(--muted);
+  font-size: 0.9rem;
+  /* stabilní výška - přepínání rasy/povolání neposkakuje layout */
+  min-height: 4.75rem;
+  max-height: 4.75rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.origin-acc-body {
+  display: grid;
+  gap: var(--space-2);
+  min-height: 0;
+}
+.acc-picked {
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 0.35rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.col-label,
+.bonus-label {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: left;
+}
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: var(--space-2);
+  align-items: stretch;
+}
+/* volba postavy = kompaktní řádek (ikona + název); inventář zůstává čtvercový grid */
+.pick-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: 0.4rem 0.55rem;
+  width: 100%;
+  min-height: 2.5rem;
+  height: auto;
+  text-align: left;
+  background: rgba(0,0,0,0.35);
+  position: relative;
+  box-sizing: border-box;
+}
+.pick-tile.selected {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.2);
+  color: var(--fg);
+}
+.pick-tile.selected .pick-label,
+.pick-tile.selected .pick-ico {
+  color: var(--fg);
+}
+.pick-ico { font-size: 1.15rem; line-height: 1; flex-shrink: 0; }
+.pick-label { font-size: 0.82rem; }
+.pick-tag {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c45c4a;
+  font-style: normal;
+}
+#race-bonus,
+#class-bonus {
+  min-height: 2rem;
+}
+.bonus-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* Postava: stejná šířka a pevná výška jako prolog; scrolluje jen střed (sekce + staty), hlavička a tlačítko stojí */
+.origin-frame .auth-card {
+  display: flex;
+  flex-direction: column;
+  height: min(40rem, calc(100dvh - var(--dev-pad) - 4rem));
+  min-height: 24rem;
+}
+.origin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.origin-name { flex: 0 0 auto; }
+/* wrap: jen spodní fade (absolutní overlay by překryl sticky – isolation na scrollu) */
+.origin-scroll-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.origin-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.15rem;
+  isolation: isolate; /* sticky summary nad průhledným scrollem */
+}
+/* jen dole; nahoře sticky Kraj/Živnost musí zůstat celé viditelné */
+.origin-edge-fade {
+  position: absolute;
+  left: 0;
+  right: 0.15rem;
+  height: 1.6rem;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.origin-edge-fade.is-on { opacity: 1; }
+.origin-edge-fade.bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--panel-solid) 20%, transparent);
+}
+.origin-col,
+.origin-acc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  flex: 0 0 auto;
+}
+.origin-acc > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  /* při scrollu Postavy zůstanou kraj / živnost / původ vidět */
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--panel-solid);
+  box-shadow: 0 1px 0 rgba(185, 168, 148, 0.25);
+  padding: 0.4rem 0.15rem;
+  margin: 0;
+}
+.origin-acc > summary::-webkit-details-marker { display: none; }
+.origin-acc > summary::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  margin: 0 0.1rem;
+}
+.origin-acc[open] > summary::before { transform: rotate(45deg); }
+.origin-acc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.origin-scroll .blurb-box { max-height: none; }
+.choice.picked {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.2);
+  color: var(--fg);
+}
+.choice.picked strong,
+.choice.picked .btn-hint {
+  color: var(--fg);
+}
+.choice.picked .hl {
+  color: #ffe6a8;
+}
+.picked-mark {
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-left: 0.35rem;
+}
+.actions.actions-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.origin-cta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+.origin-cta .btn-primary {
+  width: 100%;
+}
+.origin-cta .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* krok zpět k prologu: u chrome nahoře, ne vedle hlavního CTA */
+.chrome-alt-back {
+  margin: 0.25rem 0 0;
+  display: flex;
+  justify-content: center;
+}
+.chrome-alt-back .btn-ghost {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+}
+.gear-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+.gear-strip.flash .stat-icon,
+#confirm-stats.flash .stat-icon,
+.stat-icons.flash .stat-icon,
+.stat-icon.is-flash {
+  animation: gear-flash 0.8s ease;
+}
+@keyframes gear-flash {
+  0%, 100% { border-color: rgba(212,168,83,0.35); }
+  40% { border-color: var(--accent); background: rgba(212,168,83,0.18); }
+}
+.stat-icon[data-stat="atk"] .si { color: #d46a5c; }
+.stat-icon[data-stat="def"] .si { color: #6a9eb8; }
+.stat-icon[data-stat="gold"] .si { color: var(--accent); }
+/* úkoly = stejný panel rytmus jako Postava */
+.q-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.q-prog {
+  margin: var(--space-1) 0;
+}
+.quest-card {  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid rgba(185,168,148,0.28);
+  margin: 0;
+}
+.quest-card:last-child { border-bottom: none; }
+.quest-card .q-obj {
+  margin: 0;
+  color: var(--fg);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.quest-card .q-rew {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.q-loot {
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid rgba(185,168,148,0.3);
+  background: rgba(0,0,0,0.25);
+  cursor: help;
+}
+.has-tip {
+  cursor: help;
+}
+.ghost-slot {
+  visibility: hidden;
+  pointer-events: none;
+  min-width: 4.5rem;
+}
+button:disabled,
+button.locked,
+.btn:disabled,
+.btn.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.actions-dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0;
+}
+.dock-city,
+.dock-combat {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: min(100%, 28rem);
+  margin: 0 auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
+}
+/* jedno okno - sticky mimo scroll (neprosvítá obsah) */
+.action-panel,
+.lane-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(42, 34, 28, 0.72);
+  padding: var(--space-2);
+  padding-bottom: calc(var(--space-2) + 0.15rem);
+  overflow: hidden;
+}
+.action-sticky {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 2.85rem;
+  padding-bottom: 0.35rem;
+  margin: 0 0 0.2rem;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.28);
+  background: rgba(42, 34, 28, 0.98);
+  z-index: 3;
+}
+.action-sticky.is-spacer {
+  border-bottom-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+.action-sticky .btn-action.btn-story {
+  box-shadow: none;
+}
+.action-sticky .btn-action.btn-story:hover:not(:disabled) {
+  box-shadow: none;
+  background: rgba(212, 168, 83, 0.1);
+}
+.action-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  --fade-t: 1rem;
+  --fade-b: 1rem;
+}
+.action-body,
+.lane-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 0.65rem 0 0.55rem;
+}
+/* labely Město/Boj/Léčitel skryté - aria-label zůstává pro a11y */
+.dock-city::before,
+.dock-combat::before {
+  content: none;
+}
+.dock-lane,
+.dock-acc {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.dock-lane-left,
+.dock-acc-left { grid-column: 1; }
+.dock-combat .dock-lane-right { grid-column: 2; }
+.dock-city .dock-lane-right,
+.dock-acc-right { grid-column: 2; }
+.lane-split {
+  flex-shrink: 0;
+  height: 0;
+  margin: 0;
+  border: none;
+  border-top: 1px dashed rgba(185, 168, 148, 0.4);
+}
+/* label sticky uvnitř scrollu */
+.action-body > .place-offer-label,
+.lane-body > .place-offer-label {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.25rem 0 0.45rem;
+  background: #2a221c;
+  box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.65);
+}
+.action-body > .place-offer-label::before,
+.lane-body > .place-offer-label::before {
+  content: "";
+  position: absolute;
+  left: -0.2rem;
+  right: -0.2rem;
+  bottom: 100%;
+  height: 0.6rem;
+  background: #2a221c;
+  pointer-events: none;
+}
+.action-body > :last-child,
+.lane-body > :last-child {
+  margin: 0;
+}
+.dock-acc > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0.4rem 0.35rem;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(10, 6, 4, 0.92);
+  border-bottom: 1px solid rgba(212, 168, 83, 0.2);
+}
+.dock-acc > summary::-webkit-details-marker { display: none; }
+.dock-acc > summary::before {
+  content: "▸ ";
+  opacity: 0.7;
+}
+.dock-acc[open] > summary::before { content: "▾ "; }
+/* desktop: bez accordion hlavičky, obě sekce vedle sebe */
+@media (min-width: 768px) {
+  .dock-acc > summary { display: none; }
+  .dock-acc { display: flex; }
+  .dock-acc > .lane-panel { display: flex; }
+  .lane-label-desk { display: block; }
+}
+@media (max-width: 767px) {
+  .lane-label-desk { display: none; } /* mobil = summary accordion */
+}
+.dock-city .btn-action,
+.dock-combat .btn-action {
+  max-width: none;
+  width: 100%;
+}
+/* větné volby - delší text, méně „tlačítkový“ */
+.dock-city .btn-action.btn-story,
+.dock-combat .btn-action.btn-story {
+  flex-shrink: 0;
+  padding: var(--space-2) 0.55rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none; /* oddělovače jen .lane-split mezi skupinami */
+}
+.dock-city .btn-action.btn-story:hover:not(:disabled),
+.dock-combat .btn-action.btn-story:hover:not(:disabled) {
+  background: rgba(212, 168, 83, 0.1);
+  box-shadow: none;
+  outline: none;
+}
+.dock-city .btn-action.btn-story strong,
+.dock-combat .btn-action.btn-story strong {
+  font-weight: 500;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+/* důležité pojmy v akčním baru */
+.btn-action .hl,
+.dock-city .btn-action .hl,
+.dock-combat .btn-action .hl {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* žlutý primary = tmavý text; hl nesmí zůstat žluté na žluté */
+.btn-action.btn-primary,
+.btn-action.btn-primary strong {
+  color: var(--accent-text);
+}
+.btn-action.btn-primary .hl {
+  color: var(--accent-text);
+  font-weight: 800;
+}
+.btn-action .act-ico {
+  margin-right: 0.15rem;
+}
+/* primary story (loot claim) - ne tmavý text jako ghost story */
+.dock-combat .btn-action.btn-story.btn-primary,
+.dock-city .btn-action.btn-story.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: none;
+  border: 1px solid var(--accent);
+  padding: 0.55rem 0.65rem;
+}
+.dock-combat .btn-action.btn-story.btn-primary strong,
+.dock-city .btn-action.btn-story.btn-primary strong {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.dock-combat .btn-action.btn-story.btn-primary .hl,
+.dock-city .btn-action.btn-story.btn-primary .hl {
+  color: inherit;
+}
+.dock-combat .btn-action.btn-story.btn-primary .btn-hint,
+.dock-city .btn-action.btn-story.btn-primary .btn-hint {
+  color: rgba(26, 18, 16, 0.75);
+  font-style: normal;
+}
+.dock-city .btn-action.btn-story .btn-hint,
+.dock-combat .btn-action.btn-story .btn-hint {
+  font-style: italic;
+  color: var(--muted);
+}
+.dock-city:empty,
+.dock-city[data-empty="1"] {
+  display: none;
+}
+/* rychlé volby - full-bleed viewport (mimo .game-frame max-width), ikony centrované */
+.player-footer {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.5rem calc(0.4rem + var(--safe-b));
+  border-top: 1px solid var(--line);
+  background: rgba(8, 5, 4, 0.97);
+}
+.player-footer .dock-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  min-width: 3.5rem;
+  max-width: 4.5rem;
+  padding: 0.4rem 0.45rem;
+  border: none;
+  background: transparent;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+.player-footer .dock-ico em {
+  font-style: normal;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.player-footer .dock-ico kbd {
+  display: inline-block;
+  margin-top: 0.05rem;
+  padding: 0.05rem 0.28rem;
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(212, 168, 83, 0.35);
+  border-radius: 0.2rem;
+  /* vždy zabírá místo - is-off jen schová inkoust */
+  min-height: 1em;
+}
+.player-footer .dock-ico kbd.is-off {
+  visibility: hidden;
+}
+@media (hover: none) and (pointer: coarse) {
+  .player-footer .dock-ico kbd {
+    visibility: hidden;
+  }
+}
+.player-footer .dock-ico:disabled,
+.player-footer .dock-ico.locked {
+  opacity: 0.4;
+}
+.dock-stack[data-mode="place"] {
+  max-height: 50dvh;
+}
+.game-topbar {
+  display: none;
+}
+/* In-game header ne - status row stačí; nastavení = ☰ */
+
+.panel-overlay {
+  /* končí nad footerem - jde překlikávat Postava/Inv/Úkoly */
+  position: fixed;
+  top: var(--safe-t);
+  left: var(--safe-l);
+  right: var(--safe-r);
+  bottom: var(--footer-h);
+  background: rgba(8, 5, 4, 0.72);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: grid;
+  place-items: end center;
+  padding: 0.5rem;
+  padding-top: calc(0.5rem + var(--dev-pad));
+  z-index: 15;
+}
+/* nested underlay: absolute - neovlivní layout aktivního sheetu (žádný posun) */
+.panel-sheet.panel-under {
+  position: absolute;
+  left: 50%;
+  bottom: 0.5rem;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 1rem));
+  max-height: calc(100dvh - var(--safe-t) - var(--footer-h) - var(--dev-pad) - 0.75rem);
+  opacity: 0.45;
+  filter: blur(3px);
+  pointer-events: none;
+  z-index: 0;
+  margin: 0;
+}
+.panel-overlay > .panel-sheet:not(.panel-under) {
+  position: relative;
+  z-index: 1;
+}
+.panel-overlay.is-fullscreen .panel-sheet.panel-under {
+  bottom: auto;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-height: calc(100dvh - var(--safe-t) - var(--safe-b) - var(--dev-pad) - 1.5rem);
+  width: min(36rem, calc(100% - 1.5rem));
+}
+@media (min-width: 768px) {
+  .panel-overlay:not(.is-fullscreen) .panel-sheet.panel-under {
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+/* landing / prolog / původ - bez player-footer → full viewport */
+.panel-overlay.is-fullscreen {
+  bottom: 0;
+  place-items: center;
+  padding: 0.75rem;
+  padding-top: calc(0.75rem + var(--dev-pad));
+}
+.panel-overlay.is-fullscreen .panel-sheet {
+  max-height: calc(100dvh - var(--safe-t) - var(--safe-b) - var(--dev-pad) - 1.5rem);
+  width: min(36rem, 100%);
+}
+.panel-sheet {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: calc(100dvh - var(--safe-t) - var(--footer-h) - var(--dev-pad) - 0.75rem);
+  /* scroll jen v .panel-scroll - ne dvojitý overflow sheet+body */
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 0.65rem 0.75rem;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.panel-overlay[data-kind="character"] .panel-sheet {
+  width: min(720px, 100%);
+  max-height: calc(100dvh - var(--safe-t) - var(--footer-h) - var(--dev-pad) - 0.5rem);
+}
+.panel-overlay[data-kind="inventory"] .panel-sheet {
+  width: min(18.5rem, 100%);
+}
+/* Postava desktop: výzbroj | talenty vedle sebe */
+.char-split {
+  display: grid;
+  gap: var(--space-3);
+}
+@media (min-width: 520px) {
+  .char-split {
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: start;
+  }
+}
+/* equip popover - blur postavy pod výběrem */
+.equip-pop-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  background: rgba(8, 5, 4, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.equip-popover {
+  width: min(100%, 18rem);
+  max-height: min(50vh, 22rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.equip-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.equip-popover h3 {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.equip-confirm {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(212, 168, 83, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+.equip-confirm-line {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.equip-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+/* mapa - fog / discovered / here */
+.map-wrap {
+  display: grid;
+  gap: var(--space-2);
+}
+.map-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  aspect-ratio: 1;
+  max-width: 22rem;
+  margin: 0 auto;
+  width: 100%;
+}
+.map-cell {
+  position: relative;
+  border: 1px solid rgba(185, 168, 148, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: 0.55rem;
+  color: var(--muted);
+}
+.map-cell.fog {
+  background: rgba(8, 5, 4, 0.85);
+  border-color: rgba(185, 168, 148, 0.12);
+}
+.map-cell.known.town { background: rgba(90, 70, 40, 0.55); }
+.map-cell.known.road { background: rgba(120, 100, 70, 0.4); }
+.map-cell.known.forest { background: rgba(30, 55, 30, 0.55); }
+.map-cell.known.plains { background: rgba(55, 70, 35, 0.4); }
+.map-cell.known.hills { background: rgba(70, 60, 50, 0.5); }
+.map-cell.known.village { background: rgba(100, 75, 45, 0.5); }
+.map-cell.known.chapel { background: rgba(60, 55, 80, 0.5); }
+.map-cell.here {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.map-cell .map-dot {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.map-cell.landmark.city {
+  background: rgba(120, 90, 40, 0.72);
+  border-color: rgba(212, 168, 83, 0.55);
+}
+.map-cell .map-ico {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.55rem, 2.2vw, 0.85rem);
+  line-height: 1;
+  pointer-events: none;
+}
+.map-cell .map-ico.dim { opacity: 0.75; font-size: clamp(0.45rem, 1.8vw, 0.7rem); }
+.map-cell.here .map-ico { display: none; }
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.panel-sheet header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent);
+  line-height: 1;
+  font-size: 0;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.panel-close::before {
+  content: "×";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 400;
+}
+.panel-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(185,168,148,0.25);
+  margin: 0;
+}
+.list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.list li {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(185,168,148,0.35);
+}
+.list li:last-child {
+  border-bottom: none;
+}
+/* jediný oddělovač před danger - ne border-bottom + border-top */
+.list li:has(+ .settings-danger) {
+  border-bottom: none;
+}
+.list li.settings-danger {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(185,168,148,0.35);
+  border-bottom: none;
+}
+.list li button {
+  margin: 0;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.85rem;
+}
+#panel-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow: hidden;
+}
+/* společný layout panelů: Inventář / Postava / Úkoly */
+.inv-foot {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid rgba(185, 168, 148, 0.22);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.inv-foot .bag-meta {
+  margin: 0;
+  text-align: left;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.inv-foot .gear-strip {
+  margin-left: auto;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.panel-head {
+  display: grid;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: 0 0 var(--space-2);
+  border-bottom: 1px solid rgba(185,168,148,0.22);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  /* neprůhledné - scroll obsah neprosvítá pod sticky */
+  background: var(--panel);
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.55);
+}
+.panel-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  flex: 1 1 auto;
+  max-height: none;
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+  overscroll-behavior: contain;
+}
+.panel-stack { gap: var(--space-3); }
+.panel-section { display: grid; gap: var(--space-2); }
+.panel-section-title {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: left;
+  /* ne sticky - scrolluje se s obsahem; sticky = jen .panel-head */
+  position: static;
+  padding: 0.15rem 0;
+}
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.25rem, 1fr));
+  gap: 0.2rem;
+}
+.panel-tile,
+.inv-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.3rem 0.35rem;
+  text-align: left;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(185,168,148,0.3);
+  min-height: 2.75rem;
+  cursor: default;
+  color: inherit;
+  font: inherit;
+}
+/* picker / obecné dlaždice - bez aspect-ratio (to dělalo obří čtverce) */
+.inv-tile.inv-cell {
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.22rem 0.15rem;
+  gap: 0.08rem;
+  min-height: 2.75rem;
+  aspect-ratio: auto;
+}
+.inv-tile.inv-cell .panel-tile-ico {
+  font-size: 1rem;
+}
+.inv-cell-name {
+  font-size: 0.55rem !important;
+  line-height: 1.1 !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inv-tile.inv-cell .tag {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.15rem;
+  font-size: 0.5rem;
+}
+.panel-tile.compact {
+  min-height: 3.1rem;
+  padding: 0.3rem 0.35rem;
+}
+.panel-tile-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  /* Emoji ink sits low in the em-box — nudge up for optical center in tiles. */
+  transform: translateY(-0.06em);
+}
+.panel-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.panel-tile-meta .stat-chip {
+  padding: 0.12rem 0.28rem;
+  font-size: 0.72rem;
+}
+.inv-tile.can-equip { cursor: pointer; }
+.panel-tile.on,
+.inv-tile.on {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.14);
+}
+.panel-tile strong,
+.inv-tile strong {
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+.inv-tile .inv-meta,
+.panel-tile .inv-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.panel-tile .tag,
+.inv-tile .tag {
+  font-size: 0.62rem;
+  color: var(--accent);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.panel-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.55rem 0.15rem;
+  border-bottom: 1px solid rgba(185,168,148,0.28);
+}
+.panel-card:last-child { border-bottom: none; }
+.panel-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+/* výzbroj: armor + hold + jewelry (lean WoW, ne full bag) */
+.equip-doll {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-areas:
+    "neck head shoulders"
+    "weapon body shield"
+    "hands legs wrists"
+    "feet . trinket";
+  gap: 0.3rem;
+  justify-items: stretch;
+  max-width: 24rem;
+  margin: 0 auto;
+}
+.equip-doll .equip-neck { grid-area: neck; }
+.equip-doll .equip-head { grid-area: head; }
+.equip-doll .equip-shoulders { grid-area: shoulders; }
+.equip-doll .equip-weapon { grid-area: weapon; }
+.equip-doll .equip-body { grid-area: body; }
+.equip-doll .equip-shield { grid-area: shield; }
+.equip-doll .equip-hands { grid-area: hands; }
+.equip-doll .equip-legs { grid-area: legs; }
+.equip-doll .equip-wrists { grid-area: wrists; }
+.equip-doll .equip-feet { grid-area: feet; }
+.equip-doll .equip-trinket { grid-area: trinket; }
+.equip-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+  height: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.equip-slot .panel-tile-ico {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.equip-slot-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+.equip-slot .inv-cell-name {
+  font-size: 0.55rem !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equip-slot.on {
+  border-color: rgba(212, 168, 83, 0.55);
+}
+.equip-slot.pick-open {
+  border-color: var(--accent);
+  outline: 1px solid rgba(212, 168, 83, 0.45);
+}
+.lane-panel-empty {
+  opacity: 0.55;
+  min-height: 100%;
+}
+.lane-panel-empty .lane-body {
+  min-height: 4rem;
+}
+.thumb.context {
+  background-size: cover;
+  background-position: center;
+}
+.thumb.context.town {
+  background-image: url("../resources/locations/city.svg");
+}
+.thumb.context.place {
+  background-image: url("../resources/locations/healer.svg");
+}
+.thumb.context.wild {
+  background-image: url("../resources/locations/forest.svg");
+}
+.thumb.context.land {
+  background-image: url("../resources/locations/plains.svg");
+}
+.item-tile:not(.can-equip) {
+  cursor: help;
+  opacity: 0.92;
+}
+.equip-picker {
+  border-top: 1px dashed rgba(185, 168, 148, 0.35);
+  padding-top: var(--space-2);
+}
+.equip-popover .inv-grid {
+  margin: 0;
+}
+.inv-grid-square {
+  grid-template-columns: repeat(auto-fill, minmax(3.15rem, 1fr));
+  gap: 0.2rem;
+}
+.inv-grid-square .inv-tile.inv-cell,
+.inv-grid-square .item-tile {
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  padding: 0.15rem 0.1rem;
+}
+/* lehké combat FX */
+@keyframes fx-strike {
+  0%, 100% { transform: translate(0, 0); filter: none; }
+  30% { transform: translate(-6px, 2px); filter: brightness(1.15); }
+  55% { transform: translate(4px, -2px); }
+}
+@keyframes fx-guard {
+  0%, 100% { box-shadow: none; }
+  40% { box-shadow: inset 0 0 0 2px rgba(212, 168, 83, 0.55); }
+}
+.game-screen.fx-strike .enemy-stage img {
+  animation: fx-strike 0.45s ease;
+}
+.game-screen.fx-guard #combat-player {
+  animation: fx-guard 0.5s ease;
+}
+.game-screen.fx-hurt #combat-player {
+  animation: fx-strike 0.4s ease;
+}
+.telegraph {
+  color: var(--accent);
+  font-size: 0.78rem;
+  margin: 0.15rem 0 0;
+  line-height: 1.3;
+}
+.telegraph.vague { color: var(--muted); font-style: italic; }
+.tip { display: block; color: var(--muted); font-size: 0.85rem; }
+.tag {
+  float: right;
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-style: normal;
+}
+/* Návštěva místa: próza odděleně od nabídky */
+.place-visit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.place-greet {
+  display: grid;
+  gap: 0.35rem;
+}
+.place-greet h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.place-greet p { margin: 0; line-height: 1.45; }
+.place-offer-label {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: left;
+}
+.world-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+.world-chip .si {
+  font-size: 0.95em;
+}
+/* loot modal */
+.loot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  padding-top: calc(1rem + var(--dev-pad));
+  background: rgba(8, 5, 4, 0.72);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.loot-overlay.hidden { display: none !important; }
+.loot-sheet {
+  width: min(18.5rem, 100%);
+  max-height: min(85dvh, 36rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem 0.75rem;
+  background: var(--panel);
+  border: 1px solid rgba(185, 168, 148, 0.22);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  overscroll-behavior: contain;
+}
+.loot-lead {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.loot-pile,
+.loot-bag {
+  min-height: 0;
+  padding: 0.25rem;
+  border: 1px solid rgba(185, 168, 148, 0.3);
+  background: rgba(0, 0, 0, 0.22);
+}
+.loot-pile {
+  border-style: dashed;
+  border-color: rgba(212, 168, 83, 0.45);
+}
+.loot-tile {
+  cursor: grab;
+  aspect-ratio: 1 !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0.12rem 0.1rem !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.loot-tile:active { cursor: grabbing; }
+.loot-tile .panel-tile-ico { font-size: 0.85rem; }
+.bag-slot [draggable="true"] { cursor: grab; }
+.bag-slot [draggable="true"]:active { cursor: grabbing; }
+.panel-scroll,
+.action-body,
+.lane-body,
+.log {
+  cursor: auto;
+}
+button,
+.btn,
+.legal-link,
+.dock-ico,
+.pick-tile,
+.linkish {
+  cursor: pointer;
+}
+.loot-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.loot-actions.is-solo {
+  display: grid;
+  justify-items: stretch;
+}
+.loot-actions.is-solo .btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+.inv-grid-flat {
+  grid-template-columns: repeat(auto-fill, minmax(3.25rem, 1fr));
+}
+/* kompaktní batoh - stejná buňka v inventáři i loot modalu */
+.inv-grid-bag {
+  /* 4×4 čtverce (16 slotů) - ne široké obdélníky */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+.bag-slot {
+  aspect-ratio: 1;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  border: 1px solid rgba(185, 168, 148, 0.28);
+  background: rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.bag-slot.empty {
+  border-style: dashed;
+  background: rgba(0, 0, 0, 0.18);
+}
+.bag-slot.drag-over {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.18);
+}
+.bag-slot .item-tile,
+.bag-slot .inv-tile,
+.bag-slot .panel-tile,
+.bag-slot .inv-tile.inv-cell {
+  width: 100%;
+  height: 100%;
+  min-height: 0 !important;
+  max-height: 100%;
+  aspect-ratio: auto !important;
+  padding: 0.08rem !important;
+  border: none;
+  background: transparent;
+  font-size: 0.58rem;
+  gap: 0.05rem !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.bag-slot .panel-tile-ico {
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
+.bag-slot .inv-cell-name {
+  font-size: 0.5rem !important;
+  line-height: 1.05 !important;
+}
+.bag-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.ranks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.ranks-table th,
+.ranks-table td {
+  padding: 0.45rem 0.4rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.28);
+}
+.ranks-table th {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+.ranks-table tr.is-you td {
+  color: var(--accent);
+  font-weight: 600;
+}
+/* FAQ accordion */
+.faq-acc {
+  display: grid;
+  gap: 0.35rem;
+}
+.faq-item {
+  border: 1px solid rgba(185, 168, 148, 0.28);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0;
+}
+.faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.55rem 0.65rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::before {
+  content: "▸ ";
+  color: var(--accent);
+  font-size: 0.75em;
+}
+.faq-item[open] summary::before { content: "▾ "; }
+.faq-item p {
+  margin: 0;
+  padding: 0 0.65rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+.settings-audio {
+  display: grid;
+  gap: 0.45rem;
+}
+.settings-mute { margin: 0; cursor: pointer; }
+.settings-mute input { cursor: pointer; }
+.settings-slider {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 2rem;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.settings-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.settings-slider input[type="range"]:disabled {
+  cursor: not-allowed;
+}
+.settings-lang {
+  display: grid;
+  gap: 0.4rem;
+}
+.lang-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.lang-btn {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.82rem;
+  border: 1px solid rgba(185, 168, 148, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+.lang-btn.is-on {
+  border-color: var(--accent);
+  background: rgba(212, 168, 83, 0.14);
+  color: var(--accent);
+}
+.lang-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.settings-account {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--space-2);
+}
+.settings-account strong {
+  grid-column: 1;
+}
+.settings-account .tip {
+  grid-column: 1;
+}
+.settings-account .btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  white-space: nowrap;
+}
+.settings-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  border-bottom: none;
+  padding-top: var(--space-2);
+}
+.settings-links .btn {
+  margin: 0;
+  width: 100%;
+  font-size: 0.78rem;
+  padding: var(--space-2) var(--space-1);
+}
+.list li.settings-links button {
+  margin: 0;
+}
+.btn-danger,
+.btn.btn-danger {
+  color: #f3e6d4;
+  background: #a63d32;
+  border-color: #c45c4a;
+}
+.btn-danger:hover:not(:disabled),
+.btn.btn-danger:hover:not(:disabled) {
+  background: #c45c4a;
+  border-color: #d46a5c;
+  color: #fff;
+}
+.delete-confirm-input {
+  width: 100%;
+  margin: 0;
+}
+.rarity-poor { color: var(--rarity-poor); }
+.rarity-common { color: var(--rarity-common); }
+.rarity-uncommon { color: var(--rarity-uncommon); }
+.rarity-rare { color: var(--rarity-rare); }
+.rarity-epic { color: var(--rarity-epic); }
+.rarity-legendary { color: var(--rarity-legendary); }
+/* rarity = barva textu; typ slotu = tón pozadí + inset glow */
+.item-tile.rarity-poor .inv-cell-name { color: var(--rarity-poor); }
+.item-tile.rarity-common .inv-cell-name { color: var(--rarity-common); }
+.item-tile.rarity-uncommon .inv-cell-name { color: var(--rarity-uncommon); }
+.item-tile.rarity-rare .inv-cell-name { color: var(--rarity-rare); }
+.item-tile.rarity-epic .inv-cell-name { color: var(--rarity-epic); }
+.item-tile.rarity-legendary .inv-cell-name { color: var(--rarity-legendary); }
+/* typ = jemný podkres (nízká opacity), rarity = text */
+.item-tile.type-weapon {
+  background: rgba(212, 106, 92, 0.07);
+  box-shadow: inset 0 0 0.55rem rgba(212, 106, 92, 0.18);
+}
+.item-tile.type-shield {
+  background: rgba(106, 158, 184, 0.07);
+  box-shadow: inset 0 0 0.55rem rgba(106, 158, 184, 0.18);
+}
+.item-tile.type-head,
+.item-tile.type-shoulders,
+.item-tile.type-body,
+.item-tile.type-hands,
+.item-tile.type-legs,
+.item-tile.type-feet,
+.item-tile.type-wrists {
+  background: rgba(185, 168, 148, 0.06);
+  box-shadow: inset 0 0 0.55rem rgba(185, 168, 148, 0.16);
+}
+.item-tile.type-neck,
+.item-tile.type-trinket {
+  background: rgba(163, 53, 238, 0.06);
+  box-shadow: inset 0 0 0.55rem rgba(163, 53, 238, 0.16);
+}
+.item-tile.type-consumable {
+  background: rgba(106, 158, 106, 0.07);
+  box-shadow: inset 0 0 0.55rem rgba(106, 158, 106, 0.18);
+}
+.item-tile.type-misc {
+  background: rgba(185, 168, 148, 0.04);
+  box-shadow: inset 0 0 0.45rem rgba(185, 168, 148, 0.12);
+}
+.bag-slot .item-tile.type-weapon {
+  background: rgba(212, 106, 92, 0.1) !important;
+  box-shadow: inset 0 0 0.35rem rgba(212, 106, 92, 0.22);
+}
+.bag-slot .item-tile.type-shield {
+  background: rgba(106, 158, 184, 0.1) !important;
+  box-shadow: inset 0 0 0.35rem rgba(106, 158, 184, 0.22);
+}
+.bag-slot .item-tile.type-head,
+.bag-slot .item-tile.type-shoulders,
+.bag-slot .item-tile.type-body,
+.bag-slot .item-tile.type-hands,
+.bag-slot .item-tile.type-legs,
+.bag-slot .item-tile.type-feet,
+.bag-slot .item-tile.type-wrists {
+  background: rgba(185, 168, 148, 0.09) !important;
+  box-shadow: inset 0 0 0.35rem rgba(185, 168, 148, 0.2);
+}
+.bag-slot .item-tile.type-neck,
+.bag-slot .item-tile.type-trinket {
+  background: rgba(163, 53, 238, 0.09) !important;
+  box-shadow: inset 0 0 0.35rem rgba(163, 53, 238, 0.2);
+}
+.bag-slot .item-tile.type-consumable {
+  background: rgba(106, 158, 106, 0.1) !important;
+  box-shadow: inset 0 0 0.35rem rgba(106, 158, 106, 0.22);
+}
+.bag-slot .item-tile.type-misc {
+  background: rgba(185, 168, 148, 0.06) !important;
+  box-shadow: inset 0 0 0.3rem rgba(185, 168, 148, 0.14);
+}
+.settings-slider em {
+  font-style: normal;
+  text-align: right;
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+.service-table {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(3.5rem, auto) auto;
+  column-gap: 0.45rem;
+  row-gap: 0;
+  align-items: center;
+}
+.service-row {
+  display: contents;
+}
+.service-row .svc-name,
+.service-row .svc-meta,
+.service-row .svc-buy {
+  padding: 0.32rem 0;
+  border-bottom: 1px solid rgba(185,168,148,0.22);
+}
+.service-row .svc-name {
+  font-weight: 600;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  min-width: 0;
+}
+.service-row .svc-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  min-height: 1.6rem;
+}
+.service-row .svc-meta:empty::before {
+  content: "";
+  display: inline-block;
+  min-width: 0.5rem;
+}
+.service-row .svc-meta .stat-icon {
+  padding: 0.1rem 0.25rem;
+  font-size: 0.68rem;
+}
+.service-row .svc-buy {
+  padding: 0.22rem 0.4rem;
+  font-size: 0.74rem;
+  justify-self: end;
+}
+
+@media (min-width: 768px) {
+  .panel-overlay { place-items: center; }
+}
+/* malý displej: log dostane větší garantovaný podíl výšky */
+@media (max-width: 767px), (max-height: 700px) {
+  :root { --log-min: 0.32; --log-floor: 8rem; }
+  /* prázdný rezervovaný pruh nad volbami = zbytečná výška */
+  .action-sticky.is-spacer { display: none; }
+}
+@media (max-width: 767px) {
+  .landing-grid { grid-template-columns: 1fr; }
+  .landing-left h1 { max-width: none; }
+  .status-row.compact .status-box {
+    padding: 0.25rem 0.3rem;
+    gap: 0.25rem;
+  }
+  .status-row.compact .thumb {
+    display: block;
+    width: 1.85rem;
+    height: 1.85rem;
+    flex-shrink: 0;
+  }
+  .status-row.compact .box-title { font-size: 0.85rem; }
+  .status-row.compact .bar { font-size: 0.68rem; grid-template-columns: 2.4rem 1fr auto; }
+  .status-row.compact .gear-strip .stat-icon {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.72rem;
+  }
+  .status-row.compact .telegraph {
+    font-size: 0.72rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .landing-bg { background-position: 35% center; }
+  .box-foot { font-size: 0.72rem; }
+  .enemy-stage {
+    align-items: flex-end;
+    padding: 0 2% 1% 0;
+    background: linear-gradient(180deg, rgba(10,6,4,0.1) 0%, transparent 40%, rgba(10,6,4,0.35) 100%);
+  }
+  .enemy-stage img {
+    width: min(92vw, 400px);
+    max-height: min(38vh, 300px);
+    opacity: 0.95;
+  }
+  .game-screen.is-combat .log.combat-log {
+    max-width: 100%;
+    background: rgba(18, 22, 18, 0.48);
+  }
+  .dock-city,
+  .dock-combat {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dock-city .dock-lane-left,
+  .dock-city .dock-lane-right,
+  .dock-combat .dock-lane-left,
+  .dock-combat .dock-lane-right,
+  .dock-acc-left,
+  .dock-acc-right {
+    grid-column: 1 !important;
+  }
+  .dock-lane .lane-panel {
+    max-height: none;
+  }
+  .game-screen.is-combat .dock-stack,
+  .dock-stack {
+    flex-basis: clamp(14rem, 52dvh, 22rem);
+    max-height: 58dvh;
+  }
+  .player-footer .dock-ico em { font-size: 0.58rem; }
+}
+@media (max-width: 400px) {
+  /* 5 ikon se na 320 px musí vejít; popisek se zkrátí, ne přeteče */
+  .player-footer { gap: 0.1rem; padding-left: var(--space-1); padding-right: var(--space-1); }
+  .player-footer .dock-ico { flex: 1 1 0; min-width: 0; padding-left: 0.1rem; padding-right: 0.1rem; }
+  .player-footer .dock-ico em { max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
+}
+
+/* --- Questy a mapa --- */
+/* záložky Úkoly | Zápisník */
+.panel-tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(185, 168, 148, 0.28);
+}
+.panel-tab {
+  position: relative;
+  flex: 1 1 0;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.panel-tab.is-on { color: var(--accent); border-bottom-color: var(--accent); }
+.nb-intro { padding: 0 var(--space-1); font-size: 0.85rem; }
+.panel-tab.has-dot::after { position: static; display: inline-block; margin-left: var(--space-2); vertical-align: middle; }
+/* puntík = nová fáma od posledního otevření Zápisníku */
+.has-dot { position: relative; }
+.has-dot::after {
+  content: "";
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(8, 5, 4, 0.9), 0 0 6px rgba(212, 168, 83, 0.8);
+}
+.player-footer .dock-ico.has-dot::after { top: 0.2rem; right: calc(50% - 1.2rem); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.q-objs { margin: 0.2rem 0; padding: 0; list-style: none; display: grid; gap: 0.15rem; font-size: 0.85rem; }
+.q-objs li.done { opacity: 0.6; text-decoration: line-through; }
+.kz-claims { gap: var(--space-4); }
+.kz-claim { display: grid; gap: var(--space-1); }
+.kz-claim .q-actions { display: flex; gap: var(--space-2); }
+.kz-resolved { opacity: 0.7; }
+.kz-done { margin-top: var(--space-2); }
+.kz-done summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.kz-done .kz-claims { margin-top: var(--space-2); }
+.kz-cert { font-style: normal; font-weight: 700; }
+.kz-cert-ok { color: var(--ok); }
+.kz-cert-bad { color: var(--hp); }
+.kz-cert-sure { color: var(--fg); }
+.kz-cert-maybe { color: var(--accent); }
+.kz-cert-vague { color: var(--muted); }
+.q-objs em, .q-lost { font-style: normal; color: var(--muted); }
+.q-lost { color: #d49a4a; }
+.quest-card.q-done { opacity: 0.6; }
+.quest-card.q-ready { border-color: var(--accent); }
+.map-cell.q-zone { box-shadow: inset 0 0 0 2px rgba(212, 154, 74, 0.55); background-image: repeating-linear-gradient(135deg, rgba(212,154,74,0.18) 0 4px, transparent 4px 8px); }
+.map-ico.q, .map-ico.warn { font-size: 0.95rem; }
+.map-ico.warn { filter: drop-shadow(0 0 3px rgba(212, 154, 74, 0.8)); }
+.map-ico.corner { position: absolute; right: 1px; top: 0; font-size: 0.7rem; }
+.map-notes { margin: 0.4rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+
+/* krátké centrované = balance; odstavce prose = pretty */
+.landing-tagline, .chrome-sub, .landing-quote blockquote { text-wrap: balance; }
+.blurb-box, .btn-hint, .choice strong, .tip, .faq-item p, .auth-card p,
+.prose-beat, .origin-text, .morning-demo-note { text-wrap: pretty; }
+.confirm-sheet { width: min(24rem, 100%); gap: 0.6rem; padding: 0.85rem; box-sizing: border-box; }
+.confirm-sheet p { margin: 0; font-size: 0.88rem; line-height: 1.4; color: var(--muted); }
+.confirm-sheet strong:first-child { color: var(--accent); }
+/* Ráno/Poledne: sheet širší; label přes screenChrome (= Prolog/Postava); tělo vlevo */
+.loot-overlay[data-morning] .morning-sheet {
+  width: min(28rem, calc(100vw - 2rem));
+  display: grid;
+  justify-items: stretch;
+  gap: 0.55rem;
+  border-color: rgba(185, 168, 148, 0.2);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+.loot-overlay[data-morning] .screen-chrome {
+  justify-self: stretch;
+}
+/* ráno modal: lehký overlay, dobu dne poznat z pečeného BG (ne z barvy rámečku) */
+.loot-overlay[data-morning] {
+  background: rgba(8, 5, 4, 0.28);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+.loot-overlay[data-morning][data-phase="morning"] {
+  background: linear-gradient(180deg, rgba(40, 28, 14, 0.16), rgba(12, 8, 6, 0.32));
+}
+.loot-overlay[data-morning][data-phase="noon"] {
+  background: linear-gradient(180deg, rgba(55, 42, 18, 0.12), rgba(18, 12, 8, 0.3));
+}
+.loot-overlay[data-morning][data-phase="afternoon"] {
+  background: linear-gradient(180deg, rgba(28, 18, 12, 0.2), rgba(10, 6, 4, 0.34));
+}
+.loot-overlay[data-morning][data-phase="evening"] {
+  background: linear-gradient(180deg, rgba(48, 22, 12, 0.22), rgba(8, 4, 10, 0.36));
+}
+.loot-overlay[data-morning][data-phase="night"] {
+  background: linear-gradient(180deg, rgba(8, 10, 22, 0.28), rgba(4, 4, 10, 0.4));
+}
+.confirm-sheet .confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  justify-items: stretch;
+}
+.confirm-sheet .confirm-actions .btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+.loot-overlay[data-morning] .morning-body {
+  display: grid;
+  gap: 0.55rem;
+}
+/*
+ * Fáze dne = vrstvy na stejném SVG (ideas/faze-dne-vizual), ne filter:
+ * data-sky=out → nebe + slunce/měsíc; in → světlo místnosti; tavern → okno + světlo.
+ */
+.landing-bg[data-sky] {
+  filter: none;
+}
+.landing-bg[data-sky="out"]::before,
+.landing-bg[data-sky="out"]::after,
+.landing-bg[data-sky="in"]::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+/* nebe jen horní pás — slunce/měsíc nikdy na cestě / zemi */
+.landing-bg[data-sky="out"]::before {
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 38%;
+}
+.landing-bg[data-sky="out"]::after,
+.landing-bg[data-sky="in"]::after {
+  z-index: 2;
+  inset: 0;
+}
+
+/* venku: slunce/měsíc jen v pásu nebe (souřadnice = % pásu) */
+.landing-bg[data-sky="out"][data-phase="morning"]::before {
+  background:
+    radial-gradient(circle at 82% 35%, rgba(255, 232, 170, 0.95) 0 7%, transparent 22%),
+    linear-gradient(180deg, rgba(170, 205, 240, 0.5) 0%, rgba(255, 210, 160, 0.22) 70%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="noon"]::before {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 250, 210, 1) 0 9%, transparent 28%),
+    linear-gradient(180deg, rgba(120, 175, 235, 0.42) 0%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="afternoon"]::before {
+  background:
+    radial-gradient(circle at 18% 48%, rgba(255, 200, 120, 0.9) 0 8%, transparent 24%),
+    linear-gradient(180deg, rgba(110, 140, 180, 0.38) 0%, rgba(200, 150, 100, 0.18) 75%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="evening"]::before {
+  background:
+    radial-gradient(circle at 14% 55%, rgba(255, 140, 60, 0.95) 0 10%, transparent 28%),
+    linear-gradient(180deg, rgba(70, 40, 80, 0.4) 0%, rgba(200, 90, 50, 0.35) 80%, transparent 100%);
+}
+.landing-bg[data-sky="out"][data-phase="night"]::before {
+  background:
+    radial-gradient(circle at 78% 32%, rgba(230, 235, 255, 0.9) 0 4%, transparent 12%),
+    radial-gradient(circle at 22% 40%, rgba(255, 255, 255, 0.5) 0 0.9%, transparent 2%),
+    radial-gradient(circle at 40% 22%, rgba(255, 255, 255, 0.4) 0 0.7%, transparent 1.6%),
+    radial-gradient(circle at 90% 55%, rgba(255, 255, 255, 0.45) 0 0.8%, transparent 1.8%),
+    linear-gradient(180deg, rgba(8, 12, 32, 0.7) 0%, rgba(12, 16, 36, 0.2) 100%);
+}
+.landing-bg[data-sky="out"][data-phase="morning"]::after {
+  background: rgba(255, 220, 180, 0.07);
+}
+.landing-bg[data-sky="out"][data-phase="noon"]::after {
+  background: rgba(255, 245, 210, 0.05);
+}
+.landing-bg[data-sky="out"][data-phase="afternoon"]::after {
+  background: rgba(30, 18, 10, 0.18);
+}
+.landing-bg[data-sky="out"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(50, 20, 10, 0.2), rgba(10, 6, 16, 0.38));
+}
+.landing-bg[data-sky="out"][data-phase="night"]::after {
+  background: rgba(4, 6, 18, 0.42);
+}
+
+/* interiér (ne krčma): jen světlo místnosti */
+.landing-bg[data-sky="in"][data-phase="morning"]::after {
+  background: rgba(40, 28, 14, 0.1);
+}
+.landing-bg[data-sky="in"][data-phase="noon"]::after {
+  background: rgba(255, 220, 150, 0.07);
+}
+.landing-bg[data-sky="in"][data-phase="afternoon"]::after {
+  background: rgba(18, 10, 6, 0.18);
+}
+.landing-bg[data-sky="in"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(50, 22, 10, 0.22), rgba(16, 8, 6, 0.36));
+}
+.landing-bg[data-sky="in"][data-phase="night"]::after {
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 150, 50, 0.1), rgba(4, 6, 14, 0.5) 72%);
+}
+
+/* pečený render (prolog S1/S2): žádný CSS tón ani nebe — světlo je v obraze */
+.landing-bg[data-sky="bake"] {
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+  background-color: #0a0806;
+  filter: none;
+}
+.landing-bg[data-sky="bake"]::before,
+.landing-bg[data-sky="bake"]::after,
+.landing-bg[data-sky="none"]::before,
+.landing-bg[data-sky="none"]::after {
+  content: none;
+}
+.landing-bg[data-sky="none"] {
+  filter: none;
+  background-image: none;
+}
+
+/* krčma: stejný cover jako ostatní BG (1600×900); ::before = nebe ve okně (přibližně) */
+.landing-bg[data-bg="tavern"],
+.landing-bg[data-sky="tavern"] {
+  background-size: cover;
+  background-position: center;
+}
+.landing-bg[data-bg="tavern"]::before {
+  content: "";
+  position: absolute;
+  /* SVG viewBox 1600×900: okno 300,200 150×190 */
+  left: 18.75%;
+  top: 22.22%;
+  width: 9.375%;
+  height: 21.11%;
+  border-radius: 50% / 42%;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.25);
+}
+.landing-bg[data-bg="tavern"][data-phase="morning"]::before {
+  background: radial-gradient(circle at 70% 28%, #ffe9a8 0 18%, transparent 42%), linear-gradient(180deg, #c8dcf5 0%, #8eb0d8 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="noon"]::before {
+  background: radial-gradient(circle at 72% 30%, #fff6c8 0 22%, transparent 48%), linear-gradient(180deg, #9ec4f0 0%, #6a9ad4 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="afternoon"]::before {
+  background: radial-gradient(circle at 68% 32%, #ffd089 0 16%, transparent 40%), linear-gradient(180deg, #8aa4c8 0%, #5a7298 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="evening"]::before {
+  background: radial-gradient(circle at 65% 40%, #ffb060 0 20%, transparent 45%), linear-gradient(180deg, #c07048 0%, #3a2a58 100%);
+}
+.landing-bg[data-bg="tavern"][data-phase="night"]::before {
+  background: radial-gradient(circle at 70% 28%, #f0e8c0 0 12%, transparent 28%), linear-gradient(180deg, #1a2240 0%, #0c1020 100%);
+}
+.landing-bg[data-bg="tavern"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.landing-bg[data-bg="tavern"][data-phase="morning"]::after {
+  background: rgba(40, 28, 14, 0.08);
+}
+.landing-bg[data-bg="tavern"][data-phase="noon"]::after {
+  background: rgba(255, 220, 140, 0.06);
+}
+.landing-bg[data-bg="tavern"][data-phase="afternoon"]::after {
+  background: rgba(18, 10, 6, 0.16);
+}
+.landing-bg[data-bg="tavern"][data-phase="evening"]::after {
+  background: linear-gradient(180deg, rgba(60, 24, 10, 0.22), rgba(20, 10, 6, 0.35));
+}
+.landing-bg[data-bg="tavern"][data-phase="night"]::after {
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 140, 40, 0.12), rgba(4, 6, 14, 0.55) 70%);
+}
+.loot-overlay[data-morning] .morning-body .prose-beat strong {
+  color: var(--accent);
+  font-weight: 600;
+  font-style: normal;
+}
+.loot-overlay[data-morning] .morning-demo-note {
+  margin: 0;
+  text-align: left;
+  text-wrap: pretty;
+  font-size: 0.85rem;
+}
+.loot-overlay[data-morning] .morning-cta {
+  display: block;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  text-align: center;
+}
+/* desktop: Postava je širší, staty vpravo stojí vedle sekcí; prolog zůstává úzký (čte se) */
+@media (min-width: 880px) {
+  .landing-frame.narrow.origin-frame { max-width: min(46rem, 100%); }
+  .origin-scroll { flex-direction: row; align-items: flex-start; gap: var(--stack); }
+  .origin-cols { flex: 1 1 auto; min-width: 0; }
+  .origin-scroll > .stats-preview { flex: 0 0 13rem; position: sticky; top: 0; z-index: 5; }
+}
+.origin-cols { display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* náběh textu i voleb po slovech (revealText); reduced-motion vypne */
+.w { opacity: 0; animation: word-in 0.32s ease forwards; animation-delay: var(--d, 0ms); }
+@keyframes word-in { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .w { opacity: 1; animation: none; }
+}
+/* Prolog: each choice stays in layout; fades in one-by-one after prose (then word reveal). */
+[data-screen="origins"] .prolog-frame #origins-box .choice.btn-action {
+  transition: opacity var(--prolog-chrome-ms, 0.36s) var(--prolog-chrome-ease, ease);
+}
+[data-screen="origins"] .prolog-frame #origins-box .choice.btn-action.is-awaiting-reveal {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-screen="origins"] .prolog-frame #origins-box .choice.btn-action {
+    transition: none;
+  }
+}
+.dev-group { margin: 0.25rem 0 0; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* hover žlutého (primary) tlačítka: zůstává plné a jen zesvětlí, text tmavý; tmavé (secondary) se jen přibarví */
+@media (hover: hover) {
+  button.btn-primary:hover:not(:disabled):not(.locked):not(.stat-icon),
+  .btn.btn-primary:hover:not(:disabled):not(.locked):not(.stat-icon),
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) {
+    background: #e8c57a;
+    border-color: #e8c57a;
+    color: var(--accent-text);
+  }
+  button.btn-primary:hover:not(:disabled) strong,
+  button.btn-primary:hover:not(:disabled) .hl,
+  button.btn-primary:hover:not(:disabled) .btn-hint,
+  button.btn-primary:hover:not(:disabled) .choice-letter,
+  .dock-city .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint),
+  .dock-combat .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint),
+  .action-sticky .btn-action.btn-story.btn-primary:hover:not(:disabled) :is(strong, .hl, .btn-hint) {
+    color: var(--accent-text);
+  }
+}
+/* Stav systémů: rozbalí lištu na celou výšku okna */
+.proto-bar:has(.dev-sec[data-sec="stav"][open]) { max-height: 92dvh; }
+.dev-status { max-height: none; }
+.origin-reply { margin: 0.25rem 0 0.5rem; font-style: italic; color: var(--muted); }
+
+.dev-checks { gap: 0.15rem 0.7rem; margin-top: 0.1rem; }
+[data-knob-mode][hidden] { display: none !important; }
+
+/* Prolog: soft melt plate under action box (see intent/ui.md). Desktop bottom bar;
+   portrait / short landscape: bake behind text + same melt (no solid panel). */
+/* 16:9 stage centered: scene + peek + action box inside; equal black bars outside.
+   Width/height are explicit (no aspect-ratio) so peek can ease bars in/out with SCENE_FADE_MS. */
+@property --letterbox-edge {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 6%;
+}
+[data-screen="origins"] {
+  /* Soft vignette in letterbox / unsafe bands — no hard cut to a flat slab. */
+  background:
+    radial-gradient(ellipse 92% 78% at 50% 42%, #16100c 0%, var(--scene-void) 58%, #050403 100%);
+  overflow: hidden;
+  display: grid;
+  grid-template: 1fr / minmax(0, 1fr);
+  justify-items: center;
+  align-items: stretch;
+  --scene-fade-ms: 420ms;
+  --scene-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --letterbox-edge: 6%;
+  /*
+   * Prolog spacing hierarchy (desktop = phone; phone only raises --prolog-edge):
+   *   --prolog-near    = related (‹›/▴▾ ↔ content, ▾ ↔ progress, choice↔choice)
+   *   --prolog-section = separate bands (text ↔ choices)
+   * Cross: same near to content on all four sides:
+   *   [near][hit][near][content][near][hit][near]
+   *   [near][rail ▴][near][content…][near][rail ▾][near][progress][edge]
+   * Side gutter always reserved (even when ‹› hidden) so content width does not jump.
+   */
+  --prolog-near: var(--space-2);
+  --prolog-section: var(--space-4);
+  --prolog-air: var(--prolog-near); /* alias — chevron/hit gutters */
+  --prolog-rail: 1.35rem;
+  --prolog-side-hit: 2.1rem;
+  --prolog-progress-h: 0.25rem; /* .progress-seg is 3px */
+  /*
+   * Soft feather: MASK with a high floor (never fully transparent).
+   * Transparent mask over melt looked like fade-to-black; wash paint made it worse.
+   * Floor keeps glyphs readable while hinting more content — melt stays behind.
+   */
+  /* Soft edge: longer feather + gentler mid stops; floor 0 = content melts to transparent (a non-zero floor read as a hard edge). */
+  --prolog-scroll-fade: min(2.85rem, calc(var(--prolog-section) * 1.35 + var(--prolog-near)), 14%);
+  --prolog-scroll-fade-floor: 0;
+  --prolog-chrome-ease: var(--scene-fade-ease);
+  --prolog-chrome-ms: 0.36s;
+  --prolog-edge: var(--space-3);
+  --prolog-frame-x: var(--space-3);
+  --prolog-card-x: var(--prolog-near); /* alias; padding uses --prolog-side-gutter */
+  /* near · rail · near · content (match ‹› near·hit·near) */
+  --prolog-card-y: calc(var(--prolog-near) * 2 + var(--prolog-rail));
+  --prolog-card-y-bottom: 0px;
+  /* Edge-to-edge shell → lift chrome by the larger of design edge and safe inset. */
+  --prolog-progress-bottom: max(var(--prolog-edge), var(--safe-b));
+  --prolog-scroll-bottom: calc(
+    var(--prolog-progress-bottom) + var(--prolog-progress-h) + var(--prolog-near)
+  );
+  /* near between content and ▾ — same air as ‹› */
+  --prolog-progress-reserve: calc(
+    var(--prolog-scroll-bottom) + var(--prolog-rail) + var(--prolog-near)
+  );
+  --prolog-side-gutter: calc(var(--prolog-near) * 2 + var(--prolog-side-hit));
+  --prolog-chrome: var(--prolog-near);
+  /* Desktop pane ▴▾: rail + near outside clip */
+  --prolog-pane-edge-out: calc(var(--prolog-near) + var(--prolog-rail));
+  /* Peek: tight to top-right (safe only + small inset — not progress-bottom). */
+  --prolog-peek-size: 2.1rem;
+  --prolog-peek-inset: var(--prolog-near);
+  --prolog-peek-clear: calc(var(--prolog-peek-inset) + var(--prolog-peek-size) + var(--prolog-near));
+}
+[data-screen="origins"] .origins-stage {
+  position: relative;
+  /* Contain absolute/fixed peek canvas under melt (same stacking context). */
+  transform: translateZ(0);
+  display: flex;
+  flex-direction: column;
+  /* Ultrawide: pillarbox — stage width = 16:9 of shell height. */
+  width: min(100%, calc(var(--shell-h) * 16 / 9));
+  max-width: 100%;
+  height: 100%;
+  min-width: 0;
+  justify-self: center;
+  /* Let the radial soft-edge bleed past the card (peek still clips). */
+  overflow: visible;
+  transition:
+    width var(--scene-fade-ms) var(--scene-fade-ease),
+    height var(--scene-fade-ms) var(--scene-fade-ease),
+    max-height var(--scene-fade-ms) var(--scene-fade-ease);
+}
+/* Cover peek (portrait / short landscape): expand stage to full monitor.
+   Letterbox/pillarbox peek = UI only — stage stays 16:9.
+   is-peek-layout = snap-expand before canvas (no melt hide yet). */
+[data-screen="origins"].is-peek-layout .origins-stage,
+[data-screen="origins"].is-peek.is-peek-cover:not(.is-peek-closing) .origins-stage,
+[data-screen="origins"].is-peek-expanding.is-peek-cover:not(.is-peek-closing) .origins-stage {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+}
+[data-screen="origins"].is-peek-layout .origins-stage {
+  transition: none;
+}
+[data-screen="origins"] .landing-bg {
+  z-index: 0;
+}
+[data-screen="origins"] .landing-frame.prolog-frame {
+  position: relative;
+  z-index: 2;
+  justify-content: flex-end;
+  /* Room for a long soft fade; readable measure stays on .origin-text */
+  max-width: clamp(42rem, 72%, 62rem);
+  width: 100%;
+  padding-top: 0;
+  overflow: visible;
+}
+[data-screen="origins"] .prolog-frame .auth-card {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  /* No backdrop-filter (broke the look); shade is ::before only. */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-width: 0;
+  border-radius: 0;
+  box-shadow: none;
+  /* Always reserve ‹› gutters — width must not jump when side nav appears. */
+  padding: var(--prolog-card-y) var(--prolog-side-gutter) var(--prolog-card-y-bottom);
+}
+/*
+ * Soft melt plate (měkká tavená deska): oversized dark fill + multi-stop feathered
+ * mask + filter blur so the rim melts into the scene; optional ::after = soft core
+ * backdrop-blur. Recipe: docs/intent/ui.md § Soft melt plate. Do not replace with
+ * solid panel / hard box-shadow / full-card backdrop-filter.
+ *
+ * Peek: interpolate --melt-bd-blur / --melt-ui-opacity (do NOT fade .prolog-frame
+ * opacity — that disables backdrop-filter and hard-cuts the blur). Keep in sync with
+ * SCENE_FADE_MS in app.js (~420 ms).
+ */
+@property --melt-bd-blur {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 7px;
+}
+@property --melt-ui-opacity {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+[data-screen="origins"] .prolog-frame {
+  --melt-bd-blur: 7px;
+  --melt-ui-opacity: 1;
+  transition:
+    --melt-bd-blur var(--scene-fade-ms, 420ms) var(--scene-fade-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    --melt-ui-opacity var(--scene-fade-ms, 420ms) var(--scene-fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+[data-screen="origins"] .prolog-frame .auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: rgba(8, 5, 4, 0.66);
+  border-radius: 1.25rem;
+  transform: scale(1.48);
+  transform-origin: center center;
+  filter: blur(20px);
+  opacity: var(--melt-ui-opacity);
+  /* With scale ~1.48, opaque from ~16% still covers the card. */
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 2%,
+      rgba(0, 0, 0, 0.1) 4%,
+      rgba(0, 0, 0, 0.2) 6%,
+      rgba(0, 0, 0, 0.34) 8%,
+      rgba(0, 0, 0, 0.5) 10%,
+      rgba(0, 0, 0, 0.68) 12.5%,
+      rgba(0, 0, 0, 0.86) 15%,
+      #000 17.5%,
+      #000 82.5%,
+      rgba(0, 0, 0, 0.86) 85%,
+      rgba(0, 0, 0, 0.68) 87.5%,
+      rgba(0, 0, 0, 0.5) 90%,
+      rgba(0, 0, 0, 0.34) 92%,
+      rgba(0, 0, 0, 0.2) 94%,
+      rgba(0, 0, 0, 0.1) 96%,
+      rgba(0, 0, 0, 0.04) 98%,
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 2%,
+      rgba(0, 0, 0, 0.1) 4.5%,
+      rgba(0, 0, 0, 0.2) 7%,
+      rgba(0, 0, 0, 0.34) 9%,
+      rgba(0, 0, 0, 0.5) 11%,
+      rgba(0, 0, 0, 0.68) 13.5%,
+      rgba(0, 0, 0, 0.86) 16%,
+      #000 18.5%,
+      #000 81.5%,
+      rgba(0, 0, 0, 0.86) 84%,
+      rgba(0, 0, 0, 0.68) 86.5%,
+      rgba(0, 0, 0, 0.5) 89%,
+      rgba(0, 0, 0, 0.34) 91%,
+      rgba(0, 0, 0, 0.2) 93%,
+      rgba(0, 0, 0, 0.1) 95.5%,
+      rgba(0, 0, 0, 0.04) 98%,
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 2%,
+      rgba(0, 0, 0, 0.1) 4%,
+      rgba(0, 0, 0, 0.2) 6%,
+      rgba(0, 0, 0, 0.34) 8%,
+      rgba(0, 0, 0, 0.5) 10%,
+      rgba(0, 0, 0, 0.68) 12.5%,
+      rgba(0, 0, 0, 0.86) 15%,
+      #000 17.5%,
+      #000 82.5%,
+      rgba(0, 0, 0, 0.86) 85%,
+      rgba(0, 0, 0, 0.68) 87.5%,
+      rgba(0, 0, 0, 0.5) 90%,
+      rgba(0, 0, 0, 0.34) 92%,
+      rgba(0, 0, 0, 0.2) 94%,
+      rgba(0, 0, 0, 0.1) 96%,
+      rgba(0, 0, 0, 0.04) 98%,
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 2%,
+      rgba(0, 0, 0, 0.1) 4.5%,
+      rgba(0, 0, 0, 0.2) 7%,
+      rgba(0, 0, 0, 0.34) 9%,
+      rgba(0, 0, 0, 0.5) 11%,
+      rgba(0, 0, 0, 0.68) 13.5%,
+      rgba(0, 0, 0, 0.86) 16%,
+      #000 18.5%,
+      #000 81.5%,
+      rgba(0, 0, 0, 0.86) 84%,
+      rgba(0, 0, 0, 0.68) 86.5%,
+      rgba(0, 0, 0, 0.5) 89%,
+      rgba(0, 0, 0, 0.34) 91%,
+      rgba(0, 0, 0, 0.2) 93%,
+      rgba(0, 0, 0, 0.1) 95.5%,
+      rgba(0, 0, 0, 0.04) 98%,
+      transparent 100%
+    );
+  mask-composite: intersect;
+}
+/* Small blur only under the reading core (soft mask — no hard glass rim). */
+[data-screen="origins"] .prolog-frame .auth-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 1rem;
+  opacity: var(--melt-ui-opacity);
+  backdrop-filter: blur(var(--melt-bd-blur));
+  -webkit-backdrop-filter: blur(var(--melt-bd-blur));
+  -webkit-mask-image: radial-gradient(
+    ellipse 72% 68% at 50% 48%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 62%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    ellipse 72% 68% at 50% 48%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 62%,
+    transparent 78%
+  );
+}
+/*
+ * Edge chevrons: same glyph for step ‹› and scroll ▴▾ (accent ▾ + rotate).
+ * Hit area stays; glyph shows on hover (touch = always faint).
+ */
+[data-screen="origins"] .prolog-frame .edge-chevron {
+  display: block;
+  font-size: 1rem;
+  line-height: 1;
+  width: 1rem;
+  height: 1rem;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(8, 5, 4, 0.45);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  transform: translateY(-50%);
+  /* Invisible hit square; chevron only on hover / touch. */
+  width: 2.25rem;
+  height: 3rem;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent);
+  cursor: pointer;
+  /* Fade with melt (peek); hit area stays layout-stable. */
+  opacity: var(--melt-ui-opacity);
+}
+/* Hitbox = whole button; hover strengthens glyph (no border/bg chrome on the box). */
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:hover:not(:disabled),
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:focus-visible:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav .edge-chevron {
+  opacity: 0;
+  transition: opacity var(--prolog-chrome-ms, 0.36s) var(--prolog-chrome-ease, ease);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:not(:disabled) .edge-chevron {
+  opacity: 0.55;
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:hover:not(:disabled) .edge-chevron,
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:focus-visible:not(:disabled) .edge-chevron {
+  opacity: 0.92;
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:disabled {
+  pointer-events: none;
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:disabled .edge-chevron {
+  opacity: 0;
+}
+/* Side ‹› — same cross on desktop and phone: near · hit · near · content. */
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav.prev {
+  left: var(--prolog-near);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav.next {
+  right: var(--prolog-near);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav.prev .edge-chevron {
+  transform: rotate(90deg);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav.next .edge-chevron {
+  transform: rotate(-90deg);
+}
+/*
+ * Phone: same cross; only raise progress off the bezel + drop frame-x
+ * (gutter owns sides — no frame+card double pad).
+ * Card ▴▾ top/bottom live ONLY here (desktop uses per-pane edges).
+ */
+@media (max-aspect-ratio: 1/1), (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"] {
+    --prolog-edge: var(--space-5);
+    /* Edge-to-edge shell: home indicator / notch lift chrome. */
+    --prolog-progress-bottom: max(var(--prolog-edge), var(--safe-b));
+    --prolog-scroll-bottom: calc(
+      var(--prolog-progress-bottom) + var(--prolog-progress-h) + var(--prolog-near)
+    );
+    --prolog-progress-reserve: calc(
+      var(--prolog-scroll-bottom) + var(--prolog-rail) + var(--prolog-near)
+    );
+    --prolog-frame-x: 0px;
+  }
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge {
+    width: var(--prolog-side-hit);
+    height: var(--prolog-rail);
+  }
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge.top {
+    top: var(--prolog-near);
+  }
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge.bottom {
+    bottom: var(--prolog-scroll-bottom);
+  }
+  /* Keep content against the chrome rails (centering broke ▴▾ distances). */
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow-scroll {
+    margin-block: 0;
+  }
+  /*
+   * One-scroll: soft floor-mask on .origin-flow (underlay/melt behind — no dark wash).
+   */
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow {
+    isolation: isolate;
+    position: relative;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow::before,
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow::after {
+    content: none;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow {
+    --prolog-fade-mask: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) calc(var(--pf-t) * 0),
+      rgba(0, 0, 0, 0.06) calc(var(--pf-t) * 0.15),
+      rgba(0, 0, 0, 0.2) calc(var(--pf-t) * 0.3),
+      rgba(0, 0, 0, 0.45) calc(var(--pf-t) * 0.48),
+      rgba(0, 0, 0, 0.72) calc(var(--pf-t) * 0.66),
+      rgba(0, 0, 0, 0.9) calc(var(--pf-t) * 0.84),
+      #000 var(--pf-t),
+      #000 calc(100% - var(--pf-b)),
+      rgba(0, 0, 0, 0.9) calc(100% - var(--pf-b) * 0.84),
+      rgba(0, 0, 0, 0.72) calc(100% - var(--pf-b) * 0.66),
+      rgba(0, 0, 0, 0.45) calc(100% - var(--pf-b) * 0.48),
+      rgba(0, 0, 0, 0.2) calc(100% - var(--pf-b) * 0.3),
+      rgba(0, 0, 0, 0.06) calc(100% - var(--pf-b) * 0.15),
+      rgba(0, 0, 0, 0) 100%
+    );
+    -webkit-mask-image: var(--prolog-fade-mask);
+    mask-image: var(--prolog-fade-mask);
+    transition: --pf-t 0.32s ease, --pf-b 0.32s ease;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow:has(> .origin-flow-scroll.fade-top) { --pf-t: var(--prolog-scroll-fade); }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow:has(> .origin-flow-scroll.fade-bottom) { --pf-b: var(--prolog-scroll-fade); }
+}
+@media (hover: none) {
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:not(:disabled) .edge-chevron {
+    opacity: 0.62;
+  }
+}
+/* Scroll ▴▾ on card edge (same family as side nav — outside text/choices). */
+[data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge {
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  width: 2.6rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: var(--accent);
+  background: none;
+  opacity: 0;
+  transition: opacity var(--prolog-chrome-ms, 0.36s) var(--prolog-chrome-ease, ease);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge.is-on {
+  opacity: calc(0.72 * var(--melt-ui-opacity, 1));
+}
+/* top/bottom: phone MQ only (unqualified values here used to clobber the formula). */
+[data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge.top .edge-chevron {
+  transform: rotate(180deg);
+}
+/* Desktop: card-level ▴▾ off — each column has its own pair outside content. */
+@media (min-aspect-ratio: 1/1) and (min-height: 521px) {
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge {
+    display: none;
+  }
+}
+/* One-scroll layouts: pane edges unused (card pair drives hints). */
+@media (max-aspect-ratio: 1/1), (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"] .prolog-frame #origins-box .pane-edge {
+    display: none;
+  }
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--prolog-rail);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity var(--prolog-chrome-ms, 0.36s) var(--prolog-chrome-ease, ease);
+  color: var(--accent);
+  background: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge.is-on {
+  opacity: calc(0.72 * var(--melt-ui-opacity, 1));
+}
+/* Outside pane by air+rail — same visual air to content as mobile card ▴▾. */
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge.top {
+  top: calc(-1 * var(--prolog-pane-edge-out));
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge.bottom {
+  bottom: calc(-1 * var(--prolog-pane-edge-out));
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge.top .edge-chevron {
+  transform: rotate(180deg);
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane {
+  overflow: visible;
+}
+/* Progress wrap = overlay at bottom (no header row / empty gap). */
+[data-screen="origins"] .prolog-frame .auth-card > .origin-progress {
+  position: absolute;
+  left: 50%;
+  bottom: var(--prolog-progress-bottom);
+  z-index: 3;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: var(--melt-ui-opacity);
+}
+[data-screen="origins"] .prolog-frame .auth-card > .origin-progress .progress-track {
+  width: min(7.5rem, 40vw);
+  margin: 0 auto;
+}
+@property --origins-exchange-opacity {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+[data-screen="origins"] .prolog-frame #origins-box {
+  position: relative;
+  --origins-exchange-opacity: 1;
+  /* melt × step crossfade (peek / krok) */
+  opacity: calc(var(--melt-ui-opacity) * var(--origins-exchange-opacity));
+  transition: --origins-exchange-opacity var(--prolog-chrome-ms, 0.36s) var(--prolog-chrome-ease, ease);
+  height: min(17rem, 34dvh);
+  min-height: 11.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "main choices";
+  column-gap: var(--stack);
+  row-gap: 0;
+  align-items: stretch;
+  /* room for bottom progress + scroll-edge */
+  padding-bottom: var(--prolog-progress-reserve);
+  box-sizing: border-box;
+  /*
+   * visible: desktop pane ▴ sits above the pane (negative top) inside card-y.
+   * hidden clipped that chevron away. Scrollers themselves clip content.
+   */
+  overflow: visible;
+}
+[data-screen="origins"] .prolog-frame #origins-box.is-exchanging {
+  --origins-exchange-opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-screen="origins"] .prolog-frame #origins-box {
+    transition: none;
+  }
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge,
+  [data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane > .pane-edge,
+  [data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav .edge-chevron {
+    transition: none;
+  }
+}
+/* Desktop: flow wrappers transparent to grid so main|choices stay two columns. */
+[data-screen="origins"] .prolog-frame #origins-box .origin-flow,
+[data-screen="origins"] .prolog-frame #origins-box .origin-flow-scroll {
+  display: contents;
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prolog-section);
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane.choices-pane {
+  grid-area: choices;
+  justify-self: stretch;
+  align-self: stretch;
+  max-height: 100%;
+}
+/* Clip = non-scrolling mask host (scroller inside). Keeps pane-edge outside overflow. */
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/*
+ * Top-align always (same as phone). margin-block:auto pulled short content
+ * toward the progress band and broke equal air to ▴ / progress.
+ */
+[data-screen="origins"] .prolog-frame #origins-box .origin-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  margin-block: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prolog-section);
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-reply { flex: 0 0 auto; }
+[data-screen="origins"] .prolog-frame #origins-box .choice-stack {
+  flex: 1 1 auto;
+  gap: var(--prolog-near);
+  align-content: flex-start;
+  margin-block: 0;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 100%;
+}
+/*
+ * Desktop scroll-fade: floor-mask on .scroll-fade-clip only.
+ * No dark wash (that read as fade-to-black over the melt). Floor keeps text
+ * from punching through to the bake. Never mask overflow:auto scrollers.
+ */
+[data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll) {
+  scrollbar-width: none;
+  box-sizing: border-box;
+  scroll-padding-top: var(--prolog-near);
+  scroll-padding-bottom: var(--prolog-near);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll).fade-top,
+[data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll).fade-bottom,
+[data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll).fade-top.fade-bottom {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane::before,
+[data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane::after {
+  content: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip::before,
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip::after {
+  content: none;
+}
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+  --prolog-fade-mask: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) calc(var(--pf-t) * 0),
+    rgba(0, 0, 0, 0.06) calc(var(--pf-t) * 0.15),
+    rgba(0, 0, 0, 0.2) calc(var(--pf-t) * 0.3),
+    rgba(0, 0, 0, 0.45) calc(var(--pf-t) * 0.48),
+    rgba(0, 0, 0, 0.72) calc(var(--pf-t) * 0.66),
+    rgba(0, 0, 0, 0.9) calc(var(--pf-t) * 0.84),
+    #000 var(--pf-t),
+    #000 calc(100% - var(--pf-b)),
+    rgba(0, 0, 0, 0.9) calc(100% - var(--pf-b) * 0.84),
+    rgba(0, 0, 0, 0.72) calc(100% - var(--pf-b) * 0.66),
+    rgba(0, 0, 0, 0.45) calc(100% - var(--pf-b) * 0.48),
+    rgba(0, 0, 0, 0.2) calc(100% - var(--pf-b) * 0.3),
+    rgba(0, 0, 0, 0.06) calc(100% - var(--pf-b) * 0.15),
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-image: var(--prolog-fade-mask);
+  mask-image: var(--prolog-fade-mask);
+  transition: --pf-t 0.32s ease, --pf-b 0.32s ease;
+}
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip:has(> .origin-body.fade-top),
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip:has(> .choice-stack.fade-top) { --pf-t: var(--prolog-scroll-fade); }
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip:has(> .origin-body.fade-bottom),
+[data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip:has(> .choice-stack.fade-bottom) { --pf-b: var(--prolog-scroll-fade); }
+/* Phone one-scroll: clip unused; mask is on .origin-flow above. */
+@media (max-aspect-ratio: 1/1), (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+}
+[data-screen="origins"] .prolog-frame #origins-box .skip-link { grid-column: 1 / -1; }
+/* Dev: hitboxes (Ladení → Ohraničení UI). Only outline what is really on screen. */
+html.debug-hitboxes [data-screen="origins"] .prolog-frame .auth-card {
+  outline: 1px dashed rgba(120, 200, 255, 0.7);
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame #origins-box {
+  outline: 1px dashed rgba(255, 200, 80, 0.75);
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:not([hidden]) {
+  outline: 1px dashed rgba(255, 80, 200, 0.9);
+  background: rgba(255, 80, 200, 0.12);
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame .auth-card > .origin-side-nav:not([hidden]) .edge-chevron {
+  opacity: 0.9;
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame .auth-card > .origin-scroll-edge.is-on,
+html.debug-hitboxes [data-screen="origins"] .prolog-frame #origins-box .pane-edge.is-on {
+  outline: 1px dashed rgba(80, 255, 160, 0.9);
+  background: rgba(80, 255, 160, 0.1);
+  opacity: 1;
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame .auth-card > .origin-progress {
+  outline: 1px dashed rgba(180, 160, 255, 0.85);
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame #origins-box :is(.origin-body, .choice-stack, .origin-flow-scroll) {
+  outline: 1px dashed rgba(255, 140, 80, 0.65);
+}
+html.debug-hitboxes [data-screen="origins"] .prolog-frame #origins-box .choice.btn-action {
+  outline: 1px dashed rgba(255, 100, 140, 0.85);
+  background: rgba(255, 100, 140, 0.08);
+}
+html.debug-hitboxes [data-screen="origins"] .peek-btn {
+  outline: 2px dashed rgba(255, 220, 60, 0.95);
+  background: rgba(255, 220, 60, 0.15);
+}
+html.debug-hitboxes [data-screen="origins"] .landing-bg {
+  outline: 1px dashed rgba(100, 180, 255, 0.55);
+}
+html.debug-hitboxes .proto-bar {
+  outline: 2px dashed rgba(120, 255, 200, 0.95);
+}
+html.debug-hitboxes .proto-bar .dev-drag {
+  outline: 1px solid rgba(255, 120, 180, 0.9);
+  background: rgba(255, 120, 180, 0.18);
+}
+html.debug-hitboxes .proto-bar :is(button.dev-btn, select, summary, label.dev-chk, label.dev-opacity) {
+  outline: 1px dashed rgba(255, 170, 90, 0.9);
+}
+html.debug-hitboxes .proto-bar input[type="range"] {
+  outline: 1px dashed rgba(255, 170, 90, 0.9);
+}
+/* Peek = melted action UI gone — drop its outlines; keep eye / bake / bar. */
+html.debug-hitboxes [data-screen="origins"]:is(.is-peek, .is-peek-expanding):not(.is-peek-closing) .prolog-frame :is(
+  .auth-card,
+  #origins-box,
+  .origin-side-nav,
+  .origin-scroll-edge,
+  .pane-edge,
+  .origin-progress,
+  .origin-body,
+  .choice-stack,
+  .origin-flow-scroll,
+  .choice.btn-action
+) {
+  outline: none !important;
+  background: transparent !important;
+}
+/* Chrome: ← → a bit clear of the label (not glued to “Prolog”) */
+[data-screen="origins"] .prolog-frame .origin-chrome .screen-chrome { margin: 0; flex: 0 0 auto; }
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-nav {
+  grid-template-columns: auto max-content auto;
+  gap: 0.95rem;
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-arrow,
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-arrow-spacer {
+  min-width: 2.1rem;
+  min-height: 2.1rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.05rem;
+  border-radius: 999px;
+}
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: rgba(18, 12, 10, 0.72);
+  color: var(--fg);
+  box-shadow: none;
+  transition:
+    background var(--hover-ms, 0.28s) ease,
+    color var(--hover-ms, 0.28s) ease,
+    opacity var(--hover-ms, 0.28s) ease;
+}
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-arrow:hover:not(:disabled) {
+  background: rgba(18, 12, 10, 0.88);
+  color: var(--accent);
+}
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-arrow:disabled {
+  opacity: 0.35;
+}
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-center { gap: 0.15rem; }
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-label { font-size: 0.62rem; letter-spacing: 0.14em; }
+[data-screen="origins"] .prolog-frame .origin-chrome .progress-track { width: min(100%, 7.5rem); }
+/* Bake fills the 16:9 stage (cover ≈ exact fit); no tiling into outer bars. */
+[data-screen="origins"] .landing-bg[data-sky="bake"] {
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+  background-color: var(--scene-void);
+}
+/*
+ * Taller than 16:9 (4:3, …): letterbox the *stage* to 16:9 (mirror ultrawide
+ * pillarbox). Bake cover-fills the stage = image edge is mid-screen; soft mask
+ * fades image→bars there. Peek / choices / eye live inside the stage, not in bars.
+ * Portrait and short landscape override below.
+ */
+@media (max-aspect-ratio: 16/9) and (min-aspect-ratio: 1/1) and (min-height: 521px) {
+  [data-screen="origins"] {
+    align-items: center;
+    /* Inherit soft vignette from base — do not flatten to a hard slab. */
+    /* Lift chrome off the letterbox seam (progress/card were kissing the bar). */
+    --prolog-edge: var(--space-3);
+    --prolog-progress-bottom: max(var(--prolog-edge), var(--safe-b));
+    --prolog-scroll-bottom: calc(
+      var(--prolog-progress-bottom) + var(--prolog-progress-h) + var(--prolog-near)
+    );
+    --prolog-progress-reserve: calc(
+      var(--prolog-scroll-bottom) + var(--prolog-rail) + var(--prolog-near)
+    );
+  }
+  [data-screen="origins"] .origins-stage {
+    width: 100%;
+    max-width: 100%;
+    /* Explicit height (not aspect-ratio) so peek can ease into full shell. */
+    height: min(var(--shell-h), calc(var(--vvw) * 9 / 16));
+    max-height: var(--shell-h);
+    /* Melt may bleed slightly into bars; bake mask handles the hard edge. */
+    overflow: visible;
+  }
+  [data-screen="origins"] .landing-frame.prolog-frame {
+    padding-bottom: var(--space-3);
+  }
+  [data-screen="origins"] .landing-bg,
+  [data-screen="origins"] .landing-bg[data-sky="bake"] {
+    background-size: cover;
+    background-position: center 40%;
+    background-color: transparent;
+    transition: --letterbox-edge var(--scene-fade-ms) var(--scene-fade-ease);
+    /* Soft ramp at stage edge; --letterbox-edge → 0% on peek (no hard mask cut). */
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      #000 var(--letterbox-edge),
+      #000 calc(100% - var(--letterbox-edge)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      #000 var(--letterbox-edge),
+      #000 calc(100% - var(--letterbox-edge)),
+      transparent 100%
+    );
+  }
+  /* Soft edge only drops on cover peek (stage expands); UI-only keeps letterbox fade. */
+  [data-screen="origins"].is-peek.is-peek-cover:not(.is-peek-closing),
+  [data-screen="origins"].is-peek-expanding.is-peek-cover:not(.is-peek-closing) {
+    --letterbox-edge: 0%;
+  }
+  [data-screen="origins"] .landing-bg::after {
+    content: none;
+  }
+}
+[data-screen="origins"] .prolog-frame .origin-text {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--fg);
+  margin: 0;
+  max-width: 42rem; /* čitelný řádek i když box na šířku roste */
+}
+[data-screen="origins"] .prolog-frame .choice.btn-action {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.84rem;
+  line-height: 1.3;
+}
+/* Portrait: bake in upper half → soft fade into lower text; melt plate on the card. */
+@media (max-aspect-ratio: 1/1) {
+  [data-screen="origins"] .origins-stage {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  [data-screen="origins"] .landing-bg,
+  [data-screen="origins"] .landing-bg[data-sky="bake"] {
+    bottom: auto;
+    /* % of full shell (edge-to-edge incl. notch) — immersive bake into unsafe top */
+    height: calc(var(--shell-h) * 0.46);
+    background-size: cover;
+    background-position: 38% center;
+    background-color: var(--scene-void);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-screen="origins"] .landing-bg::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 42%;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(8, 5, 4, 0.25) 35%,
+      rgba(8, 5, 4, 0.7) 70%,
+      #0a0806 100%
+    );
+  }
+  [data-screen="origins"] .landing-frame.prolog-frame {
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    /* Bake full-bleed; side safe only — top notch stays in the image. */
+    padding: 0 max(var(--prolog-frame-x), var(--safe-r)) 0 max(var(--prolog-frame-x), var(--safe-l));
+    box-sizing: border-box;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+  [data-screen="origins"] .prolog-frame .auth-card {
+    /* Soft melt plate over the dark lower band — no solid --bg panel. */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    /* Card height includes padding; box fills remainder (no shell-h + pad overflow). */
+    height: calc(var(--shell-h) * 0.56);
+    max-height: calc(var(--shell-h) * 0.56);
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /* Shell is edge-to-edge; progress-reserve already includes max(edge, safe-b). */
+    padding: var(--prolog-card-y) var(--prolog-side-gutter) var(--prolog-card-y-bottom);
+    overflow: visible;
+  }
+  [data-screen="origins"] .prolog-frame .auth-card::before {
+    /* Tighter upward bleed so melt does not swallow top chrome (eye / safe). */
+    transform: scale(1.22, 1.28);
+    transform-origin: center 70%;
+    filter: blur(14px);
+  }
+  [data-screen="origins"] .landing-bg::after {
+    /* Shorter bake→text feather (was 42% of bake ≈ full-height melt feel). */
+    height: 28%;
+  }
+  /*
+   * Reading underlay for the action box (overlay scroll-fades paint on top —
+   * no mask punch-through catch needed).
+   */
+  [data-screen="origins"] .prolog-frame #origins-box {
+    background: rgba(8, 5, 4, 0.78);
+    /* flex-basis 0: height from card, not from content (else no scroll) */
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    height: auto;
+    padding-bottom: var(--prolog-progress-reserve);
+  }
+  [data-screen="origins"] .prolog-frame #origins-box::after {
+    content: none;
+  }
+  /* Wrapper; scroller centers when short, top when overflowing. */
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow-scroll {
+    display: flex;
+    flex-direction: column;
+    /* basis 0: height from flow, not content — else bottom choices clip with no scroll */
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
+    /* top-align: margin auto would break equal ▴▾ air to content */
+    margin-block: 0;
+    gap: var(--prolog-section); /* text band ↔ choices band */
+    /* pad ignored by scrollContentNeedsOverflow; last choice clears bottom fade/chrome */
+    padding-bottom: var(--prolog-near);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-main {
+    flex: 0 0 auto;
+    min-height: 0;
+    gap: var(--prolog-section);
+    margin-bottom: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane.choices-pane {
+    grid-area: auto;
+  }
+  /* One-scroll: mask lives on .origin-flow; clips just wrap content height. */
+  [data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-body {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: 0;
+    margin-block: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .choice-stack {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: 0;
+    gap: var(--prolog-near);
+    margin-block: 0;
+  }
+}
+/* Phone landscape: bake left → soft fade under text; melt plate on the column. */
+@media (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  [data-screen="origins"] {
+    /*
+     * Narrow column: full desktop side-gutter (near·hit·near ×2) ate the text.
+     * Keep the same cross to ‹› (near·hit·near) but one shared gutter budget;
+     * melt side uses near only so content can breathe.
+     */
+    --prolog-side-hit: 1.75rem;
+    --prolog-side-gutter: calc(var(--prolog-near) * 2 + var(--prolog-side-hit));
+  }
+  [data-screen="origins"] .origins-stage {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    max-height: none;
+    min-height: 0;
+    /* Visible so left melt can bleed over the bake (hidden = hardcut). */
+    overflow: visible;
+  }
+  /*
+   * Fit height (auto 100%), not cover — wide phone crops top/bottom with cover
+   * and looks over-zoomed. Scene sits left; right fades to text.
+   * Fill full shell (incl. landscape notch / home) — parent clips overflow.
+   */
+  [data-screen="origins"] .landing-bg,
+  [data-screen="origins"] .landing-bg[data-sky="bake"] {
+    right: 0;
+    background-size: auto 100%;
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-color: var(--scene-void);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /*
+   * Scene left → soft dark under text → dissolve again toward the right bezel
+   * (mirror the left melt rim — no solid black slab).
+   */
+  [data-screen="origins"] .landing-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(8, 5, 4, 0.16) 42%,
+      rgba(8, 5, 4, 0.42) 55%,
+      rgba(8, 5, 4, 0.55) 68%,
+      rgba(8, 5, 4, 0.28) 88%,
+      transparent 100%
+    );
+  }
+  [data-screen="origins"] .landing-frame.prolog-frame {
+    max-width: 100%;
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    /* Safe only — card owns ‹› gutters (avoid double pad → empty right band). */
+    padding: 0 max(0px, var(--safe-r)) 0 max(0px, var(--safe-l));
+    box-sizing: border-box;
+    justify-content: flex-start;
+    /* Let melt shade bleed left into the scene (hidden clipped to a hard edge). */
+    overflow: visible;
+  }
+  [data-screen="origins"] {
+    --prolog-landscape-card-w: min(60%, 36rem);
+  }
+  [data-screen="origins"] .prolog-frame .auth-card {
+    position: relative;
+    isolation: isolate;
+    /* Wider text column; scene still reads on the left (~40%). */
+    width: var(--prolog-landscape-card-w);
+    max-width: 100%;
+    margin-left: auto;
+    border-width: 0;
+    border-radius: 0;
+    /* Soft melt plate over the dark right band — no solid --bg panel. */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    /* Full shell column; padding inside — box must not also be shell-h tall. */
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /*
+     * Top clears the top-right eye; L/R stay equal near·hit·near (peek-clear on
+     * the end pad made a huge right gap beside ›). Eye sits in the top pad.
+     */
+    padding:
+      max(var(--prolog-card-y), calc(var(--safe-t) + var(--prolog-peek-clear)))
+      var(--prolog-side-gutter)
+      var(--prolog-card-y-bottom)
+      var(--prolog-side-gutter);
+    overflow: visible; /* melt bleed; scroll is on #origins-box / .origin-flow */
+  }
+  /*
+   * Melt: soft into bake on the left AND into the bezel/scene on the right
+   * (same long feather both sides — origin slightly left so scene still reads).
+   */
+  [data-screen="origins"] .prolog-frame .auth-card::before {
+    transform: scale(1.85, 1.28);
+    transform-origin: 62% center;
+    filter: blur(18px);
+    -webkit-mask-image:
+      linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, 0.04) 3%,
+        rgba(0, 0, 0, 0.12) 6%,
+        rgba(0, 0, 0, 0.28) 9%,
+        rgba(0, 0, 0, 0.5) 12%,
+        rgba(0, 0, 0, 0.72) 15%,
+        rgba(0, 0, 0, 0.9) 18%,
+        #000 22%,
+        #000 72%,
+        rgba(0, 0, 0, 0.9) 78%,
+        rgba(0, 0, 0, 0.72) 83%,
+        rgba(0, 0, 0, 0.5) 87%,
+        rgba(0, 0, 0, 0.28) 91%,
+        rgba(0, 0, 0, 0.12) 95%,
+        rgba(0, 0, 0, 0.04) 98%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(0, 0, 0, 0.04) 2%,
+        rgba(0, 0, 0, 0.1) 4.5%,
+        rgba(0, 0, 0, 0.2) 7%,
+        rgba(0, 0, 0, 0.34) 9%,
+        rgba(0, 0, 0, 0.5) 11%,
+        rgba(0, 0, 0, 0.68) 13.5%,
+        rgba(0, 0, 0, 0.86) 16%,
+        #000 18.5%,
+        #000 81.5%,
+        rgba(0, 0, 0, 0.86) 84%,
+        rgba(0, 0, 0, 0.68) 86.5%,
+        rgba(0, 0, 0, 0.5) 89%,
+        rgba(0, 0, 0, 0.34) 91%,
+        rgba(0, 0, 0, 0.2) 93%,
+        rgba(0, 0, 0, 0.1) 95.5%,
+        rgba(0, 0, 0, 0.04) 98%,
+        transparent 100%
+      );
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, 0.04) 3%,
+        rgba(0, 0, 0, 0.12) 6%,
+        rgba(0, 0, 0, 0.28) 9%,
+        rgba(0, 0, 0, 0.5) 12%,
+        rgba(0, 0, 0, 0.72) 15%,
+        rgba(0, 0, 0, 0.9) 18%,
+        #000 22%,
+        #000 72%,
+        rgba(0, 0, 0, 0.9) 78%,
+        rgba(0, 0, 0, 0.72) 83%,
+        rgba(0, 0, 0, 0.5) 87%,
+        rgba(0, 0, 0, 0.28) 91%,
+        rgba(0, 0, 0, 0.12) 95%,
+        rgba(0, 0, 0, 0.04) 98%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(0, 0, 0, 0.04) 2%,
+        rgba(0, 0, 0, 0.1) 4.5%,
+        rgba(0, 0, 0, 0.2) 7%,
+        rgba(0, 0, 0, 0.34) 9%,
+        rgba(0, 0, 0, 0.5) 11%,
+        rgba(0, 0, 0, 0.68) 13.5%,
+        rgba(0, 0, 0, 0.86) 16%,
+        #000 18.5%,
+        #000 81.5%,
+        rgba(0, 0, 0, 0.86) 84%,
+        rgba(0, 0, 0, 0.68) 86.5%,
+        rgba(0, 0, 0, 0.5) 89%,
+        rgba(0, 0, 0, 0.34) 91%,
+        rgba(0, 0, 0, 0.2) 93%,
+        rgba(0, 0, 0, 0.1) 95.5%,
+        rgba(0, 0, 0, 0.04) 98%,
+        transparent 100%
+      );
+    mask-composite: intersect;
+  }
+  [data-screen="origins"] .prolog-frame .auth-card::after {
+    -webkit-mask-image: radial-gradient(
+      ellipse 78% 68% at 55% 48%,
+      #000 0%,
+      #000 38%,
+      rgba(0, 0, 0, 0.55) 58%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      ellipse 78% 68% at 55% 48%,
+      #000 0%,
+      #000 38%,
+      rgba(0, 0, 0, 0.55) 58%,
+      transparent 78%
+    );
+  }
+  [data-screen="origins"] .prolog-frame #origins-box {
+    /* No solid fill — hard-cuts the left melt. Soft catch ::before instead. */
+    background: transparent;
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    height: auto;
+    padding-bottom: var(--prolog-progress-reserve);
+  }
+  /* Portrait top band must not leak into landscape. */
+  [data-screen="origins"] .prolog-frame #origins-box::after {
+    content: none;
+  }
+  /*
+   * Catch OUTSIDE scroll-mask (one layer — not cutting text). Soft into bake on
+   * the left and into the bezel on the right (same idea as melt rim).
+   */
+  [data-screen="origins"] .prolog-frame #origins-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(8, 5, 4, 0.72);
+    /* Eased fade on all four sides (intersect of an L/R and a T/B ramp): no hard plate edge. */
+    -webkit-mask-image:
+      linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.00) 0.0%,
+      rgba(0, 0, 0, 0.06) 3.3%,
+      rgba(0, 0, 0, 0.22) 6.6%,
+      rgba(0, 0, 0, 0.43) 9.9%,
+      rgba(0, 0, 0, 0.65) 13.2%,
+      rgba(0, 0, 0, 0.84) 16.5%,
+      rgba(0, 0, 0, 0.97) 19.8%,
+      rgba(0, 0, 0, 1.00) 22.0%,
+      rgba(0, 0, 0, 1.00) 78.0%,
+      rgba(0, 0, 0, 0.97) 80.2%,
+      rgba(0, 0, 0, 0.84) 83.5%,
+      rgba(0, 0, 0, 0.65) 86.8%,
+      rgba(0, 0, 0, 0.43) 90.1%,
+      rgba(0, 0, 0, 0.22) 93.4%,
+      rgba(0, 0, 0, 0.06) 96.7%,
+      rgba(0, 0, 0, 0.00) 100.0%
+    ),
+      linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.00) calc(3.2rem * 0),
+      rgba(0, 0, 0, 0.06) calc(3.2rem * 0.15),
+      rgba(0, 0, 0, 0.22) calc(3.2rem * 0.3),
+      rgba(0, 0, 0, 0.43) calc(3.2rem * 0.45),
+      rgba(0, 0, 0, 0.65) calc(3.2rem * 0.6),
+      rgba(0, 0, 0, 0.84) calc(3.2rem * 0.75),
+      rgba(0, 0, 0, 0.97) calc(3.2rem * 0.9),
+      rgba(0, 0, 0, 1.00) calc(3.2rem * 1),
+      rgba(0, 0, 0, 1.00) calc(100% - 3.2rem * 1),
+      rgba(0, 0, 0, 0.97) calc(100% - 3.2rem * 0.9),
+      rgba(0, 0, 0, 0.84) calc(100% - 3.2rem * 0.75),
+      rgba(0, 0, 0, 0.65) calc(100% - 3.2rem * 0.6),
+      rgba(0, 0, 0, 0.43) calc(100% - 3.2rem * 0.45),
+      rgba(0, 0, 0, 0.22) calc(100% - 3.2rem * 0.3),
+      rgba(0, 0, 0, 0.06) calc(100% - 3.2rem * 0.15),
+      rgba(0, 0, 0, 0.00) calc(100% - 3.2rem * 0)
+    );
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.00) 0.0%,
+      rgba(0, 0, 0, 0.06) 3.3%,
+      rgba(0, 0, 0, 0.22) 6.6%,
+      rgba(0, 0, 0, 0.43) 9.9%,
+      rgba(0, 0, 0, 0.65) 13.2%,
+      rgba(0, 0, 0, 0.84) 16.5%,
+      rgba(0, 0, 0, 0.97) 19.8%,
+      rgba(0, 0, 0, 1.00) 22.0%,
+      rgba(0, 0, 0, 1.00) 78.0%,
+      rgba(0, 0, 0, 0.97) 80.2%,
+      rgba(0, 0, 0, 0.84) 83.5%,
+      rgba(0, 0, 0, 0.65) 86.8%,
+      rgba(0, 0, 0, 0.43) 90.1%,
+      rgba(0, 0, 0, 0.22) 93.4%,
+      rgba(0, 0, 0, 0.06) 96.7%,
+      rgba(0, 0, 0, 0.00) 100.0%
+    ),
+      linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.00) calc(3.2rem * 0),
+      rgba(0, 0, 0, 0.06) calc(3.2rem * 0.15),
+      rgba(0, 0, 0, 0.22) calc(3.2rem * 0.3),
+      rgba(0, 0, 0, 0.43) calc(3.2rem * 0.45),
+      rgba(0, 0, 0, 0.65) calc(3.2rem * 0.6),
+      rgba(0, 0, 0, 0.84) calc(3.2rem * 0.75),
+      rgba(0, 0, 0, 0.97) calc(3.2rem * 0.9),
+      rgba(0, 0, 0, 1.00) calc(3.2rem * 1),
+      rgba(0, 0, 0, 1.00) calc(100% - 3.2rem * 1),
+      rgba(0, 0, 0, 0.97) calc(100% - 3.2rem * 0.9),
+      rgba(0, 0, 0, 0.84) calc(100% - 3.2rem * 0.75),
+      rgba(0, 0, 0, 0.65) calc(100% - 3.2rem * 0.6),
+      rgba(0, 0, 0, 0.43) calc(100% - 3.2rem * 0.45),
+      rgba(0, 0, 0, 0.22) calc(100% - 3.2rem * 0.3),
+      rgba(0, 0, 0, 0.06) calc(100% - 3.2rem * 0.15),
+      rgba(0, 0, 0, 0.00) calc(100% - 3.2rem * 0)
+    );
+    mask-composite: intersect;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-flow-scroll {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
+    margin-block: 0;
+    gap: var(--prolog-section);
+    padding-bottom: var(--prolog-near);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-main {
+    flex: 0 0 auto;
+    min-height: 0;
+    gap: var(--prolog-near);
+    margin-bottom: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-scroll-pane.choices-pane {
+    grid-area: auto;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .scroll-fade-clip {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .origin-body {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: 0;
+  }
+  [data-screen="origins"] .prolog-frame #origins-box .choice-stack {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: 0;
+    gap: var(--prolog-near);
+  }
+  [data-screen="origins"] .prolog-frame .origin-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  [data-screen="origins"] .prolog-frame .choice.btn-action {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+/*
+ * Prolog peek: tight top-right (safe + --prolog-peek-inset, not progress-bottom).
+ * Landscape: --prolog-peek-clear on padding-top only; L/R gutters stay equal.
+ */
+[data-screen="origins"] .origins-stage > .peek-btn,
+.peek-btn {
+  position: absolute;
+  /* Above melt plate (frame z=2) and bake fades — always visible chrome. */
+  z-index: 40;
+  top: calc(var(--prolog-peek-inset, var(--space-2)) + var(--safe-t));
+  right: calc(var(--prolog-peek-inset, var(--space-2)) + var(--safe-r));
+  width: var(--prolog-peek-size, 2.1rem);
+  height: var(--prolog-peek-size, 2.1rem);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  border-radius: 999px;
+  background: rgba(18, 12, 10, 0.82);
+  pointer-events: auto;
+  isolation: isolate;
+  transition:
+    background var(--hover-ms, 0.28s) ease,
+    color var(--hover-ms, 0.28s) ease,
+    border-color var(--hover-ms, 0.28s) ease;
+}
+.peek-btn > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  line-height: 1;
+}
+.peek-btn[aria-pressed="true"] {
+  background: rgba(18, 12, 10, 0.88);
+  color: var(--accent);
+}
+
+/* Cmd+R: nejdřív tma, po init plynulý fade-in (boot-ready). */
+html.boot-pending body {
+  opacity: 0;
+}
+html.boot-ready body {
+  opacity: 1;
+  transition: opacity var(--scene-fade-ms, 420ms) ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.boot-pending body,
+  html.boot-ready body {
+    opacity: 1;
+    transition: none;
+  }
+}
+/*
+ * Cmd+R ve ukázce: inline script nastaví html.boot-peek před paintem,
+ * ať action box / melt neblikne před enterPeekMode.
+ */
+html.boot-peek [data-screen="origins"] .prolog-frame {
+  --melt-bd-blur: 0px;
+  --melt-ui-opacity: 0;
+  pointer-events: none;
+}
+/*
+ * Peek melt: hide while open; on is-peek-closing restore in parallel with bg
+ * (same --scene-fade-ms / --scene-fade-ease) — not after settle (that felt cascaded).
+ */
+[data-screen="origins"].is-peek:not(.is-peek-closing) .prolog-frame,
+[data-screen="origins"].is-peek-expanding:not(.is-peek-closing) .prolog-frame {
+  --melt-bd-blur: 0px;
+  --melt-ui-opacity: 0;
+  pointer-events: none;
+}
+[data-screen="origins"].is-peek-closing .prolog-frame {
+  pointer-events: none;
+}
+/* Cover peek: fixed canvas. Stage peek: pan/zoom inside letterbox (inset stays). */
+[data-screen="origins"].is-peek .landing-bg,
+[data-screen="origins"].is-peek-expanding .landing-bg {
+  transform-origin: center center;
+  will-change: transform, filter, opacity;
+  cursor: grab;
+  touch-action: none;
+}
+[data-screen="origins"].is-peek.is-peek-cover .landing-bg,
+[data-screen="origins"].is-peek-expanding.is-peek-cover .landing-bg {
+  background-repeat: no-repeat;
+  background-color: #0a0806;
+  inset: auto;
+}
+[data-screen="origins"].is-peek-expanding .landing-bg,
+[data-screen="origins"].is-peek-closing .landing-bg {
+  pointer-events: none;
+  cursor: default;
+}
+[data-screen="origins"].is-peek .landing-bg.is-dragging { cursor: grabbing; }
+[data-screen="origins"].is-peek.is-peek-cover .landing-bg::after,
+[data-screen="origins"].is-peek-expanding.is-peek-cover .landing-bg::after { content: none; }
+@media (prefers-reduced-motion: reduce) {
+  [data-screen="origins"] {
+    --scene-fade-ms: 0ms;
+  }
+  [data-screen="origins"] .prolog-frame,
+  [data-screen="origins"] .origins-stage,
+  [data-screen="origins"] .landing-bg {
+    transition: none !important;
+  }
+  [data-screen="origins"].is-peek-expanding .landing-bg {
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}

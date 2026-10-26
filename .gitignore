@@ -1,0 +1,17 @@
+.claude/worktrees/
+tools/stage3d/out/
+render/tmp/
+.DS_Store
+render/locations/**/3d/
+render/shared/chars/*/3d/
+render/handoff/
+render/archive/
+__pycache__/
+.env
+.env.*
+!.env.example
+server/data/*.json
+server/data/*.tmp
+server/data/history/
+server/VERSION
+server/admin/VERSION

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#3a2410;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#3a2410;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2c868"/><stop offset="1" stop-color="#fbeec0"/></linearGradient>
+</defs>
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
+<g id="hill"><path class="o" d="M-10 480q300-110 640-40t620-30q200-30 360 30v460h-1620z" fill="#b8c060"/></g>
+<g id="cottage-a"><rect class="o" x="220" y="440" width="300" height="190" fill="#e8d4a0"/><path class="o" d="M180 460L370 290l190 170z" fill="#c8963a"/>
+<g class="t" opacity=".6"><path d="M260 445l110-130M470 445L370 315M330 400l60-70"/></g>
+<rect class="o" x="260" y="500" width="60" height="60" fill="#4a5a7a"/><path class="o" d="M400 630v-80q0-30 30-30t30 30v80z" fill="#6b3a1d"/>
+<rect class="o" x="450" y="330" width="40" height="70" fill="#8a8a82"/></g>
+<g id="cottage-b"><rect class="o" x="1020" y="470" width="340" height="170" fill="#d9b88a"/><path class="o" d="M980 490L1190 320l210 170z" fill="#b8832a"/>
+<g class="t" opacity=".6"><path d="M1030 475l160-155M1350 475L1190 320"/></g>
+<rect class="o" x="1060" y="530" width="56" height="56" fill="#4a5a7a"/><path class="o" d="M1220 640v-80q0-30 30-30t30 30v80z" fill="#6b3a1d"/></g>
+<g id="haystacks"><g class="o" fill="#e0b64a"><path d="M700 640q-10-100 70-110t80 110z"/><path d="M830 650q-6-70 50-76t60 76z"/></g><g class="t" opacity=".6"><path d="M740 560l-10 70M780 545v90M870 600l-6 40"/></g></g>
+<g id="well"><ellipse class="o" cx="620" cy="700" rx="60" ry="16" fill="#8a8a82"/><path class="o" d="M560 700v-30q0-10 60-10t60 10v30q0 16-60 16t-60-16z" fill="#a8a69a"/><ellipse class="o" cx="620" cy="670" rx="60" ry="12" fill="#4f6a8a"/>
+<path class="o" d="M570 666v-60h10v60zM660 666v-60h10v60z" fill="#6b3a1d"/><path class="o" d="M560 610l60-30 60 30z" fill="#8a5a2a"/></g>
+<g id="fence"><path class="t" d="M-10 780l1620-10M-10 810l1620-10"/><g class="o" fill="#a8723a"><rect x="100" y="750" width="14" height="80"/><rect x="400" y="748" width="14" height="80"/><rect x="700" y="746" width="14" height="80"/><rect x="1000" y="744" width="14" height="80"/><rect x="1300" y="742" width="14" height="80"/></g></g>
+<g id="ground"><path class="o" d="M-10 840q500-30 1000-10t620-10v90h-1620z" fill="#a8a048"/></g>
+</svg>

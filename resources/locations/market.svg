@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+<style>.o{stroke:#2a1a10;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.t{stroke:#2a1a10;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;fill:none}</style>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8dce8"/><stop offset="1" stop-color="#e8d8b0"/></linearGradient>
+</defs>
+<!-- vesnický trh: dřevo, plátno, hlína — bez jarmarečních pruhů -->
+<g id="sky"><rect width="1600" height="900" fill="url(#sky)"/></g>
+<g id="hills"><path class="o" d="M-10 420q280-90 560-30t540-20q260-40 520 40v500h-1620z" fill="#9aaa58"/></g>
+<g id="cottages">
+<path class="o" d="M40 380h220v160H40z" fill="#e0c898"/><path class="o" d="M20 390l130-100 130 100z" fill="#a87838"/>
+<path class="o" d="M1340 360h230v180h-230z" fill="#d4b888"/><path class="o" d="M1320 370l135-105 135 105z" fill="#9a6830"/>
+</g>
+<g id="stall-left">
+<rect class="o" x="120" y="480" width="16" height="200" fill="#5a3a1c"/><rect class="o" x="420" y="480" width="16" height="200" fill="#5a3a1c"/>
+<path class="o" d="M100 460h360l20 50H80z" fill="#c4a878"/>
+<path class="o" d="M90 450h380l-20 40H110z" fill="#8a6a40"/>
+<rect class="o" x="110" y="580" width="340" height="90" fill="#8a5a30"/>
+<g class="o"><ellipse cx="180" cy="570" rx="28" ry="16" fill="#c45a2a"/><ellipse cx="250" cy="572" rx="28" ry="16" fill="#d4a030"/><ellipse cx="320" cy="570" rx="28" ry="16" fill="#6a9a40"/><ellipse cx="390" cy="572" rx="22" ry="14" fill="#c45a2a"/></g>
+</g>
+<g id="stall-center">
+<rect class="o" x="640" y="500" width="14" height="180" fill="#5a3a1c"/><rect class="o" x="940" y="500" width="14" height="180" fill="#5a3a1c"/>
+<path class="o" d="M620 480h350l18 45H602z" fill="#b89868"/>
+<path class="o" d="M610 470h370l-16 36H626z" fill="#7a5a30"/>
+<rect class="o" x="630" y="590" width="330" height="80" fill="#8a5a30"/>
+<g class="o"><ellipse cx="720" cy="582" rx="40" ry="18" fill="#c9a060"/><ellipse cx="820" cy="582" rx="40" ry="18" fill="#b88850"/><rect x="880" y="560" width="50" height="36" fill="#6b3a1d"/></g>
+</g>
+<g id="stall-right">
+<rect class="o" x="1120" y="490" width="16" height="190" fill="#5a3a1c"/><rect class="o" x="1420" y="490" width="16" height="190" fill="#5a3a1c"/>
+<path class="o" d="M1100 470h360l20 48H1080z" fill="#c4a878"/>
+<path class="o" d="M1090 460h380l-18 38H1108z" fill="#8a6a40"/>
+<rect class="o" x="1110" y="585" width="340" height="85" fill="#8a5a30"/>
+<g class="o"><path d="M1160 585l16-40h40l16 40z" fill="#7a4a2a"/><path d="M1260 585l16-50h44l16 50z" fill="#5a7a3a"/><path d="M1360 585l14-36h40l14 36z" fill="#a87838"/></g>
+</g>
+<g id="ground">
+<path class="o" d="M-10 680q400-40 800-10t820-10v250h-1620z" fill="#b89860"/>
+<g class="t" opacity=".35"><path d="M100 720q200 30 400 10t500 20M200 780q300 20 600 5t500 15"/></g>
+</g>
+<g id="wagon">
+<path class="o" d="M720 720h220l20 40H700z" fill="#6b3a1d"/>
+<circle class="o" cx="740" cy="770" r="28" fill="#4a3020"/><circle class="o" cx="920" cy="770" r="28" fill="#4a3020"/>
+<path class="o" d="M760 700h140l10 20H750z" fill="#c4a040"/>
+</g>
+<g id="fence"><g class="o" fill="#8a5a30"><rect x="40" y="800" width="12" height="50"/><rect x="200" y="798" width="12" height="50"/><rect x="1400" y="798" width="12" height="50"/><rect x="1540" y="800" width="12" height="50"/></g>
+<path class="t" d="M40 820h180M1400 820h150"/></g>
+</svg>

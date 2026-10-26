@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Land of Machala">
+  <rect width="512" height="512" rx="112" fill="#0a0806"/>
+  <circle cx="256" cy="256" r="168" fill="none" stroke="#d4a853" stroke-width="22"/>
+  <circle cx="256" cy="256" r="104" fill="none" stroke="#d4a853" stroke-opacity="0.35" stroke-width="12"/>
+  <path d="M98 340 V230 L168 340 L256 148 L344 340 L414 230 V340" fill="none" stroke="#d4a853" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="286" r="14" fill="#d4a853"/>
+</svg>
