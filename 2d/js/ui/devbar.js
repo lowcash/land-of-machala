@@ -390,6 +390,12 @@ function initDevBar() {
     },
     { passive: true }
   );
+  /* Same top/bottom edge fade as the rest of the app (styles.css [data-fade] mask). */
+  if (typeof bindScrollFade === "function") {
+    bindScrollFade(devScroll);
+    const worldOut = $("dev-world-out");
+    if (worldOut) bindScrollFade(worldOut);
+  }
   window.addEventListener("pagehide", () => {
     if (devOpen()) saveDevScroll(devScroll.scrollTop);
   });
@@ -423,6 +429,7 @@ function initStatusBox() {
   });
   clampStatusBar = box.clampBar;
   box.applyChrome();
+  if (typeof bindScrollFade === "function") bindScrollFade(bar.querySelector(".dev-scroll"));
   /* Own transparency slider: same helpers as the dev box, separate localStorage key. */
   applyDevOpacity(bar, loadStatusOpacity(), "status-opacity");
   $("status-opacity")?.addEventListener("input", (e) => {

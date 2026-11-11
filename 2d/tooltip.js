@@ -9,9 +9,18 @@ function floatTipEl() {
     tip.id = "float-tip";
     tip.className = "float-tip";
     tip.setAttribute("role", "tooltip");
+    tip.setAttribute("aria-hidden", "true");
     document.body.appendChild(tip);
   }
   return tip;
+}
+
+function tipBitHtml(text) {
+  const m = String(text).match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|⚔|🛡|♥|✦|◎|⬡|✧|🪙)\s*(.*)$/u);
+  if (m) {
+    return `<span class="tip-bit"><span class="tip-ico" aria-hidden="true">${m[1]}</span><span class="tip-txt">${m[2] || ""}</span></span>`;
+  }
+  return `<span class="tip-bit"><span class="tip-txt">${text}</span></span>`;
 }
 
 function formatTipHtml(text) {
@@ -21,21 +30,14 @@ function formatTipHtml(text) {
     .filter(Boolean);
   if (parts.length <= 1) {
     const one = parts[0] || text;
+    /* Plain text with no leading icon: no tip-bit chrome (icon only where it carries meaning). */
     const m = one.match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|⚔|🛡|♥|✦|◎|⬡|✧|🪙)\s*(.*)$/u);
     if (m) {
-      return `<span class="tip-bits"><span class="tip-bit"><span class="tip-ico" aria-hidden="true">${m[1]}</span>${m[2] || ""}</span></span>`;
+      return `<span class="tip-bits">${tipBitHtml(one)}</span>`;
     }
-    return one;
+    return `<span class="tip-txt">${one}</span>`;
   }
-  return `<span class="tip-bits">${parts
-    .map((p) => {
-      const m = p.match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|⚔|🛡|♥|✦|◎|⬡|✧|🪙)\s*(.*)$/u);
-      if (m) {
-        return `<span class="tip-bit"><span class="tip-ico" aria-hidden="true">${m[1]}</span>${m[2] || ""}</span>`;
-      }
-      return `<span class="tip-bit">${p}</span>`;
-    })
-    .join("")}</span>`;
+  return `<span class="tip-bits">${parts.map((p) => tipBitHtml(p)).join("")}</span>`;
 }
 
 /**
@@ -73,14 +75,21 @@ function visibleRect(el) {
   return { left: r0.left, right: r0.right, width: r0.width, top, bottom };
 }
 
+const TIP_HOVER_MS = 400;
+const TIP_FADE_MS = 160;
+const TIP_SAFETY_MS = 250;
 let floatTipTimer = null;
+let floatTipShowTimer = null;
+let floatTipHideTimer = null;
+let floatTipSafetyTimer = null;
 let floatTipAnchor = null;
-/** @type {MutationObserver | null} Runs only while a tip is shown. */
+let floatTipPending = null;
+/** @type {MutationObserver | null} Runs only while a tip is shown or pending. */
 let floatTipObserver = null;
 
 /* Anchor still connected, rendered, not hidden and not covered by another element at its first box centre. */
 function floatTipAnchorOk(el) {
-  if (!el.isConnected) return false;
+  if (!el || !el.isConnected) return false;
   const box = el.getClientRects()[0];
   if (!box || getComputedStyle(el).visibility === "hidden") return false;
   const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
@@ -91,7 +100,8 @@ function floatTipAnchorOk(el) {
 function floatTipWatch() {
   if (floatTipObserver) return;
   floatTipObserver = new MutationObserver(() => {
-    if (floatTipAnchor && !floatTipAnchorOk(floatTipAnchor)) hideFloatTip();
+    const a = floatTipAnchor || floatTipPending;
+    if (a && !floatTipAnchorOk(a)) hideFloatTip();
   });
   floatTipObserver.observe(document.body, {
     childList: true,
@@ -101,29 +111,45 @@ function floatTipWatch() {
   });
 }
 
-function showFloatTip(icon, opts = {}) {
-  const text =
-    icon.dataset.tip ||
-    (icon.dataset.kodex && window.LOM?.Kodex?.KODEX_BY?.[icon.dataset.kodex]?.short) ||
-    icon.querySelector(".tip-bubble")?.textContent;
-  if (!text) {
-    hideFloatTip();
-    return;
+function floatTipStopWatch() {
+  if (floatTipObserver) {
+    floatTipObserver.disconnect();
+    floatTipObserver = null;
   }
+}
+
+function floatTipClearShowTimer() {
+  if (floatTipShowTimer) {
+    clearTimeout(floatTipShowTimer);
+    floatTipShowTimer = null;
+  }
+  floatTipPending = null;
+}
+
+function floatTipClearSafety() {
+  if (floatTipSafetyTimer) {
+    clearInterval(floatTipSafetyTimer);
+    floatTipSafetyTimer = null;
+  }
+}
+
+function floatTipArmSafety() {
+  floatTipClearSafety();
+  floatTipSafetyTimer = setInterval(() => {
+    if (!floatTipAnchor) {
+      floatTipClearSafety();
+      return;
+    }
+    if (!floatTipAnchorOk(floatTipAnchor)) hideFloatTip();
+  }, TIP_SAFETY_MS);
+}
+
+function placeFloatTip(icon) {
   const tip = floatTipEl();
-  tip.innerHTML = formatTipHtml(text);
   tip.classList.remove("below");
-  /* Measure while invisible – avoids the place→clamp jump. */
-  tip.style.visibility = "hidden";
-  tip.classList.add("show");
   const r = visibleRect(icon);
   const vv = tipViewportBox();
   const pad = 8;
-  clearTimeout(floatTipTimer);
-  floatTipAnchor = icon;
-  floatTipWatch();
-  const autoHide = opts.autoHide ?? tipIsCoarse();
-  if (autoHide) floatTipTimer = setTimeout(hideFloatTip, opts.hideMs || 4000);
 
   let left = r.left + r.width / 2;
   let top = r.top - 6;
@@ -150,22 +176,84 @@ function showFloatTip(icon, opts = {}) {
     tip.style.top = `${top + (vv.top + vv.height - pad - tr.bottom)}px`;
   }
   if (dx) tip.style.left = `${left + dx}px`;
-  tip.style.visibility = "";
+}
+
+function showFloatTipNow(icon, opts = {}) {
+  const text =
+    icon.dataset.tip ||
+    (icon.dataset.kodex && window.LOM?.Kodex?.KODEX_BY?.[icon.dataset.kodex]?.short) ||
+    icon.querySelector(".tip-bubble")?.textContent;
+  if (!text) {
+    hideFloatTip();
+    return;
+  }
+  floatTipClearShowTimer();
+  if (floatTipHideTimer) {
+    clearTimeout(floatTipHideTimer);
+    floatTipHideTimer = null;
+  }
+  const tip = floatTipEl();
+  tip.innerHTML = formatTipHtml(text);
+  tip.setAttribute("aria-hidden", "false");
+  /* Place while not .show (opacity 0) so clamp does not fight the fade-in. */
+  tip.classList.remove("show");
+  placeFloatTip(icon);
+  void tip.offsetWidth;
+  tip.classList.add("show");
+  clearTimeout(floatTipTimer);
+  floatTipAnchor = icon;
+  floatTipWatch();
+  floatTipArmSafety();
+  const autoHide = opts.autoHide ?? tipIsCoarse();
+  if (autoHide) floatTipTimer = setTimeout(hideFloatTip, opts.hideMs || 4000);
+  /* Scrollable tip body reuses the shared scroll-edge fade (styles.css [data-fade]). */
+  if (typeof bindScrollFade === "function" && tip.scrollHeight > tip.clientHeight + 1) {
+    bindScrollFade(tip);
+  }
+}
+
+function showFloatTip(icon, opts = {}) {
+  if (!icon) return;
+  const delay = opts.delay != null ? opts.delay : tipIsCoarse() ? 0 : TIP_HOVER_MS;
+  if (delay <= 0 || floatTipAnchor === icon) {
+    showFloatTipNow(icon, opts);
+    return;
+  }
+  floatTipClearShowTimer();
+  floatTipPending = icon;
+  floatTipWatch();
+  floatTipShowTimer = setTimeout(() => {
+    floatTipShowTimer = null;
+    if (floatTipPending !== icon) return;
+    if (!floatTipAnchorOk(icon) || floatTipIsSuppressed(icon)) {
+      floatTipPending = null;
+      return;
+    }
+    showFloatTipNow(icon, opts);
+  }, delay);
 }
 
 function hideFloatTip() {
+  floatTipClearShowTimer();
+  floatTipClearSafety();
   clearTimeout(floatTipTimer);
   floatTipTimer = null;
   floatTipAnchor = null;
-  if (floatTipObserver) {
-    floatTipObserver.disconnect();
-    floatTipObserver = null;
-  }
+  floatTipStopWatch();
   const tip = document.getElementById("float-tip");
   if (!tip) return;
   tip.classList.remove("show");
+  tip.setAttribute("aria-hidden", "true");
   tip.style.visibility = "";
+  tip.style.opacity = "";
+  /* Drop content after fade so a stuck node never keeps old copy; single global tip stays mounted. */
+  if (floatTipHideTimer) clearTimeout(floatTipHideTimer);
+  floatTipHideTimer = setTimeout(() => {
+    floatTipHideTimer = null;
+    if (!tip.classList.contains("show")) tip.replaceChildren();
+  }, TIP_FADE_MS + 40);
 }
+
 const tipSel = ".stat-icon, .has-tip";
 /** After pointerdown on a tip host, suppress hover re-show until pointerleave of that host. */
 let floatTipSuppressEl = null;
@@ -180,15 +268,23 @@ function floatTipIsSuppressed(el) {
 
 /* scroll, Esc a stisk kdekoli schovají tip (tip by jinak zůstal viset na starém místě) */
 document.addEventListener("scroll", hideFloatTip, true);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") hideFloatTip();
-}, true);
+document.addEventListener(
+  "keydown",
+  (e) => {
+    if (e.key === "Escape") hideFloatTip();
+  },
+  true
+);
 /* Press anywhere dismisses a stuck tip; pointerdown on a tip host also suppresses hover re-show until leave. */
-document.addEventListener("pointerdown", (e) => {
-  if (floatTipAnchor) hideFloatTip();
-  const host = e.target instanceof Element ? e.target.closest?.(tipSel) : null;
-  floatTipSuppressEl = host || null;
-}, true);
+document.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (floatTipAnchor || floatTipPending) hideFloatTip();
+    const host = e.target instanceof Element ? e.target.closest?.(tipSel) : null;
+    floatTipSuppressEl = host || null;
+  },
+  true
+);
 /* Cursor leaves the page, the window loses focus or the tab is hidden: pointerout may never fire, so close here too. */
 document.documentElement.addEventListener("pointerleave", () => {
   floatTipClearSuppress();
@@ -224,7 +320,7 @@ function tipClearPress() {
   tipPress = null;
 }
 
-/* Desktop / mouse: hover. Touch: no hover tip (long-press / Kodex tap below). */
+/* Desktop / mouse: hover (after TIP_HOVER_MS). Touch: no hover tip (long-press / Kodex tap below). */
 document.addEventListener(
   "pointerover",
   (e) => {
@@ -250,7 +346,7 @@ document.addEventListener(
     const fromKodex = e.target.closest?.("abbr.kodex");
     if (fromKodex && !e.relatedTarget?.closest?.("abbr.kodex")) {
       if (floatTipSuppressEl === fromKodex) floatTipClearSuppress();
-      hideFloatTip();
+      if (floatTipPending === fromKodex || floatTipAnchor === fromKodex) hideFloatTip();
       return;
     }
     const icon = e.target.closest?.(tipSel);
@@ -258,8 +354,18 @@ document.addEventListener(
     const to = e.relatedTarget?.closest?.(tipSel);
     if (to !== icon) {
       if (floatTipSuppressEl === icon) floatTipClearSuppress();
-      hideFloatTip();
+      if (floatTipPending === icon || floatTipAnchor === icon) hideFloatTip();
     }
+  },
+  true
+);
+document.addEventListener(
+  "mouseleave",
+  (e) => {
+    if (e.pointerType === "touch" || tipIsCoarse()) return;
+    const icon = e.target.closest?.(tipSel) || e.target.closest?.("abbr.kodex");
+    if (!icon) return;
+    if (floatTipPending === icon || floatTipAnchor === icon) hideFloatTip();
   },
   true
 );
@@ -281,7 +387,7 @@ document.addEventListener(
       timer: window.setTimeout(() => {
         if (!tipPress || tipPress.el !== icon) return;
         tipPress.shown = true;
-        showFloatTip(icon, { autoHide: true, hideMs: 4500 });
+        showFloatTip(icon, { autoHide: true, hideMs: 4500, delay: 0 });
         try {
           navigator.vibrate?.(12);
         } catch (_) {}
@@ -340,8 +446,9 @@ document.addEventListener(
 /* Guard: a tip stays open only while the pointer is over its anchor. Covers pointerout that never came (anchor removed
    or re-rendered, pointer jumped off). Registered after the show listeners above, so a new anchor is already set. */
 function floatTipPointerGuard(e) {
-  if (!floatTipAnchor) return;
-  if (e.target instanceof Element && floatTipAnchor.contains(e.target)) return;
+  const a = floatTipAnchor || floatTipPending;
+  if (!a) return;
+  if (e.target instanceof Element && a.contains(e.target)) return;
   hideFloatTip();
 }
 document.addEventListener("pointerover", floatTipPointerGuard, true);
@@ -383,7 +490,7 @@ document.addEventListener(
       hideFloatTip();
       kodexTapId = null;
     } else {
-      showFloatTip(k, { autoHide: true });
+      showFloatTip(k, { autoHide: true, delay: 0 });
       kodexTapId = k.dataset.kodex;
     }
   },
@@ -396,7 +503,7 @@ document.addEventListener(
     /* Touch focus follows the tap: a tip shown here would outlive the touch end, so focus shows a tip only on fine pointers. */
     if (tipIsCoarse()) return;
     const icon = e.target.closest?.(tipSel);
-    if (icon) showFloatTip(icon, { autoHide: false });
+    if (icon) showFloatTip(icon, { autoHide: false, delay: 0 });
   },
   true
 );

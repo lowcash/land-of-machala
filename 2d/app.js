@@ -640,12 +640,77 @@ function setPrologBg() {
   if (sceneDemo?.on && LOM.SceneView?.enabled) syncSceneCompose();
   else syncParticles();
 }
+/**
+ * Snapshot ::before / ::after sky tones into real overlays, then swap data-phase and fade the overlays out.
+ * CSS cannot interpolate pseudo backgrounds; this matches DAYPART_FADE_MS of the bake cross-fade.
+ */
+function crossfadeSkyPhase(el, nextPhase) {
+  const prev = el.dataset.phase;
+  if (prev === nextPhase) return;
+  const sky = el.dataset.sky;
+  if (!prev || !sky || sky === "bake" || sky === "none" || peekReduceMotion()) {
+    el.dataset.phase = nextPhase;
+    return;
+  }
+  el.querySelectorAll(":scope > .sky-crossfade").forEach((n) => n.remove());
+  const layers = ["::before", "::after"];
+  const overlays = [];
+  for (const pseudo of layers) {
+    let cs;
+    try {
+      cs = getComputedStyle(el, pseudo);
+    } catch (_) {
+      continue;
+    }
+    if (!cs || cs.content === "none") continue;
+    const bg = cs.backgroundImage;
+    const bgc = cs.backgroundColor;
+    if ((!bg || bg === "none") && (!bgc || bgc === "rgba(0, 0, 0, 0)" || bgc === "transparent")) continue;
+    const overlay = document.createElement("div");
+    overlay.className = "sky-crossfade";
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.style.position = "absolute";
+    overlay.style.pointerEvents = "none";
+    overlay.style.zIndex = pseudo === "::before" ? "1" : "2";
+    overlay.style.left = cs.left;
+    overlay.style.right = cs.right;
+    overlay.style.top = cs.top;
+    overlay.style.bottom = cs.bottom;
+    overlay.style.width = cs.width;
+    overlay.style.height = cs.height;
+    overlay.style.borderRadius = cs.borderRadius;
+    overlay.style.background = cs.background;
+    overlay.style.backgroundImage = cs.backgroundImage;
+    overlay.style.backgroundColor = cs.backgroundColor;
+    overlay.style.boxShadow = cs.boxShadow;
+    overlay.style.opacity = "1";
+    overlay.style.transition = "none";
+    el.appendChild(overlay);
+    overlays.push(overlay);
+  }
+  el.dataset.phase = nextPhase;
+  if (!overlays.length) return;
+  void el.offsetWidth;
+  overlays.forEach((overlay) => {
+    overlay.style.transition = `opacity ${DAYPART_FADE_MS}ms ease`;
+    overlay.style.opacity = "0";
+    const done = (e) => {
+      if (e && e.target !== overlay) return;
+      if (e && e.propertyName && e.propertyName !== "opacity") return;
+      overlay.removeEventListener("transitionend", done);
+      overlay.remove();
+    };
+    overlay.addEventListener("transitionend", done);
+    setTimeout(() => done(), DAYPART_FADE_MS + 80);
+  });
+}
+
 /** Fáze dne: data-phase + CSS vrstvy (nebe/světlo), ne jen filter ([faze-dne-vizual]). */
 function syncPhaseLook() {
   const ph = LOM.phaseOf?.(state.clock)?.id || "afternoon";
   document.body.dataset.phase = ph;
   document.querySelectorAll(".landing-bg").forEach((el) => {
-    el.dataset.phase = ph;
+    crossfadeSkyPhase(el, ph);
   });
 }
 
@@ -1724,10 +1789,10 @@ function initDevStorybook() {
     else resetDevWorldSceneFromPreset();
     if (savedSession.scene) restoreSceneDemoFromSession(savedSession.scene);
     if (savedSession.peek && state.screen === "origins") {
-      enterPeekMode();
+      /* Seed camera BEFORE enterPeekMode so the first cover layout keeps the saved pose (no rAF flip). */
+      restorePeekCameraFromSession(savedSession);
+      enterPeekMode({ keepPan: true });
       setPeekButtonState(document.querySelector(".peek-btn"), true);
-      /* enterPeekMode resets pan – re-apply after layout settles. */
-      requestAnimationFrame(() => restorePeekCameraFromSession(savedSession));
     }
   } else if (!publicBar) {
     resetDevWorldSceneFromPreset();

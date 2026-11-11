@@ -139,10 +139,13 @@ function peekFadeTransition() {
   ].join(", ");
 }
 
-function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}) {
+/** opts.keepPan: boot restore already seeded peekPan / peekFocus – do not snap back to focus rest. */
+function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}, opts = {}) {
   peekLayout = { ew, eh, vw, vh };
-  const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
-  peekPan = { x: p.x, y: p.y, scale: 1 };
+  if (!(opts.keepPan && bootPoseSnap)) {
+    const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
+    peekPan = { x: p.x, y: p.y, scale: 1 };
+  }
   clampPeekPan();
   bg.style.transition = "none";
   /*
@@ -161,9 +164,11 @@ function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}) {
   bg.style.backgroundPosition = "center";
   bg.style.filter = "";
   bg.style.opacity = "";
-  bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(1)`;
+  bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
   /* The canvas pans/zooms about its centre; a prolog pose left "center bottom" (portrait) behind otherwise. */
   bg.style.transformOrigin = "center center";
+  /* Boot restore: strip any leftover soft-crossfade so the cover never stacks two bakes. */
+  if (bootPoseSnap) bg.querySelectorAll(":scope > .bg-crossfade").forEach((n) => n.remove());
 }
 
 function peekCoverCanvasActive(bg) {
@@ -645,7 +650,8 @@ function setPeekButtonState(btn, on) {
 }
 
 /** Letterbox/pillarbox peek: UI away, pan/zoom inside the stage (pruhy zůstanou). */
-function enterStagePeek(scr, bg, gen) {
+function enterStagePeek(scr, bg, gen, opts = {}) {
+  const keepPan = !!(opts.keepPan && bootPoseSnap);
   /*
    * Mid-exit reverse: zoom back out was in progress – reverse to clear view from current frame.
    */
@@ -653,11 +659,11 @@ function enterStagePeek(scr, bg, gen) {
     peekFreezeComputed(bg);
     scr.classList.remove("is-peek-closing");
     scr.classList.add("is-peek-expanding");
-    const to = peekRestIdentity();
+    const to = keepPan ? { ...peekPan } : peekRestIdentity();
     const camNow = peekSceneCamera();
     peekPan = { ...to };
     /* Bias carries the camera the parallax holds now, so the depth shift does not jump while the pan settles. */
-    peekParallaxBias = { x: camNow.x - to.x, y: camNow.y - to.y };
+    peekParallaxBias = keepPan ? { x: 0, y: 0 } : { x: camNow.x - to.x, y: camNow.y - to.y };
     bg.style.transition = peekTransformTransition();
     bg.style.filter = "blur(0px)";
     bg.style.opacity = "1";
@@ -672,16 +678,21 @@ function enterStagePeek(scr, bg, gen) {
   }
 
   const box = peekStageBox();
-  peekFocus = readBgFocus(bg);
-  /* Keep the camera the parallax holds now (GUI pose pan included) as bias: entering does not drop the depth shift. */
-  const camNow = peekSceneCamera();
-  peekPan = peekRestIdentity();
-  peekParallaxBias = { x: camNow.x - peekPan.x, y: camNow.y - peekPan.y };
+  if (!keepPan) {
+    peekFocus = readBgFocus(bg);
+    /* Keep the camera the parallax holds now (GUI pose pan included) as bias: entering does not drop the depth shift. */
+    const camNow = peekSceneCamera();
+    peekPan = peekRestIdentity();
+    peekParallaxBias = { x: camNow.x - peekPan.x, y: camNow.y - peekPan.y };
+  } else {
+    peekParallaxBias = { x: 0, y: 0 };
+  }
   if (box) {
     peekLayout = { ew: box.width, eh: box.height, vw: box.width, vh: box.height };
   } else {
     peekLayout = { ew: 0, eh: 0, vw: 0, vh: 0 };
   }
+  clampPeekPan();
   scr.classList.add("is-peek");
   scr.classList.remove("is-peek-cover", "is-peek-expanding");
   bg.style.transformOrigin = "center center";
@@ -699,15 +710,19 @@ function peekSettleEnterVisual(scr, bg) {
   applyPeekTransform();
 }
 
-function enterPeekMode() {
+/** opts.keepPan: session restore already set peekPan/peekFocus (Cmd+R while eye was open). */
+function enterPeekMode(opts = {}) {
   const scr = document.querySelector('[data-screen="origins"]');
   const bg = originsPeekBg();
   if (!scr || !bg) return;
+  const keepPan = !!(opts.keepPan && bootPoseSnap);
   const gen = ++peekEnterGen;
   scr.classList.remove("is-peek-closing");
+  /* One bake only: drop a soft-crossfade leftover before the cover canvas mounts. */
+  bg.querySelectorAll(":scope > .bg-crossfade").forEach((n) => n.remove());
 
   if (!peekNeedsCover()) {
-    enterStagePeek(scr, bg, gen);
+    enterStagePeek(scr, bg, gen, { keepPan });
     return;
   }
 
@@ -719,12 +734,15 @@ function enterPeekMode() {
     peekFreezeComputed(bg);
     scr.classList.add("is-peek", "is-peek-expanding");
     const { ew, eh, vw, vh } = peekLayout;
-    const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
-    peekPan = { x: p.x, y: p.y, scale: 1 };
+    if (!keepPan) {
+      const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
+      peekPan = { x: p.x, y: p.y, scale: 1 };
+    }
+    clampPeekPan();
     bg.style.transition = peekTransformTransition();
     bg.style.filter = "blur(0px)";
     bg.style.opacity = "1";
-    bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(1)`;
+    bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
     afterPeekTransition(bg, gen, () => {
       if (gen !== peekEnterGen) return;
       peekSettleEnterVisual(scr, bg);
@@ -734,11 +752,15 @@ function enterPeekMode() {
     return;
   }
 
-  /* Read focus before is-peek (portrait/bake change background-position). */
-  peekFocus = readBgFocus(bg);
-  /* The GUI pose pan stays as parallax bias: the eye zooms out to rest, the depth shift does not drop with it. */
-  peekParallaxBias = { x: peekPan.x + peekParallaxBias.x, y: peekPan.y + peekParallaxBias.y };
-  peekPan = { x: 0, y: 0, scale: 1 };
+  /* Read focus before is-peek (portrait/bake change background-position), unless boot restore seeded it. */
+  if (!keepPan) {
+    peekFocus = readBgFocus(bg);
+    /* The GUI pose pan stays as parallax bias: the eye zooms out to rest, the depth shift does not drop with it. */
+    peekParallaxBias = { x: peekPan.x + peekParallaxBias.x, y: peekPan.y + peekParallaxBias.y };
+    peekPan = { x: 0, y: 0, scale: 1 };
+  } else {
+    peekParallaxBias = { x: 0, y: 0 };
+  }
   const fromBox = bg.getBoundingClientRect();
   const fadeOnly = peekIsShortLandscape();
   withPeekImageSize(bg, (iw, ih) => {
@@ -756,8 +778,8 @@ function enterPeekMode() {
     bg.style.transition = "none";
     scr.classList.add("is-peek-layout");
     void scr.offsetWidth;
-    applyPeekCanvas(bg, ew, eh, vw, vh, { top, left });
-    const endT = `translate(${peekPan.x}px, ${peekPan.y}px) scale(1)`;
+    applyPeekCanvas(bg, ew, eh, vw, vh, { top, left }, { keepPan });
+    const endT = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
     let startT = endT;
     let motion = "fade";
     if (bootPoseSnap) {

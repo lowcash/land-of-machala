@@ -156,7 +156,7 @@ function restoreDevTogglesFromSession(snap) {
   return true;
 }
 
-/** After enterPeekMode (which resets pan): restore saved camera if present. */
+/** Seed / re-apply saved peek camera. Safe before enterPeekMode (no clamp while layout is empty). */
 function restorePeekCameraFromSession(snap) {
   if (!snap?.peek || state.screen !== "origins") return false;
   if (snap.peekFocus && typeof snap.peekFocus.x === "number" && typeof snap.peekFocus.y === "number") {
@@ -168,8 +168,11 @@ function restorePeekCameraFromSession(snap) {
       y: Number(snap.peekPan.y) || 0,
       scale: Math.max(1, Number(snap.peekPan.scale) || 1),
     };
-    clampPeekPan();
-    applyPeekTransform();
+    /* Only clamp/paint once the cover/stage layout exists – otherwise clampPeekPan would zero the pan. */
+    if (peekLayout.ew > 0 && peekLayout.vw > 0) {
+      clampPeekPan();
+      applyPeekTransform();
+    }
     if (sceneDemo && snap.scene?.shot === "custom") {
       sceneDemo.shot = "custom";
       const sel = snap.scene.shotSel;
