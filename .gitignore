@@ -1,11 +1,10 @@
 .claude/worktrees/
-tools/stage3d/out/
-render/tmp/
+# assets/ scratch and paid outputs (gitignored; trials, open packs, paid Gemini outputs in assets/costs/)
+assets/_scratch/
+assets/costs/
+assets/source/locations/**/3d/
+assets/source/characters/*/3d/
 .DS_Store
-render/locations/**/3d/
-render/shared/chars/*/3d/
-render/handoff/
-render/archive/
 __pycache__/
 .env
 .env.*
@@ -14,4 +13,20 @@ server/data/*.json
 server/data/*.tmp
 server/data/history/
 server/VERSION
-server/admin/VERSION
+admin/VERSION
+
+# source PNG sources of the clean plates (runtime loads clean-*.jpeg)
+assets/source/locations/**/layers/clean-*.png
+
+# Server secrets (VPS env file copy); never commit
+server.env
+
+server/data/outbox/
+assets/pipelines/likeness/.venv/
+assets/pipelines/likeness/models/
+assets/pipelines/likeness/capture/models/
+# photo-to-3d spike: venv, model weights, cloned third-party source (renders go to assets/_scratch/)
+assets/pipelines/photo-to-3d/.venv/
+assets/pipelines/photo-to-3d/models/
+assets/pipelines/photo-to-3d/vendor/
+assets/source/objects/

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0806" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Machala" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <title>Land of Machala · 2D</title>
+  <script>
+    /* Před CSS/paint: session + boot-pending/settling (final pose before fade-in after Cmd+R). */
+    (function () {
+      document.documentElement.classList.add("boot-pending");
+      document.documentElement.classList.add("boot-settling");
+      try {
+        var s = JSON.parse(sessionStorage.getItem("lom.storybook") || "null");
+        if (s && s.peek) document.documentElement.classList.add("boot-peek");
+        if (s && s.scenarioId) document.documentElement.classList.add("boot-storybook");
+      } catch (e) {}
+    })();
+
+  </script>
+  <link rel="stylesheet" href="ui-tokens.css" />
+  <link rel="stylesheet" href="tooltip.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- DEV - skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
+  <aside class="storybook-bar is-collapsed" data-dev-only hidden aria-label="Vývojářský storybook">
+    <div class="dev-row dev-chrome box-head">
+      <button type="button" class="dev-drag has-tip" id="dev-drag" aria-label="Otevřít nebo přesunout panel" aria-expanded="false" aria-controls="dev-detail-panel"><span class="dev-drag-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" focusable="false"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span></button>
+      <span class="dev-drag-slot" aria-hidden="true"></span>
+      <div class="dev-knob dev-main">
+        <select id="dev-scenario" aria-label="Předvolba scény (nastaví přepínače)"></select>
+      </div>
+      <button type="button" class="dev-btn dev-reset reset-btn" id="dev-reset" aria-label="Obnovit podle presetu scény" title="Obnovit podle presetu scény">↺</button>
+      <label class="dev-opacity has-tip" data-tip="Průhlednost panelu"><span class="sr-only">Průhlednost</span><input type="range" id="dev-opacity" min="0" max="100" value="100" /></label>
+    </div>
+    <div class="dev-scroll">
+      <div id="dev-detail-panel" class="dev-detail" hidden>
+        <!-- Order: Čas a počasí (subsections Čas, Počasí) → Scéna (Kamera, Pozice, Objekty, Efekty) → Ladění. Stav systému is its own box below.
+             Subsections are nested dev-sub details (indented, open state per browser). Same model as the 3D view (systems/scene-controls.js). -->
+        <details class="dev-sec" data-sec="cas" open><summary class="box-subhead">Čas a počasí</summary>
+          <details class="dev-sub" data-sub="cas" open><summary>Čas</summary>
+            <div class="dev-row dev-world-clock-row" id="dev-world-clock"></div>
+            <div class="dev-row dev-knobs" data-knob-sec="cas"></div>
+          </details>
+          <details class="dev-sub" data-sub="pocasi" open><summary>Počasí</summary>
+            <div class="dev-scene-compose" id="dev-weather"></div>
+          </details>
+        </details>
+        <details class="dev-sec" data-sec="world" open><summary class="box-subhead">Scéna</summary>
+          <div class="dev-row dev-knobs" data-knob-sec="world"></div>
+          <details class="dev-sub" data-sub="kamera" open><summary>Kamera</summary>
+            <div class="dev-scene-compose" id="dev-scene-camera"></div>
+          </details>
+          <details class="dev-sub" data-sub="pozice" open><summary>Pozice a obsazení</summary>
+            <div class="dev-scene-compose" id="dev-scene-compose"></div>
+          </details>
+          <details class="dev-sub" data-sub="objekty" open><summary>Objekty</summary>
+            <div class="dev-world-objects" id="dev-world-objects" aria-live="polite"></div>
+            <pre class="dev-world-out" id="dev-world-out" aria-live="polite"></pre>
+          </details>
+          <details class="dev-sub" data-sub="efekty" open><summary>Efekty</summary>
+            <div class="dev-scene-compose" id="dev-scene-effects"></div>
+          </details>
+        </details>
+        <p class="dev-group">Vývojářské</p>
+        <details class="dev-sec" data-sec="debug"><summary class="box-subhead">Ladení</summary><div class="dev-row dev-toggles" id="dev-debug-toggles" role="group" aria-label="Ladení layoutu (dev)"></div></details>
+      </div>
+      <p id="dev-note" class="dev-note hidden"></p>
+    </div>
+  </aside>
+  <!-- Stav systému: its own floating box next to the dev box (same chrome, handle, drag and saved position). DEV only, like the dev box. -->
+  <aside class="storybook-bar status-bar is-collapsed" id="status-bar" data-dev-only hidden aria-label="Stav systému">
+    <div class="dev-row dev-chrome box-head">
+      <button type="button" class="dev-drag has-tip" id="status-drag" aria-label="Otevřít nebo přesunout panel Stav systému" aria-expanded="false" aria-controls="status-panel"><span class="dev-drag-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12h4l2.5-6 4 12 2.5-6H22"/></svg></span></button>
+      <span class="dev-drag-slot" aria-hidden="true"></span>
+      <span class="status-bar-title">Stav systému</span>
+      <label class="dev-opacity has-tip" data-tip="Průhlednost panelu"><span class="sr-only">Průhlednost</span><input type="range" id="status-opacity" min="0" max="100" value="100" /></label>
+    </div>
+    <div class="dev-scroll">
+      <div id="status-panel" class="dev-detail">
+        <div id="dev-status" class="dev-status"></div>
+      </div>
+    </div>
+  </aside>
+  <!-- Admin switch (top-left, mirror of the eye); shown by app.js only in dev or for an admin session on the world server. Same corner and size as the 2D button in the admin. -->
+  <a class="admin-switch has-tip" id="admin-switch" href="/" data-tip="Admin" aria-label="Admin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13M13.5 4.5 17 8l-3.5 3.5"/><path d="M20 16H7M10.5 12.5 7 16l3.5 3.5"/></svg></a>
+
+  <!-- PROLOG -->
+  <main data-screen="origins" class="view-full landing-screen hidden">
+    <div class="origins-stage">
+      <div class="landing-bg" aria-hidden="true"></div>
+      <!-- Stage-level: top-right of viewport (landscape = horizontal center). Outside melt for hits. -->
+      <button type="button" class="btn-ghost peek-btn has-tip" data-act="prolog-peek" data-tip="Rozhlédnout se" title="Rozhlédnout se" aria-label="Rozhlédnout se" aria-pressed="false"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span></button>
+      <!-- Whole-scene view only: the drag cue (grab cursor on the picture + this small icon). -->
+      <p class="peek-drag-hint" role="img" aria-label="Posuň pohled" title="Posuň pohled"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></p>
+      <div class="landing-frame narrow prolog-frame">
+        <section class="auth-card grow-card">
+          <button type="button" class="origin-side-nav prev" data-act="origin-back" title="Zpět" aria-label="Zpět" hidden><span class="edge-chevron" aria-hidden="true">▾</span></button>
+          <button type="button" class="origin-side-nav next" data-act="origin-fwd" title="Další" aria-label="Další" hidden><span class="edge-chevron" aria-hidden="true">▾</span></button>
+          <div class="scroll-hint top origin-scroll-edge" aria-hidden="true"><span class="edge-chevron">▾</span></div>
+          <div class="scroll-hint bottom origin-scroll-edge" aria-hidden="true"><span class="edge-chevron">▾</span></div>
+          <div class="origin-progress" aria-hidden="true"></div>
+          <div id="origins-box"></div>
+        </section>
+      </div>
+      <!-- Toasts live in the stage so letterbox/pillarbox bars stay empty (dev bar stays on body). -->
+      <div id="toast-host" class="toast-host in-stage" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <script src="js/data/characters.js"></script>
+  <script src="js/data/kodex.js"></script>
+  <script src="js/systems/clock.js"></script>
+  <script src="js/systems/variants.js"></script>
+  <script src="js/systems/weather.js"></script>
+  <script src="js/systems/prolog-camera.js"></script>
+  <script src="js/systems/particles.js"></script>
+  <script src="js/systems/kodex.js"></script>
+  <script src="js/ui/particles-view.js"></script>
+  <script src="js/dev/scenarios.js"></script>
+  <script src="ui-kit.js"></script>
+  <script src="tooltip.js"></script>
+  <script src="js/ui/boot-hold.js"></script>
+  <script src="app.js"></script>
+  <script src="js/ui/peek.js"></script>
+  <script src="js/ui/devbar.js"></script>
+  <script src="js/ui/storybook.js"></script>
+  <script src="js/ui/world-demo.js"></script>
+  <script src="js/ui/scene-compose-demo.js"></script>
+  <script src="app-boot.js"></script>
+  <script src="js/ui/pwa-register.js"></script>
+</body>
+</html>

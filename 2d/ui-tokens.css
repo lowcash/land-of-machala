@@ -1,0 +1,28 @@
+/* Shared UI tokens for 2d and admin (admin loads this file from ../2d/).
+   Values are copied from the :root blocks of 2d/styles.css and admin/admin.css; no new look lives here.
+   Surfaces keep their own palette and use these names where they match. Load this before the surface stylesheet. */
+:root {
+  /* accent: 2d gold; admin's #d4a35a is treated as the same accent */
+  --ui-accent: #d4a853;
+  --ui-accent-weak: rgba(212, 168, 83, 0.15);
+  --ui-accent-hover: #e8c57a;
+
+  /* surfaces (2d values) */
+  --ui-bg: #140e0c;
+  --ui-fg: #f3e6d4;
+  --ui-panel: rgba(18, 12, 10, 0.78);
+  --ui-border: rgba(212, 168, 83, 0.55);
+  --ui-radius: 4px;
+
+  /* spacing (same scale as 2d/styles.css --space-1..5) */
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-5: 1.5rem;
+
+  /* status (ok: 2d --ok; warn and danger: admin --warn and --bad) */
+  --ui-ok: #6a9e6a;
+  --ui-warn: #c9a24a;
+  --ui-danger: #c15a4a;
+}

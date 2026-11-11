@@ -1,12 +1,12 @@
 # Land of Machala
 
-A Czech text RPG set in Machalsko: tavern talk, roads, rumours, and a missing chapel bell. Systems stay under the hood — you play what people say and do.
+A Czech text RPG set in Machalsko. The public build is the tavern prologue; systems stay under the hood – you play what people say and do.
 
 ## Play
 
-**[Open the demo in your browser](https://lowcash.github.io/land-of-machala/)** — no install, no build.
+**[Open the demo in your browser](https://lowcash.github.io/land-of-machala/)** – no install, no build.
 
-This public build is a **prologue demo**: tavern → four choices → name → morning. Deeper systems (combat, rumour case, map) live in the full prototype under `prototype/`.
+This public build is a **prologue demo**: tavern → four choices → end of the demo. Nothing after the prologue is included.
 
 Dialogue and UI copy in the game are in Czech.
 

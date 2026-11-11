@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Land of Machala">
+  <rect width="512" height="512" rx="112" fill="#0a0806"/>
+  <g transform="translate(0 -32)">
+    <circle cx="256" cy="330" r="112" fill="#d4a853" fill-opacity="0.11"/>
+    <path d="M112 352 L168 196 L256 296 L344 196 L400 352" fill="none" stroke="#d4a853" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(256 326) scale(0.8) translate(-256 -298)">
+      <path d="M256 298 C268 326 290 338 290 362 C290 378 275 388 256 388 C237 388 222 378 222 362 C222 344 232 336 238 322 C240 332 244 338 252 342 C250 326 250 312 256 298 Z" fill="#d4a853"/>
+      <path d="M256 352 C262 364 264 370 262 376 C261 380 258 381 256 381 C254 381 251 380 250 376 C248 370 250 364 256 352 Z" fill="#f3dca6"/>
+    </g>
+  </g>
+</svg>

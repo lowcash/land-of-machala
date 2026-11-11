@@ -1,0 +1,65 @@
+/* Shared tooltip styles (tooltip.js): loaded by 2D, Admin and the play page. Fallbacks keep it right where the page has no theme variables. */
+.stat-icon .tip-bubble { display: none !important; }
+.float-tip {
+  display: none;
+  position: fixed;
+  z-index: 500;
+  width: max-content;
+  max-width: min(14rem, 70vw);
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid rgba(212, 168, 83, 0.4);
+  background: rgba(26, 18, 16, 0.88);
+  color: var(--fg, #f3e6d4);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
+  transform: translate(-50%, -100%);
+  border-radius: var(--radius-ui, 3px);
+  /* Position is measured while visibility:hidden – no place→clamp jump. */
+}
+abbr.kodex {
+  position: relative;
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(212, 168, 83, 0.7);
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+.float-tip.show { display: flex; }
+.float-tip.below { transform: translate(-50%, 0.35rem); }
+.float-tip .tip-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1, 0.25rem);
+  align-items: center;
+}
+.float-tip .tip-bit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.35rem;
+  border: 1px solid rgba(185, 168, 148, 0.28);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  max-width: 100%;
+}
+.float-tip .tip-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(185, 168, 148, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.has-tip {
+  cursor: help;
+}
