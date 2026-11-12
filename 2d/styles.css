@@ -65,8 +65,10 @@ img, svg { display: block; max-width: 100%; }
   --hp: #c45c4a;
   --mp: #5a8fc8;
   --ok: #6a9e6a;
-  --font-display: "Palatino Linotype", Palatino, Georgia, serif;
-  --font-ui: "Palatino Linotype", Palatino, Georgia, serif;
+  --font-display: var(--ui-font-num);
+  /* Game prose keeps the display stack; chrome/dev heads use --ui-font via shared head rules. */
+  --font-ui: var(--ui-font-num);
+  --head-tracking: var(--ui-head-tracking);
   --radius: 4px;
   /* spacing palette - jen tyto; žadné ad-hoc rem u margin/padding/gap */
   --space-1: 0.25rem;
@@ -142,8 +144,10 @@ html, body {
   background: rgba(13, 9, 8, var(--dev-opacity));
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  font-size: 0.68rem;
-  color: var(--muted);
+  /* Tool UI: Avenir stack; player prose keeps --font-ui / Iowan outside this box. */
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-body, 13px);
+  color: var(--ui-color-label, var(--muted));
   overflow: hidden;
   box-shadow: 0 8px 28px rgba(0, 0, 0, calc(0.45 * var(--dev-opacity)));
   /* height:auto + max-height – obě směry (otevřít i sbalit) jdou animovat */
@@ -154,7 +158,22 @@ html, body {
     border-radius 0.28s ease,
     box-shadow 0.28s ease;
 }
-.storybook-bar.is-dragging { cursor: grabbing; transition: none; }
+/* Refresh: persisted open/closed lands with no width/max-height animation (html.boxes-boot until two rAFs). */
+html.boxes-boot .storybook-bar,
+html.boxes-boot .storybook-bar .dev-body,
+html.boxes-boot .storybook-bar .dev-scroll,
+html.boxes-boot .storybook-bar .dev-chrome,
+html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
+  transition: none !important;
+}
+.storybook-bar.is-dragging,
+.storybook-bar.is-resizing { cursor: grabbing; transition: none; }
+.storybook-bar.is-resizing { cursor: nwse-resize; }
+/* Shared corner resize (tooltip.js mountCornerResize): hidden while collapsed to the handle square. */
+.storybook-bar.is-collapsed > .float-resize,
+.storybook-bar.is-minimized > .float-resize,
+.storybook-bar.is-collapsed > [data-float-resize],
+.storybook-bar.is-minimized > [data-float-resize] { display: none; }
 /* sbaleno = jen čtverec; jen width + max-height (bez max-width:2rem → X hardcut) */
 .storybook-bar.is-collapsed,
 .storybook-bar.is-minimized {
@@ -163,6 +182,21 @@ html, body {
   max-height: 2rem;
   border-radius: 8px;
   padding: 0;
+}
+/* Inset frame around the scrollport: bar border > .dev-body (pad) > .dev-scroll. */
+.storybook-bar .dev-body {
+  --dev-body-pad: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: var(--dev-body-pad);
+  position: relative;
+  transition:
+    opacity 0.28s ease,
+    max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s ease;
 }
 .storybook-bar .dev-scroll {
   transition:
@@ -173,6 +207,14 @@ html, body {
     --fade-b 0.28s ease;
   max-height: min(70vh, 36rem);
   opacity: 1;
+}
+.storybook-bar.is-collapsed .dev-body,
+.storybook-bar.is-minimized .dev-body {
+  padding: 0 !important;
+  max-height: 0 !important;
+  opacity: 0;
+  overflow: hidden !important;
+  pointer-events: none;
 }
 .storybook-bar.is-collapsed .dev-scroll,
 .storybook-bar.is-minimized .dev-scroll {
@@ -233,14 +275,16 @@ html, body {
   --dev-chrome-h: var(--box-head-h);
   position: sticky;
   top: 0;
-  z-index: 2;
+  /* Above scroll-fade overlays on .dev-scroll (z-index 1). */
+  z-index: 5;
   flex-shrink: 0;
   flex-wrap: nowrap;
   align-items: center;
   gap: 0.3rem;
   /* No top/left inset: the fixed handle sits on the box corner, the row starts right under the border. */
   padding: 0 0.45rem 0 0;
-  background: rgba(13, 9, 8, var(--dev-opacity));
+  /* Opaque chrome: scroll content must never read through the box header. */
+  background: var(--panel-solid);
   border-bottom: 1px solid rgba(185, 168, 148, 0.22);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -255,17 +299,31 @@ html, body {
  * everything with its border-radius (overflow: hidden), so a row never paints square corners outside the box.
  * The intro text of Stav systému is a plain .box-subhead <div> in app markup; it is not a summary, so it scrolls normally.
  */
-.storybook-bar .box-head { position: sticky; top: 0; z-index: 2; }
+.storybook-bar .box-head { position: sticky; top: 0; z-index: 5; }
 .storybook-bar summary.box-subhead,
 .storybook-bar .dev-sys-sec > summary {
   position: sticky;
   top: var(--stick-1);
-  z-index: 3;
+  z-index: 4;
   height: var(--sub-h);
+  min-height: var(--sub-h);
+  max-height: var(--sub-h);
   box-sizing: border-box;
-  margin: 0 -0.5rem;
-  padding: 0 0.5rem;
-  background: rgba(13, 9, 8, var(--dev-opacity));
+  margin: 0;
+  padding: 0 0.35rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-section, 12px);
+  font-weight: var(--ui-fw-head, 600);
+  letter-spacing: var(--ui-head-tracking, 0.06em);
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--ui-color-section, var(--muted));
+  overflow: hidden;
+  /* Solid, not --dev-opacity: a leaving level-2 must not show through this row. */
+  background: var(--panel-solid);
+  scroll-margin-top: 0;
 }
 /* Stav systému: sizes to its content; the list scrolls inside the box (the box max-height keeps it in the viewport). */
 .storybook-bar.status-bar .dev-scroll { max-height: calc(100dvh - 3rem); }
@@ -276,12 +334,16 @@ html, body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.7rem;
-  color: var(--fg);
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-card, 15px);
+  font-weight: var(--ui-fw-head, 600);
+  letter-spacing: var(--ui-head-tracking, 0.06em);
+  text-transform: uppercase;
+  line-height: var(--ui-card-lh, 1.3);
+  color: var(--ui-color-title, var(--fg));
 }
-/* One optical row: drag / select / ↺ / opacity share the same height + center. */
-.storybook-bar .dev-chrome > .dev-btn,
-.storybook-bar .dev-chrome > .dev-main select,
+/* One optical row: drag stays chrome-tall; select / ↺ share --ui-control-h with in-body controls. */
+.storybook-bar .dev-chrome > .dev-btn:not(.dev-reset),
 .storybook-bar .dev-chrome > .dev-drag {
   box-sizing: border-box;
   height: var(--dev-chrome-h);
@@ -294,7 +356,15 @@ html, body {
   justify-content: center;
   padding: 0 0.55rem;
   line-height: 1;
-  font-size: 0.85rem;
+  font-size: var(--ui-control-fs);
+}
+.storybook-bar .dev-chrome > .dev-btn.dev-reset {
+  align-self: center;
+  flex: 0 0 auto;
+}
+/* Inset focus ring: bar overflow:hidden would clip the global outline-offset:2px. */
+.storybook-bar .dev-chrome > .dev-btn.dev-reset:focus-visible {
+  outline-offset: -2px;
 }
 .storybook-bar .dev-chrome > .dev-main {
   display: inline-flex;
@@ -304,9 +374,16 @@ html, body {
 }
 .storybook-bar .dev-chrome > .dev-main select {
   display: block;
-  padding: 0 0.4rem;
-  line-height: var(--dev-chrome-h);
-  font-size: 0.7rem;
+  box-sizing: border-box;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  margin: 0;
+  padding: 0 0.5rem;
+  line-height: normal;
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  border-radius: var(--ui-control-radius);
 }
 .storybook-bar .dev-chrome > .dev-opacity {
   display: inline-flex;
@@ -321,19 +398,28 @@ html, body {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Uniform inner pad (incl. bottom): content must not touch the box edge. Top stays 0 so sticky rows pin flush. */
-  padding: 0 0.55rem 0.75rem;
+  /* Body supplies the inset from the box border; keep bottom pad so the last line clears the scroll edge (>= 8px). */
+  padding: 0 0 0.625rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   box-sizing: border-box;
+  /* Anchors / focus land below the stacked sticky rows (L1 + L2). */
+  scroll-padding-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
+  scroll-padding-bottom: 0.5rem;
   /* max-height / opacity / transition: viz pravidla výš (collapse) */
 }
 .storybook-bar .dev-scroll > :first-child {
-  margin-top: 0.35rem;
+  /* First section starts at the scrollport top; sticky chain still pins at top: 0. */
+  margin-top: 0;
 }
 .storybook-bar .dev-scroll > :last-child {
-  margin-bottom: 0.15rem;
+  margin-bottom: 0;
+}
+/* Section / subsection bodies: never park under the sticky stack at rest. */
+.storybook-bar details.dev-sec[open] > :not(summary),
+.storybook-bar details.dev-sub[open] > :not(summary) {
+  scroll-margin-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
 }
 /* Spacer under the fixed handle: keeps the row's first real control where the handle was. */
 .storybook-bar .dev-drag-slot {
@@ -410,17 +496,74 @@ html, body {
   line-height: 1;
   box-sizing: border-box;
 }
-/* The one reset button (↺): same size and glyph nudge everywhere in the dev box; the chrome row uses it too. */
-.storybook-bar .dev-btn.dev-reset,
-.storybook-bar .dev-chrome > .dev-btn.dev-reset {
-  --dev-reset-size: 1.7rem;
+/* Shared compact controls inside the floating boxes (not player prolog / not the drag handle).
+   Token height + zero vertical pad so glyphs are not clipped; chevron keeps padding-right via the global select rule. */
+.storybook-bar select,
+.storybook-bar button:not(.dev-drag),
+.storybook-bar .dev-btn,
+.storybook-bar .dev-knob select,
+.storybook-bar .dev-main select,
+.storybook-bar .dev-scene-compose select,
+.storybook-bar .dev-obj-state select,
+.storybook-bar input:not([type="checkbox"]):not([type="range"]):not([type="hidden"]) {
+  box-sizing: border-box;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  padding: 0 0.5rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  font-weight: var(--ui-fw-body, 400);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+  border-radius: var(--ui-control-radius);
+  line-height: 1.2;
+  overflow: hidden;
+}
+.storybook-bar input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  accent-color: var(--ui-accent, var(--accent));
+  border-radius: calc(var(--ui-control-radius) * 0.5);
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+.storybook-bar label,
+.storybook-bar .dev-chk {
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  letter-spacing: normal;
+  text-transform: none;
+  align-items: center;
+}
+.storybook-bar input[type="range"] {
+  height: var(--ui-control-h);
+  accent-color: var(--ui-accent, var(--accent));
+}
+/* The one reset button (↺): same --ui-control-h as the chrome select. */
+.storybook-bar .dev-btn.dev-reset {
+  --dev-reset-size: var(--ui-control-h);
   padding: 0;
   width: var(--dev-reset-size);
   min-width: var(--dev-reset-size);
   height: var(--dev-reset-size);
   min-height: var(--dev-reset-size);
-  font-size: 0.95rem;
-  transform: translateY(0.04em);
+  max-height: var(--dev-reset-size);
+  font-size: var(--ui-control-fs);
+  line-height: 1;
+  transform: none;
+  border-radius: var(--ui-control-radius);
+}
+/* One reset only (chrome #dev-reset): hide section / object-card ↺ in the scroll body. */
+.storybook-bar .dev-scroll .dev-reset,
+.storybook-bar .dev-scroll .reset-btn {
+  display: none !important;
 }
 .storybook-bar button,
 .storybook-bar select,
@@ -456,9 +599,18 @@ html, body {
 body:not(.has-dev) .storybook-bar,
 .storybook-bar[hidden] { display: none !important; }
 .dev-row { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; }
-.dev-knob { display: inline-flex; flex-direction: column; gap: 0.1rem; font-size: 0.6rem; color: var(--muted); }
-.dev-knob select, .dev-main select { font: inherit; font-size: 0.7rem; padding: 0.2rem; background: rgba(0,0,0,0.4); color: var(--fg); border: 1px solid var(--line); max-width: 11rem; }
-.dev-main { flex-direction: row; align-items: center; gap: 0.3rem; font-size: 0.7rem; }
+.dev-knob { display: inline-flex; flex-direction: column; gap: 0.1rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500); color: var(--ui-color-label, var(--muted)); }
+.dev-knob select, .dev-main select {
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  padding: 0 0.5rem;
+  line-height: normal;
+  background: rgba(0,0,0,0.4);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  max-width: 11rem;
+}
+.dev-main { flex-direction: row; align-items: center; gap: 0.3rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500); color: var(--ui-color-label, var(--muted)); }
 .dev-main select { max-width: 17rem; }.dev-row.dev-knobs,
 .dev-scene-compose .dev-scene-row {
   align-items: center;
@@ -468,16 +620,28 @@ body:not(.has-dev) .storybook-bar,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.55rem;
-  padding: 0.15rem 0.45rem;
-  line-height: 1;
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+  padding: 0 0.5rem;
+  line-height: normal;
   box-sizing: border-box;
+  border-radius: var(--ui-control-radius);
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
 }
 .dev-knob select {
-  min-height: 1.55rem;
+  min-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
   box-sizing: border-box;
+  border-radius: var(--ui-control-radius);
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  padding: 0 0.5rem;
+  line-height: normal;
 }
-.dev-chk { display: inline-flex; gap: 0.25rem; align-items: flex-start; white-space: nowrap; cursor: help; }
+.dev-chk { display: inline-flex; gap: 0.25rem; align-items: center; white-space: nowrap; cursor: help; }
 /* Ladení: long labels → stack, wrap. */
 .dev-toggles {
   flex-direction: column;
@@ -495,13 +659,15 @@ body:not(.has-dev) .storybook-bar,
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-section, 12px);
+  font-weight: var(--ui-fw-head, 600);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fg);
+  letter-spacing: var(--ui-head-tracking, 0.06em);
+  color: var(--ui-color-section, var(--fg));
   list-style: none;
   padding: 0.2rem 0.1rem;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 .dev-sec > summary::-webkit-details-marker { display: none; }
 .dev-sec[open] > summary { margin-bottom: 0.25rem; }
@@ -521,7 +687,7 @@ body:not(.has-dev) .storybook-bar,
   margin: 0;
 }
 .dev-sec[open] > summary::before { transform: translate(0, -0.14rem) rotate(45deg); }
-.dev-note { margin: 0; color: var(--muted); }
+.dev-note { margin: 0; color: var(--ui-color-helper, var(--muted)); font-size: var(--ui-fs-helper, 11.5px); font-weight: var(--ui-fw-body, 400); font-family: var(--ui-font); }
 .dev-world-out {
   margin: 0.35rem 0 0;
   padding: 0.35rem 0.45rem;
@@ -535,36 +701,66 @@ body:not(.has-dev) .storybook-bar,
   width: 100%;
   box-sizing: border-box;
 }
-.dev-world-clock-row {
+/* Čas: title above; slider + readout one nowrap flex row (slider flex 1, output fixed). */
+.storybook-bar .dev-world-clock-row {
+  display: flex;
+  flex-wrap: nowrap;
   width: 100%;
-  gap: 0.45rem;
-  align-items: center;
+  gap: 0.5rem;
+  align-items: flex-end;
+  /* Clear sticky Čas a počasí + Čas rows (Hodina scény must sit fully below the chain). */
+  scroll-margin-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
+  margin-top: 0.35rem;
+  padding-top: 0.15rem;
 }
-.dev-world-hour-knob {
-  flex: 1 1 8rem;
-  min-width: 7rem;
+.storybook-bar .dev-world-hour-knob {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  scroll-margin-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
 }
-.dev-world-hour-knob input[type="range"] {
+/* Keep subsection bodies clear of sticky L2 rows at the same level. */
+.storybook-bar details.dev-sub[open] > summary {
+  margin-bottom: 0.4rem;
+}
+.storybook-bar .dev-world-hour-knob input[type="range"] {
   width: 100%;
-  height: 1.25rem;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--ui-control-h);
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--ui-accent, var(--accent));
   vertical-align: middle;
 }
-.dev-world-hour-label {
-  font: 0.72rem/1 ui-monospace, monospace;
-  color: var(--fg);
-  white-space: nowrap;
-  /* fixed slot (longest text "15:00 · odpoledne"): the slider next to it must not change size while the text does */
-  flex: 0 0 auto;
-  width: 17ch;
-  font-variant-numeric: tabular-nums;
+.storybook-bar .dev-world-hour-label {
+  /* Fixed slot for longest readout ("15:00 · odpoledne"); never shrink so glyphs are not clipped. */
+  flex: 0 0 15ch;
+  width: 15ch;
+  min-width: 15ch;
+  max-width: 15ch;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  box-sizing: border-box;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  min-height: 1.55rem;
+  white-space: nowrap;
+  overflow: hidden;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  line-height: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
 }
-.dev-world-clock-row > .dev-btn {
-  align-self: center;
+.storybook-bar .dev-world-clock-row > .dev-btn {
+  align-self: flex-end;
 }
 .dev-world-objects {
   display: flex;
@@ -604,9 +800,15 @@ body:not(.has-dev) .storybook-bar,
   color: var(--muted);
 }
 .dev-obj-state select {
-  font: inherit;
-  font-size: 0.68rem;
-  padding: 0.15rem 0.25rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  padding: 0 0.5rem;
+  line-height: normal;
+  min-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  box-sizing: border-box;
+  border-radius: var(--ui-control-radius);
   background: rgba(0, 0, 0, 0.4);
   color: var(--fg);
   border: 1px solid var(--line);
@@ -864,6 +1066,9 @@ body.has-dev .view-full {
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
+  /* Prefer high-quality resampling when the browser downscales a hi-res plate/cutout. */
+  image-rendering: auto;
+  image-rendering: high-quality;
   /* Layers cross-fade in and out (scene-view.js sets opacity); 0 ms under prefers-reduced-motion. */
   transition: opacity var(--scene-fade-ms, 420ms) var(--scene-fade-ease, ease);
 }
@@ -872,6 +1077,9 @@ body.has-dev .view-full {
   display: block;
   width: 100%;
   height: 100%;
+  /* Backing store is sized to CSS × dpr; keep browser resampling high-quality if sizes drift. */
+  image-rendering: auto;
+  image-rendering: high-quality;
 }
 /* Overscan (scene-view.js) scales the stage; the particles follow so flames stay on their candle. */
 .landing-bg.has-scene-compose > .bg-particles {
@@ -891,16 +1099,28 @@ body.has-dev .view-full {
 .storybook-bar details.dev-sub > summary {
   cursor: pointer;
   list-style: none;
-  font-size: 0.65rem;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  /* level 2 sticky row: starts at the sub-rule (border-left), ends at the scroll area edge */
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-section, 12px);
+  font-weight: var(--ui-fw-head, 600);
+  text-transform: uppercase;
+  letter-spacing: var(--ui-head-tracking, 0.06em);
+  color: var(--ui-color-section, var(--muted));
+  /* level 2 sticky row: park under level 1 (--stick-2); never share level-1's top slot */
   position: sticky;
   top: var(--stick-2);
-  z-index: 2;
-  margin: 0 -0.5rem 0 -0.6rem;
-  padding: 0.15rem 0.5rem 0.15rem 0.6rem;
-  background: rgba(13, 9, 8, var(--dev-opacity));
+  z-index: 3;
+  height: var(--sub-h);
+  min-height: var(--sub-h);
+  max-height: var(--sub-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  line-height: normal;
+  overflow: hidden;
+  /* Left -0.6rem covers the sub indent rule; scroll has no side pad anymore. */
+  margin: 0 0 0 -0.6rem;
+  padding: 0 0.35rem 0 0.6rem;
+  background: var(--panel-solid);
 }
 .storybook-bar details.dev-sub > summary::-webkit-details-marker { display: none; }
 .storybook-bar details.dev-sub > summary::before { content: "▸ "; }
@@ -922,7 +1142,7 @@ body.has-dev .view-full {
 .storybook-bar [hidden] { display: none !important; }
 .storybook-bar details.dev-sub[data-sub="efekty"] > .dev-scene-compose,
 .storybook-bar details.dev-sub[data-sub="pocasi"] > .dev-scene-compose { border-top: none; margin-top: 0; padding-top: 0; }
-.dev-scene-note { margin: 0; font-size: 0.65rem; color: var(--muted); }
+.dev-scene-note { margin: 0; font-size: var(--ui-fs-helper, 11.5px); font-weight: var(--ui-fw-body, 400); font-family: var(--ui-font); color: var(--ui-color-helper, var(--muted)); }
 .dev-scene-warn { font-size: 0.6rem; color: #d9a066; white-space: nowrap; }
 /* Positions: one row per slot (title left, who + reset right, wraps on a narrow panel). */
 .dev-scene-slots { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -933,14 +1153,22 @@ body.has-dev .view-full {
   justify-content: space-between;
   gap: 0.25rem 0.5rem;
 }
-.dev-scene-compose .dev-scene-slot-show { flex: 1 1 9rem; color: var(--fg); font-size: 0.7rem; text-transform: none; letter-spacing: 0; }
+.dev-scene-compose .dev-scene-slot-show {
+  flex: 1 1 9rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--fg)); text-transform: none; letter-spacing: 0;
+}
 .dev-scene-slot-ctl { display: inline-flex; align-items: center; gap: 0.3rem; }
 .dev-scene-compose .dev-scene-slot-ctl select,
 .dev-scene-compose #dev-scene-shot {
-  font: inherit;
-  font-size: 0.7rem;
-  padding: 0.15rem 0.25rem;
-  min-height: 1.55rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  padding: 0 0.5rem;
+  line-height: normal;
+  min-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  box-sizing: border-box;
+  border-radius: var(--ui-control-radius);
   background: rgba(0, 0, 0, 0.4);
   color: var(--fg);
   border: 1px solid var(--line);
@@ -953,12 +1181,13 @@ body.has-dev .view-full {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.15rem 0.1rem;
+  padding: 0 0.5rem;
   background: none;
   border: none;
   color: var(--fg);
-  font: inherit;
-  font-size: 0.7rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-control-fs);
+  line-height: normal;
   cursor: pointer;
   margin-right: auto;
 }
@@ -986,7 +1215,7 @@ body.has-dev .view-full {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  min-height: 1.55rem;
+  min-height: var(--ui-control-h);
   margin: 0;
   line-height: 1.2;
 }
@@ -997,7 +1226,8 @@ body.has-dev .view-full {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.75rem;
+  font-family: var(--ui-font);
+  font-size: 12px;
   color: var(--muted);
   min-width: 0;
 }
@@ -1011,10 +1241,13 @@ body.has-dev .view-full {
   min-width: 7.5rem;
   max-width: 11rem;
 }
-.dev-scene-compose .dev-scene-label {
+.dev-scene-compose .dev-scene-label,
+.dev-world-objects > .dev-scene-label {
   margin: 0;
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
   opacity: 0.85;
@@ -1322,9 +1555,74 @@ input[type="range"] {
 }
 .fade-top { --fade-t: var(--fade-size); }
 .fade-bottom { --fade-b: var(--fade-size); }
+/* Instant fade for boot / already-visited prolog steps (no --pf/--fade grow-in). */
+.fade-snap,
+.fade-snap[data-fade],
+.fade-snap.fade-top,
+.fade-snap.fade-bottom,
+.fade-snap .scroll-fade-clip,
+.fade-snap .origin-flow,
+#origins-box.fade-snap .scroll-fade-clip,
+#origins-box.fade-snap .origin-flow {
+  transition: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   [data-fade], .fade-top, .fade-bottom, .log, .action-scroll { transition: none; }
 }
+/*
+ * Floating boxes (dev / Stav systému): mask on .dev-scroll also faded sticky summaries.
+ * Top fade stays a sticky overlay inside the scroll (z-index 1 < sticky 3–5) so headers stay opaque.
+ * Bottom fade is on .dev-body, parked on the scroll element's bottom edge (above the body pad / box
+ * border), and only paints while .fade-bottom is on (more content below) – never covers the last line at end.
+ */
+.storybook-bar .dev-scroll[data-fade],
+.storybook-bar .dev-scroll.fade-top,
+.storybook-bar .dev-scroll.fade-bottom {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  position: relative;
+}
+.storybook-bar .dev-scroll[data-fade]::before,
+.storybook-bar .dev-scroll[data-fade]::after {
+  content: "";
+  position: sticky;
+  left: 0;
+  right: 0;
+  display: block;
+  height: var(--fade-size, 2.4rem);
+  margin-bottom: calc(-1 * var(--fade-size, 2.4rem));
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  background: linear-gradient(to bottom, rgba(13, 9, 8, var(--dev-opacity)), transparent);
+}
+/* Bottom pseudo on the scroll is inert; real bottom fade is .dev-body::after. */
+.storybook-bar .dev-scroll[data-fade]::after {
+  content: none;
+  display: none;
+  top: auto;
+  bottom: 0;
+  margin-bottom: 0;
+  margin-top: calc(-1 * var(--fade-size, 2.4rem));
+  background: linear-gradient(to top, rgba(13, 9, 8, var(--dev-opacity)), transparent);
+}
+.storybook-bar .dev-scroll.fade-top::before { opacity: 1; top: 0; }
+.storybook-bar .dev-scroll.fade-bottom::after { opacity: 0; }
+.storybook-bar .dev-body::after {
+  content: "";
+  position: absolute;
+  left: var(--dev-body-pad, 0.5rem);
+  right: var(--dev-body-pad, 0.5rem);
+  bottom: var(--dev-body-pad, 0.5rem);
+  height: var(--fade-size, 2.4rem);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  background: linear-gradient(to top, rgba(13, 9, 8, var(--dev-opacity)), transparent);
+}
+.storybook-bar .dev-body:has(> .dev-scroll.fade-bottom)::after { opacity: 1; }
 /* telegraph - viz níže u combat FX */
 .bar {
   display: grid;
@@ -1936,7 +2234,15 @@ button.locked,
     transition: none;
   }
 }
-.dev-group { margin: 0.25rem 0 0; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.dev-group {
+  margin: 0.25rem 0 0;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label);
+  font-weight: var(--ui-fw-label, 500);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ui-color-label, var(--muted));
+}
 
 /* hover žlutého (primary) tlačítka: zůstává plné a jen zesvětlí, text tmavý; tmavé (secondary) se jen přibarví */
 @media (hover: hover) {button.btn-primary:hover:not(:disabled):not(.locked):not(.stat-icon),
@@ -3576,7 +3882,13 @@ html.boot-peek [data-screen="origins"] .prolog-frame {
   will-change: transform, filter, opacity;
   cursor: grab;
   touch-action: none;
+  pointer-events: auto;
+  z-index: 1;
 }
+/*
+ * Eye toggle keeps compose/particles mounted (parallax on the same plate).
+ * Hiding them here used to flash a second bake and jump the camera.
+ */
 [data-screen="origins"].is-peek.is-peek-cover .landing-bg,
 [data-screen="origins"].is-peek-expanding.is-peek-cover .landing-bg {
   background-repeat: no-repeat;

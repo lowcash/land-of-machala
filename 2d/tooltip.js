@@ -1,6 +1,101 @@
 /* Shared hover / long-press / focus tooltip for every page: 2D (2d/app.js), Admin and the play page.
    Shows the text of [data-tip] (also .stat-icon, abbr.kodex when window.LOM.Kodex is loaded) in one floating #float-tip.
+   Also hosts mountCornerResize (dev box, Stav systému, admin map tips): one corner-drag size behaviour.
    Classic script, no build, no dependency on app.js. Styles: tooltip.css (same folder). Load before the page script. */
+
+/**
+ * Corner resize for a position:fixed (or absolute) panel. Shared by the 2d floating boxes and admin map tips.
+ * opts: minW/minH/maxW/maxH (number or () => number), onSize(w, h), getSize() => {w,h}|null,
+ * disabled() => bool (e.g. collapsed), scale() => number (admin map zoom; default 1).
+ * Returns { applySize(w,h), handle, destroy }.
+ */
+function mountCornerResize(el, opts) {
+  opts = opts || {};
+  const num = (v, fallback) => {
+    const n = typeof v === "function" ? v() : v;
+    return Number.isFinite(n) ? n : fallback;
+  };
+  let handle = el.querySelector(":scope > .float-resize, :scope > [data-float-resize]");
+  if (!handle) {
+    handle = document.createElement("span");
+    handle.className = "float-resize";
+    handle.setAttribute("data-float-resize", "");
+    handle.setAttribute("aria-hidden", "true");
+    el.appendChild(handle);
+  }
+  const applySize = (w, h) => {
+    if (w != null && Number.isFinite(w)) {
+      el.style.width = `${w}px`;
+      el.style.maxWidth = `${w}px`;
+    }
+    if (h != null && Number.isFinite(h)) {
+      el.style.height = `${h}px`;
+      el.style.maxHeight = `${h}px`;
+    }
+  };
+  let drag = null;
+  const onMove = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const scale = num(opts.scale, 1) || 1;
+    const minW = num(opts.minW, 160);
+    const minH = num(opts.minH, 96);
+    const maxW = num(opts.maxW, window.innerWidth - 16);
+    const maxH = num(opts.maxH, window.innerHeight - 16);
+    const w = Math.max(minW, Math.min(maxW, Math.round(drag.w0 + (e.clientX - drag.sx) / scale)));
+    const h = Math.max(minH, Math.min(maxH, Math.round(drag.h0 + (e.clientY - drag.sy) / scale)));
+    drag.w = w;
+    drag.h = h;
+    applySize(w, h);
+    el.setAttribute("data-resizing", "");
+    el.classList.add("is-resizing");
+    if (typeof opts.onMove === "function") opts.onMove(w, h);
+  };
+  const onUp = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    const done = drag;
+    drag = null;
+    el.removeAttribute("data-resizing");
+    el.classList.remove("is-resizing");
+    if (e.type === "pointerup" && done.w != null && typeof opts.onSize === "function") {
+      opts.onSize(done.w, done.h);
+    }
+  };
+  const onDown = (e) => {
+    if (drag) return;
+    if (e.button !== 0) return;
+    if (typeof opts.disabled === "function" && opts.disabled()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const cur =
+      (typeof opts.getSize === "function" && opts.getSize()) ||
+      { w: el.offsetWidth, h: el.offsetHeight };
+    drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, w0: cur.w, h0: cur.h, w: cur.w, h: cur.h };
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  };
+  handle.addEventListener("pointerdown", onDown);
+  const boot = typeof opts.getSize === "function" ? opts.getSize() : null;
+  if (boot && (boot.w != null || boot.h != null)) applySize(boot.w, boot.h);
+  return {
+    applySize,
+    handle,
+    destroy() {
+      handle.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    },
+  };
+}
+window.mountCornerResize = mountCornerResize;
+
 /** Tip v body - mimo backdrop-filter / overflow parentů */
 function floatTipEl() {
   let tip = document.getElementById("float-tip");

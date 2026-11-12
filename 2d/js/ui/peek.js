@@ -44,10 +44,17 @@ function peekIsShortLandscape() {
 /**
  * Peek always cover-fills the viewport (no letterbox/pillarbox bars).
  * Player pans/zooms to see the rest – equalizes awkward viewports (landscape, 4:3).
+ * Unknown image size → bake aspect (never the viewport box: that squeezed 16:9 into the window).
  */
 function peekFitSize(iw, ih, vw, vh) {
-  if (!(iw > 0 && ih > 0)) return { ew: vw, eh: vh };
-  const { ew, eh } = LOM.PrologCamera.sceneFit(iw, ih, vw, vh);
+  let pw = iw;
+  let ph = ih;
+  if (!(pw > 0 && ph > 0)) {
+    const ar = (typeof LOM !== "undefined" && LOM.PrologCamera?.BAKE_AR) || 1365 / 768;
+    pw = ar * 1000;
+    ph = 1000;
+  }
+  const { ew, eh } = LOM.PrologCamera.sceneFit(pw, ph, vw, vh);
   return { ew, eh };
 }
 
@@ -139,10 +146,10 @@ function peekFadeTransition() {
   ].join(", ");
 }
 
-/** opts.keepPan: boot restore already seeded peekPan / peekFocus – do not snap back to focus rest. */
+/** opts.keepPan: seeded peekPan / peekFocus (boot restore or prolog-pose entry) – do not snap to focus rest. */
 function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}, opts = {}) {
   peekLayout = { ew, eh, vw, vh };
-  if (!(opts.keepPan && bootPoseSnap)) {
+  if (!opts.keepPan) {
     const p = peekPanForFocus(ew, eh, vw, vh, peekFocus);
     peekPan = { x: p.x, y: p.y, scale: 1 };
   }
@@ -161,6 +168,8 @@ function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}, opts = {}) {
   bg.style.right = "auto";
   bg.style.bottom = "auto";
   bg.style.backgroundSize = "100% 100%";
+  /* Peek stretches the bake to the cover canvas; prefer high-quality resampling over default. */
+  bg.style.imageRendering = "high-quality";
   bg.style.backgroundPosition = "center";
   bg.style.filter = "";
   bg.style.opacity = "";
@@ -169,6 +178,67 @@ function applyPeekCanvas(bg, ew, eh, vw, vh, _offset = {}, opts = {}) {
   bg.style.transformOrigin = "center center";
   /* Boot restore: strip any leftover soft-crossfade so the cover never stacks two bakes. */
   if (bootPoseSnap) bg.querySelectorAll(":scope > .bg-crossfade").forEach((n) => n.remove());
+}
+
+/** Account id for per-user peek prefs (mirrors ClientState / uiPrefKey). */
+function peekAccountId() {
+  if (typeof ClientState !== "undefined" && ClientState.accountId) return ClientState.accountId();
+  try {
+    let a = document.documentElement.getAttribute("data-account") || "";
+    if (!a) {
+      const m = /(?:^|;\s*)lom_account=([^;]*)/.exec(document.cookie || "");
+      if (m) a = decodeURIComponent(m[1] || "");
+    }
+    return a || "anon";
+  } catch (_) {
+    return "anon";
+  }
+}
+
+/** Persist eye open + pan/focus to storybook session and per-user localStorage. */
+function persistPeekEyeState(open) {
+  const snap = {
+    open: !!open,
+    pan: { x: peekPan.x, y: peekPan.y, scale: peekPan.scale },
+    focus: { x: peekFocus.x, y: peekFocus.y },
+  };
+  const BH = typeof BootHold !== "undefined" ? BootHold : null;
+  try {
+    const key = "lom.storybook";
+    const raw = sessionStorage.getItem(key);
+    const cur = raw ? JSON.parse(raw) : null;
+    const merged = BH && BH.mergePeekIntoSession ? BH.mergePeekIntoSession(cur, snap) : Object.assign({}, cur || {}, {
+      peek: snap.open,
+      peekPan: snap.pan,
+      peekFocus: snap.focus,
+    });
+    sessionStorage.setItem(key, JSON.stringify(merged));
+  } catch (_) {}
+  try {
+    const prefKey = BH && BH.peekUiKey ? BH.peekUiKey(peekAccountId()) : `lom.ui.${peekAccountId()}.lom.peek`;
+    const body = BH && BH.serializePeekSnap ? BH.serializePeekSnap(snap) : snap;
+    if (open) localStorage.setItem(prefKey, JSON.stringify(body));
+    else localStorage.removeItem(prefKey);
+  } catch (_) {}
+}
+
+/** Cover-canvas pan/scale matching the current prologue camera crop; null = not representable (zoom out smoothly). */
+function peekCoverPanForProlog(iw, ih, ew, eh, vw, vh, left, top) {
+  if (!LOM.PrologCamera?.poseRect) return null;
+  const box = peekRestingBox(vw, vh, left, top);
+  if (!(box.width > 0 && box.height > 0 && ew > 0 && eh > 0)) return null;
+  const pose = prologCameraPose(prologShotNow(), { W: box.width, H: box.height });
+  if (!pose || !(pose.scale > 0)) return null;
+  /* Scale-1 bg-position slide is not a pure cover pan – keep the smooth zoom-out path. */
+  if (pose.bgX != null && pose.scale <= 1.001) return null;
+  const target = LOM.PrologCamera.poseRect(
+    peekDisplayedImageRect(box, iw, ih, { size: peekRestingBgSize(), focus: pose.focus }),
+    box,
+    pose
+  );
+  const pan = peekPanScaleToRect(target, ew, eh, vw, vh, left, top);
+  if (!Number.isFinite(pan.scale) || pan.scale <= 0) return null;
+  return pan;
 }
 
 function peekCoverCanvasActive(bg) {
@@ -216,9 +286,50 @@ function originsPeekBg() {
 }
 
 function peekBgUrl(bg) {
-  const raw = getComputedStyle(bg).backgroundImage || "";
-  const m = raw.match(/url\((['"]?)(.*?)\1\)/);
+  /* Prefer live style; while compose is mounted the bake URL lives in dataset.bakeBg. */
+  const raw = bg?.style?.backgroundImage || bg?.dataset?.bakeBg || getComputedStyle(bg).backgroundImage || "";
+  const m = String(raw).match(/url\((['"]?)(.*?)\1\)/);
   return m ? m[2] : "";
+}
+
+/**
+ * Eye mode owns one interactive bake on .landing-bg. Hide (do not destroy) the scene-compose
+ * layer so exit can reveal it under the peek frame without a rebuild flash. Restore bakeBg
+ * onto the element while compose is hidden (compose had set backgroundImage to none).
+ */
+function peekSuspendSceneLayer() {
+  const bg = originsPeekBg();
+  if (!bg) return;
+  bg.querySelectorAll(":scope > .scene-compose, :scope > .bg-particles").forEach((n) => {
+    n.hidden = true;
+  });
+  if (bg.dataset.bakeBg && (!bg.style.backgroundImage || bg.style.backgroundImage === "none")) {
+    bg.style.backgroundImage = bg.dataset.bakeBg;
+  }
+}
+
+/**
+ * Reveal the compositor after / under the eye. opts.underPeek: remount while is-peek is still
+ * on, so the first post-exit paint is never an empty frame.
+ */
+function peekResumeSceneLayer(opts) {
+  const underPeek = !!(opts && opts.underPeek);
+  const bg = originsPeekBg();
+  if (bg) {
+    bg.querySelectorAll(":scope > .scene-compose, :scope > .bg-particles").forEach((n) => {
+      n.hidden = false;
+    });
+    /* Compose owns the plate again: drop the peek bake duplicate when the host is present. */
+    if (bg.querySelector(":scope > .scene-compose") && bg.style.backgroundImage && bg.style.backgroundImage !== "none") {
+      bg.dataset.bakeBg = bg.style.backgroundImage;
+      bg.style.backgroundImage = "none";
+    }
+  }
+  if (typeof syncSceneCompose === "function") {
+    syncSceneCompose(underPeek ? { underPeek: true } : undefined);
+  } else if (typeof setPrologBg === "function") {
+    setPrologBg();
+  }
 }
 
 /** Parsuje background-position na podíl 0–1 (center/left/… i %). */
@@ -293,6 +404,7 @@ function clearPeekLayoutStyles(bg) {
   bg.style.bottom = "";
   bg.style.backgroundSize = "";
   bg.style.backgroundPosition = "";
+  bg.style.imageRendering = "";
   bg.style.filter = "";
   bg.style.opacity = "";
   bg.classList.remove("is-dragging");
@@ -315,13 +427,19 @@ function resetPeekTransform(camera = "ease") {
 
 /** Cover peek ended on the prolog camera: drop the canvas and set the in-flow pose (already on screen). */
 function finishPeekCoverExit(scr, bg) {
-  clearPeekLayoutStyles(bg);
+  /* Scene under the still-visible peek frame first – no empty paint between cover and in-flow. */
+  peekResumeSceneLayer({ underPeek: true });
   peekParallaxBias = { x: 0, y: 0 };
   scr.classList.remove("is-peek", "is-peek-expanding", "is-peek-closing", "is-peek-cover", "is-peek-layout");
   peekPan = { x: 0, y: 0, scale: 1 };
   peekLayout = { ew: 0, eh: 0, vw: 0, vh: 0 };
   prologCamKey = "";
+  bg.style.transition = "none";
+  bg.style.filter = "";
+  bg.style.opacity = "";
+  clearPeekLayoutStyles(bg);
   applyPrologCamera(false);
+  persistPeekEyeState(false);
   writeStorybookSession();
 }
 
@@ -377,15 +495,19 @@ function layoutPeekFullImage(done, opts = {}) {
     done?.();
     return;
   }
-  const { vw, vh } = peekViewport();
   const applySize = (iw, ih) => {
     if (!scr.classList.contains("is-peek")) {
       done?.();
       return;
     }
+    const { vw, vh } = peekViewport();
+    if (!(vw > 0 && vh > 0)) {
+      requestAnimationFrame(() => withPeekImageSize(bg, applySize));
+      return;
+    }
     const { ew, eh } = peekFitSize(iw, ih, vw, vh);
     const keepPan = !opts.resetPan ? { ...peekPan } : null;
-    applyPeekCanvas(bg, ew, eh, vw, vh);
+    applyPeekCanvas(bg, ew, eh, vw, vh, {}, { keepPan: !!keepPan });
     if (keepPan) {
       peekPan = keepPan;
       clampPeekPan();
@@ -469,6 +591,7 @@ function prologCardSide(shot) {
 function prologCameraWanted() {
   const scr = document.querySelector('[data-screen="origins"]');
   if (!scr || state.screen !== "origins") return false;
+  if (typeof prologSceneVisibleForStep === "function" && !prologSceneVisibleForStep(state.originStep)) return false;
   if (scr.classList.contains("is-peek") || scr.classList.contains("is-peek-expanding")) return false;
   return true;
 }
@@ -606,6 +729,9 @@ function applyPrologCamera(animate = true) {
   peekParallaxBias = pose.cam ? { x: pose.cam.x - pose.x, y: pose.cam.y - pose.y } : { x: 0, y: 0 };
   bg.style.transformOrigin = pose.origin || "center center";
   applyPeekTransform();
+  /* After the camera tween settles, re-measure so the GL buffer matches the displayed (zoomed) size. */
+  if (ease > 0) LOM.SceneView?.scheduleSettleLayout?.(ease + 32);
+  else LOM.SceneView?.relayout?.();
 }
 
 function peekRestIdentity() {
@@ -651,7 +777,7 @@ function setPeekButtonState(btn, on) {
 
 /** Letterbox/pillarbox peek: UI away, pan/zoom inside the stage (pruhy zůstanou). */
 function enterStagePeek(scr, bg, gen, opts = {}) {
-  const keepPan = !!(opts.keepPan && bootPoseSnap);
+  const keepPan = !!opts.keepPan;
   /*
    * Mid-exit reverse: zoom back out was in progress – reverse to clear view from current frame.
    */
@@ -672,6 +798,7 @@ function enterStagePeek(scr, bg, gen, opts = {}) {
       if (gen !== peekEnterGen) return;
       peekSettleEnterVisual(scr, bg);
       showPeekHintOnce();
+      persistPeekEyeState(true);
       writeStorybookSession();
     });
     return;
@@ -680,10 +807,10 @@ function enterStagePeek(scr, bg, gen, opts = {}) {
   const box = peekStageBox();
   if (!keepPan) {
     peekFocus = readBgFocus(bg);
-    /* Keep the camera the parallax holds now (GUI pose pan included) as bias: entering does not drop the depth shift. */
+    /* Stage peek starts at the live camera pose (no forced zoom-out to identity). */
     const camNow = peekSceneCamera();
-    peekPan = peekRestIdentity();
-    peekParallaxBias = { x: camNow.x - peekPan.x, y: camNow.y - peekPan.y };
+    peekPan = { x: camNow.x, y: camNow.y, scale: camNow.scale > 0 ? camNow.scale : 1 };
+    peekParallaxBias = { x: 0, y: 0 };
   } else {
     peekParallaxBias = { x: 0, y: 0 };
   }
@@ -698,6 +825,7 @@ function enterStagePeek(scr, bg, gen, opts = {}) {
   bg.style.transformOrigin = "center center";
   applyPeekTransform();
   showPeekHintOnce();
+  persistPeekEyeState(true);
   writeStorybookSession();
 }
 
@@ -715,11 +843,20 @@ function enterPeekMode(opts = {}) {
   const scr = document.querySelector('[data-screen="origins"]');
   const bg = originsPeekBg();
   if (!scr || !bg) return;
-  const keepPan = !!(opts.keepPan && bootPoseSnap);
+  if (typeof prologSceneVisibleForStep === "function" && !prologSceneVisibleForStep(state.originStep)) return;
+  const keepPan = !!opts.keepPan;
   const gen = ++peekEnterGen;
   scr.classList.remove("is-peek-closing");
+  /*
+   * Mark peeking immediately (before async image measure) so boot's writeStorybookSession
+   * and isOriginsPeeking() see the eye as open – otherwise a mid-enter Cmd+R saved peek:false.
+   */
+  scr.classList.add("is-peek-expanding");
+  persistPeekEyeState(true);
   /* One bake only: drop a soft-crossfade leftover before the cover canvas mounts. */
   bg.querySelectorAll(":scope > .bg-crossfade").forEach((n) => n.remove());
+  /* Hide the resting scene-compose / particles so only the interactive peek bake remains. */
+  peekSuspendSceneLayer();
 
   if (!peekNeedsCover()) {
     enterStagePeek(scr, bg, gen, { keepPan });
@@ -747,6 +884,7 @@ function enterPeekMode(opts = {}) {
       if (gen !== peekEnterGen) return;
       peekSettleEnterVisual(scr, bg);
       showPeekHintOnce();
+      persistPeekEyeState(true);
       writeStorybookSession();
     });
     return;
@@ -755,21 +893,44 @@ function enterPeekMode(opts = {}) {
   /* Read focus before is-peek (portrait/bake change background-position), unless boot restore seeded it. */
   if (!keepPan) {
     peekFocus = readBgFocus(bg);
-    /* The GUI pose pan stays as parallax bias: the eye zooms out to rest, the depth shift does not drop with it. */
-    peekParallaxBias = { x: peekPan.x + peekParallaxBias.x, y: peekPan.y + peekParallaxBias.y };
-    peekPan = { x: 0, y: 0, scale: 1 };
+    peekParallaxBias = { x: 0, y: 0 };
   } else {
     peekParallaxBias = { x: 0, y: 0 };
   }
-  const fromBox = bg.getBoundingClientRect();
   const fadeOnly = peekIsShortLandscape();
+  let coverRetries = 0;
+  const runCoverEnter = () => {
   withPeekImageSize(bg, (iw, ih) => {
     if (gen !== peekEnterGen) return;
     if (!scr.isConnected || !document.body.contains(bg)) return;
     const { vw, vh, top, left } = peekViewport();
+    /* Boot / first paint: wait until the viewport has a real box (avoid squeeze from 0×0 → full window). Capped. */
+    if (!(vw > 0 && vh > 0)) {
+      if (gen !== peekEnterGen || coverRetries >= 60) return;
+      coverRetries += 1;
+      requestAnimationFrame(runCoverEnter);
+      return;
+    }
     const { ew, eh } = peekFitSize(iw, ih, vw, vh);
-    /* FLIP from the painted image (contain / auto 100% / half-plate), not the BG box. */
+    /* FLIP from the painted image (contain / auto 100% / half-plate), not the BG box. Re-read here, not a stale call-time value. */
+    const fromBox = bg.getBoundingClientRect();
     const from = peekDisplayedImageRect(fromBox, iw, ih, bg);
+    /*
+     * Prefer starting at the prologue camera pose (same crop/zoom). Zoom-out to the whole bake
+     * is only by the user. If that pose cannot be represented on the cover canvas, fall back to
+     * a smooth same-layer FLIP toward focus rest (no layer swap).
+     */
+    let seedKeep = keepPan;
+    if (!keepPan) {
+      const posePan = peekCoverPanForProlog(iw, ih, ew, eh, vw, vh, left, top);
+      if (posePan) {
+        peekPan = posePan;
+        seedKeep = true;
+      } else {
+        peekPan = { x: 0, y: 0, scale: 1 };
+        seedKeep = false;
+      }
+    }
     /*
      * Sync kick (0→1 together): expand stage (layout only) → absolute canvas under
      * melt → start visual → one turn add peek classes + arm bg end state.
@@ -778,12 +939,12 @@ function enterPeekMode(opts = {}) {
     bg.style.transition = "none";
     scr.classList.add("is-peek-layout");
     void scr.offsetWidth;
-    applyPeekCanvas(bg, ew, eh, vw, vh, { top, left }, { keepPan });
+    applyPeekCanvas(bg, ew, eh, vw, vh, { top, left }, { keepPan: seedKeep });
     const endT = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
     let startT = endT;
     let motion = "fade";
-    if (bootPoseSnap) {
-      /* Restored at boot: the eye is the first paint, no entrance flip from the rest pose. */
+    if (bootPoseSnap || seedKeep) {
+      /* Restored / pose-matched: first paint is already the eye crop, no entrance zoom-out. */
       motion = "snap";
     } else if (!fadeOnly) {
       const flip = peekFlipFromRect(bg, from);
@@ -801,6 +962,7 @@ function enterPeekMode(opts = {}) {
       scr.classList.add("is-peek", "is-peek-cover");
       peekSettleEnterVisual(scr, bg);
       showPeekHintOnce();
+      persistPeekEyeState(true);
       writeStorybookSession();
       return;
     }
@@ -818,9 +980,20 @@ function enterPeekMode(opts = {}) {
       if (gen !== peekEnterGen) return;
       peekSettleEnterVisual(scr, bg);
       showPeekHintOnce();
+      persistPeekEyeState(true);
       writeStorybookSession();
     });
   });
+  };
+  /* Measure after layout (two frames at boot) so the cover canvas keeps bake aspect. */
+  if (bootPoseSnap) {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (gen !== peekEnterGen) return;
+        runCoverEnter();
+      })
+    );
+  } else runCoverEnter();
 }
 
 function exitPeekMode() {
@@ -830,13 +1003,16 @@ function exitPeekMode() {
   const gen = ++peekEnterGen;
   /* Already shrinking / cancelled enter – snap to settled CSS. */
   if (scr.classList.contains("is-peek-expanding") && !scr.classList.contains("is-peek")) {
+    peekResumeSceneLayer({ underPeek: true });
     scr.classList.remove("is-peek-expanding", "is-peek-closing", "is-peek-cover", "is-peek-layout");
     resetPeekTransform();
+    persistPeekEyeState(false);
     writeStorybookSession();
     return;
   }
   const inPeek = bg && scr.classList.contains("is-peek");
   const settle = () => {
+    peekResumeSceneLayer({ underPeek: true });
     scr.classList.remove(
       "is-peek",
       "is-peek-expanding",
@@ -845,6 +1021,7 @@ function exitPeekMode() {
       "is-peek-layout"
     );
     resetPeekTransform();
+    persistPeekEyeState(false);
     writeStorybookSession();
   };
 
@@ -879,7 +1056,7 @@ function exitPeekMode() {
   /*
    * Cover peek: from current pan/zoom to resting crop (mid-enter reverse OK).
    * Stage eases via is-peek-closing in parallel with FLIP.
-   * Short landscape: fade out → swap to CSS plate while invisible → fade in
+   * Short landscape: fade out → resume scene under peek while invisible → fade in
    * (left-fit FLIP would shoot sideways; dim→snap was the end jump).
    */
   if (peekIsShortLandscape()) {
@@ -895,6 +1072,7 @@ function exitPeekMode() {
       gen,
       () => {
         if (gen !== peekEnterGen) return;
+        peekResumeSceneLayer({ underPeek: true });
         scr.classList.remove(
           "is-peek",
           "is-peek-expanding",
@@ -918,6 +1096,7 @@ function exitPeekMode() {
             bg.style.transition = "";
             bg.style.filter = "";
             bg.style.opacity = "";
+            persistPeekEyeState(false);
             writeStorybookSession();
           },
           half
@@ -929,9 +1108,18 @@ function exitPeekMode() {
   }
   withPeekImageSize(bg, (iw, ih) => {
     if (gen !== peekEnterGen) return;
-    if (!scr.isConnected || !document.body.contains(bg)) return;
+    if (!scr.isConnected || !document.body.contains(bg)) {
+      peekResumeSceneLayer();
+      persistPeekEyeState(false);
+      return;
+    }
     const { ew, eh, vw, vh } = peekLayout;
     const { top, left } = peekViewport();
+    /* Prolog camera missing (not loaded): fall back to the plain settle. */
+    if (!LOM.PrologCamera?.poseRect) {
+      settle();
+      return;
+    }
     /*
      * Target first: the pose the prolog step settles on (in-flow box of the bake), mapped onto the canvas frame.
      * The tween goes straight there; it never stops at the resting identity (that stop was the second move).
@@ -1038,6 +1226,7 @@ function initPrologPeekGestures() {
     if (pointers.size === 0) {
       dragging = false;
       bg.classList.remove("is-dragging");
+      persistPeekEyeState(true);
       writeStorybookSession();
     } else if (pointers.size === 1) {
       const only = [...pointers.values()][0];
@@ -1058,6 +1247,7 @@ function initPrologPeekGestures() {
       e.preventDefault();
       setPeekZoom(peekPan.scale + (e.deltaY > 0 ? -0.12 : 0.12), e.clientX, e.clientY);
       markSceneShotCustom();
+      persistPeekEyeState(true);
       writeStorybookSession();
     },
     { passive: false }
@@ -1074,6 +1264,7 @@ function initPrologPeekGestures() {
       setPeekZoom(1.8, e.clientX, e.clientY);
     }
     markSceneShotCustom();
+    persistPeekEyeState(true);
     writeStorybookSession();
   });
 
@@ -1084,3 +1275,63 @@ function initPrologPeekGestures() {
   window.addEventListener("resize", onPeekResize);
   window.visualViewport?.addEventListener("resize", onPeekResize);
 }
+
+/** Read eye snap from per-user pref, else storybook session. */
+function readPersistedPeekSnap() {
+  const BH = typeof BootHold !== "undefined" ? BootHold : null;
+  try {
+    const prefKey = BH && BH.peekUiKey ? BH.peekUiKey(peekAccountId()) : `lom.ui.${peekAccountId()}.lom.peek`;
+    const raw = localStorage.getItem(prefKey);
+    if (raw) {
+      const snap = BH && BH.parsePeekSnap ? BH.parsePeekSnap(JSON.parse(raw)) : JSON.parse(raw);
+      if (snap && snap.open) return snap;
+    }
+  } catch (_) {}
+  try {
+    const raw = sessionStorage.getItem("lom.storybook");
+    if (!raw) return null;
+    return BH && BH.parsePeekSnap ? BH.parsePeekSnap(JSON.parse(raw)) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * If storybook boot raced ahead of async enterPeekMode (or missed keepPan), re-enter once
+ * the scene is ready with the saved pan/zoom.
+ */
+function peekEnsureBootRestore() {
+  const BH = typeof BootHold !== "undefined" ? BootHold : null;
+  const snap = readPersistedPeekSnap();
+  const held = typeof bootHold !== "undefined" && bootHold.held && bootHold.held();
+  const already =
+    typeof isOriginsPeeking === "function"
+      ? isOriginsPeeking()
+      : !!document.querySelector('[data-screen="origins"].is-peek, [data-screen="origins"].is-peek-expanding');
+  const sceneVisible =
+    typeof prologSceneVisibleForStep !== "function" ||
+    (typeof state !== "undefined" && prologSceneVisibleForStep(state.originStep));
+  const ready = {
+    held: !!held,
+    screen: typeof state !== "undefined" ? state.screen : null,
+    sceneVisible: !!sceneVisible,
+    alreadyPeeking: !!already,
+  };
+  const should = BH && BH.shouldRestorePeek ? BH.shouldRestorePeek(snap, ready) : !!(snap && snap.open && !held && !already && ready.screen === "origins" && sceneVisible);
+  if (!should) {
+    /* Still booting: retry until hold releases / reveal finishes. */
+    if (held || document.documentElement.classList.contains("boot-pending")) {
+      setTimeout(peekEnsureBootRestore, 50);
+    }
+    return;
+  }
+  if (snap.pan) peekPan = { x: snap.pan.x, y: snap.pan.y, scale: snap.pan.scale };
+  if (snap.focus) peekFocus = { x: snap.focus.x, y: snap.focus.y };
+  enterPeekMode({ keepPan: true });
+  if (typeof setPeekButtonState === "function") {
+    setPeekButtonState(document.querySelector(".peek-btn"), true);
+  }
+}
+
+/* After scripts load: reinforce eye restore once the boot hold / scene is ready. */
+setTimeout(peekEnsureBootRestore, 0);

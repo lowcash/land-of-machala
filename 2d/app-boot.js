@@ -1,5 +1,5 @@
-/* počasí v obraze prologu (obloha v okně, ztlumené světlo): prolog-<shot>-<ph>-<počasí>-16x9; mlha zatím bez obrazu oblohy */
-const PROLOG_WEATHER_KINDS = ["overcast", "rain"];
+/* počasí v obraze prologu (obloha v okně): prolog-<shot>-<ph>-<počasí>-16x9; výběr padá na jasno, dokud finál chybí */
+const PROLOG_WEATHER_KINDS = ["overcast", "rain", "fog", "snow"];
 for (const shot of ["s1", "s2"]) {
   for (const ph of PROLOG_BAKE_PHASES) {
     const key = `tavern-prolog-photoreal-${shot}-${ph}`;
@@ -201,20 +201,37 @@ document.querySelectorAll(".origin-acc").forEach((el) => {
   if (PUBLIC_DEMO || !/^https?:$/.test(location.protocol)) return;
   const switches = [[$("admin-switch"), "admin"]].filter(([el]) => el);
   if (!switches.length) return;
-  /* Copy of ClientState.watchIdentity (2d/js/ui/client-state.js), inlined because this page does not load that file.
-     One identity per browser profile: a stale tab that sees another identity clears sessionStorage and reloads "/". */
+  /* Copy of ClientState.watchIdentity / authVerifyDecision (2d/js/ui/client-state.js), inlined because this page does not load that file.
+     One identity per browser profile: a stale tab that sees another identity clears sessionStorage and reloads "/".
+     Only 401/403 clear; 5xx / network keep the session. Stale responses are ignored by request generation. */
+  const authVerifyDecision = (status, networkError) => {
+    if (networkError) return "retry";
+    const s = Number(status);
+    if (!isFinite(s) || s <= 0) return "retry";
+    if (s === 401 || s === 403) return "logout";
+    if (s >= 200 && s < 300) return "keep";
+    return "retry";
+  };
   const watchWho = (who) => {
     if (!who) return;
     const key = (w) => (w ? `${w.role}:${w.actorId || ""}` : "");
     const loaded = key(who);
     let last = 0;
+    let checkGen = 0;
     const check = () => {
       if (document.visibilityState !== "visible" || Date.now() - last < 2000) return;
       last = Date.now();
+      const gen = ++checkGen;
       fetch("/auth/whoami", { credentials: "same-origin", cache: "no-store" })
-        .then((r) => (r.status === 401 || r.status === 403 ? null : r.ok ? r.json() : undefined))
+        .then((r) => {
+          if (gen !== checkGen) return undefined;
+          const d = authVerifyDecision(r.status, false);
+          if (d === "logout") return null;
+          if (d === "retry") return undefined;
+          return r.json();
+        })
         .then((w) => {
-          if (w === undefined || (w && key(w) === loaded)) return;
+          if (gen !== checkGen || w === undefined || (w && key(w) === loaded)) return;
           try { sessionStorage.clear(); } catch (e) { /* blocked storage: nothing to clear */ }
           location.replace("/");
         })
@@ -225,9 +242,11 @@ document.querySelectorAll(".origin-acc").forEach((el) => {
   };
   fetch("/auth/whoami", { credentials: "same-origin", cache: "no-store" })
     .then(async (r) => {
+      const decision = authVerifyDecision(r.status, false);
       const body = await r.json().catch(() => null);
-      if (r.ok) { watchWho(body); return body; }
-      accessNotice(body && body.reason);
+      if (decision === "keep") { watchWho(body); return body; }
+      if (decision === "logout") accessNotice(body && body.reason);
+      /* retry / 5xx: keep any stored session; the admin switch simply stays hidden until a later focus check */
       return null;
     })
     .then((who) => {

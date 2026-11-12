@@ -52,6 +52,10 @@ test("scroll-fade: floor mask (no fade-to-black / no opaque wash ink)", () => {
   assert.match(css, /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.45\)\s+calc\(var\(--pf-t\)\s*\*\s*0\.48\)/);
   assert.match(css, /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.9\)\s+calc\(var\(--pf-t\)\s*\*\s*0\.84\)/);
   assert.equal(/transparent\s+0/.test(css.match(/scroll-fade-clip:has[\s\S]{0,400}/)?.[0] || ""), false);
+  /* Visited / boot steps: fade-snap zeros the grow-in; floating boxes use overlays under sticky headers. */
+  assert.match(css, /\.fade-snap/);
+  assert.match(css, /\.storybook-bar\s+\.dev-scroll\[data-fade\]::before/);
+  assert.match(css, /\.storybook-bar\s+\.dev-chrome\s*\{[^}]*z-index:\s*5/s);
 });
 
 test("scroll-fade: desktop clip mask + phone flow mask; no pane wash", () => {

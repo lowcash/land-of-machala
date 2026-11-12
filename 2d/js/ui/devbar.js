@@ -21,7 +21,7 @@ function uiPrefKey(name) {
   if (!a) a = "anon";
   return "lom.ui." + a + "." + name;
 }
-/* The one reset text and icon of the dev box (object cards, Kamera, Pozice, Efekty, the preset ↺). */
+/* The one reset of the dev box (chrome preset ↺). Inner section/object resets are hidden in CSS. */
 const DEV_RESET_TITLE = "Obnovit podle presetu scény";
 const DEV_KNOB_SEC = {
   mode: "world",
@@ -67,6 +67,8 @@ function loadDevBarPrefs(key = DEV_BAR_KEY) {
     opacity: 0.8,
     x: null,
     y: null,
+    w: null,
+    h: null,
     sections: {
       cas: true,
       svet: true,
@@ -88,6 +90,8 @@ function loadDevBarPrefs(key = DEV_BAR_KEY) {
       if (typeof j.opacity === "number") out.opacity = Math.min(DEV_OP_MAX, Math.max(0, j.opacity));
       if (typeof j.x === "number") out.x = j.x;
       if (typeof j.y === "number") out.y = j.y;
+      if (typeof j.w === "number" && j.w > 0) out.w = j.w;
+      if (typeof j.h === "number" && j.h > 0) out.h = j.h;
       if (j.sections && typeof j.sections === "object") {
         for (const k of Object.keys(out.sections)) if (typeof j.sections[k] === "boolean") out.sections[k] = j.sections[k];
       }
@@ -156,10 +160,28 @@ function shouldShowDevBar() {
   return location.protocol === "file:" || host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 }
 
+/**
+ * .storybook-bar (border) > .dev-body (inset padding) > .dev-scroll.
+ * Wraps the scroll element once so the scrollport is not flush with the box edge.
+ */
+function ensureDevBody(bar) {
+  if (!bar) return null;
+  const existing = bar.querySelector(":scope > .dev-body > .dev-scroll");
+  if (existing) return existing;
+  const scroll = bar.querySelector(":scope > .dev-scroll");
+  if (!scroll) return bar.querySelector(".dev-scroll");
+  const body = document.createElement("div");
+  body.className = "dev-body";
+  scroll.parentNode.insertBefore(body, scroll);
+  body.appendChild(scroll);
+  return scroll;
+}
+
 function applyDevVisibility(show) {
   document.body.classList.toggle("has-dev", !!show);
   /* Both floating boxes (dev box, Stav systému) follow the same switch; the status box never shows in the public demo. */
   document.querySelectorAll(".storybook-bar").forEach((bar) => {
+    ensureDevBody(bar);
     const hide = !show || (PUBLIC_DEMO && bar.id === "status-bar");
     bar.hidden = hide;
     bar.toggleAttribute("hidden", hide);
@@ -173,13 +195,14 @@ function applyDevVisibility(show) {
 }
 
 /**
- * Floating box (dev box, Stav systému): the square handle toggles collapse (click) or moves the box (drag). The box is
- * anchored to the handle; its position and collapsed state live in prefs under `key` (sessionStorage) and it is clamped to
- * the visual viewport. `defaultPos()` gives the first position (null = top-left corner); `onApply(prefs)` runs on every
- * chrome change, `onFrame()` after the next layout.
+ * Floating box (dev box, Stav systému): the square handle toggles collapse (click) or moves the box (drag). Corner
+ * resize (mountCornerResize in tooltip.js) persists w/h per account like x/y. The box is anchored to the handle; prefs
+ * live under `key` and the box is clamped to the visual viewport. `defaultPos()` gives the first position
+ * (null = top-left corner); `onApply(prefs)` runs on every chrome change, `onFrame()` after the next layout.
  */
 function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}, onFrame = () => {}, tipLabel = "" } = {}) {
   const prefs = loadDevBarPrefs(key);
+  const scroll = ensureDevBody(bar) || bar.querySelector(".dev-scroll");
   /*
    * The square handle is position:fixed and the box is anchored to it: the box sits at (x, y), the handle at (x+1, y+1)
    * (the box border is 1 px). Collapsing or expanding only changes the box size, so the handle never moves.
@@ -195,6 +218,56 @@ function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}
       handle.style.top = `${y + 1}px`;
     }
   };
+  const boxPad = () => {
+    const root = getComputedStyle(document.documentElement);
+    const px = (name) => {
+      const n = parseFloat(root.getPropertyValue(name));
+      return Number.isFinite(n) ? n : 0;
+    };
+    return {
+      vw: window.visualViewport?.width || window.innerWidth,
+      vh: window.visualViewport?.height || window.innerHeight,
+      padL: 8 + px("--safe-l"),
+      padT: 8 + px("--safe-t"),
+      padR: 8 + px("--safe-r"),
+      padB: 8 + px("--safe-b"),
+    };
+  };
+  /** Open size from prefs; collapsed uses CSS (2rem square). */
+  const applyBoxSize = () => {
+    const closed = !!(prefs.collapsed || prefs.minimized);
+    if (closed) {
+      bar.style.width = "";
+      bar.style.maxWidth = "";
+      bar.style.height = "";
+      bar.style.maxHeight = "";
+      if (scroll) scroll.style.maxHeight = "";
+      return;
+    }
+    const { vw, vh, padL, padR, padT, padB } = boxPad();
+    const maxW = Math.max(160, vw - padL - padR);
+    const maxH = Math.max(96, vh - padT - padB);
+    if (prefs.w != null) {
+      const w = Math.max(160, Math.min(maxW, prefs.w));
+      prefs.w = w;
+      bar.style.width = `${w}px`;
+      bar.style.maxWidth = `${w}px`;
+    } else {
+      bar.style.width = "";
+      bar.style.maxWidth = "";
+    }
+    if (prefs.h != null) {
+      const h = Math.max(96, Math.min(maxH, prefs.h));
+      prefs.h = h;
+      bar.style.height = `${h}px`;
+      bar.style.maxHeight = `${h}px`;
+      if (scroll) scroll.style.maxHeight = "none";
+    } else {
+      bar.style.height = "";
+      bar.style.maxHeight = "";
+      if (scroll) scroll.style.maxHeight = "";
+    }
+  };
   const applyChrome = () => {
     /* minimized (starý klíč) = sbaleno */
     const closed = !!(prefs.collapsed || prefs.minimized);
@@ -202,6 +275,7 @@ function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}
     prefs.minimized = false;
     bar.classList.toggle("is-collapsed", closed);
     bar.classList.toggle("is-minimized", closed);
+    applyBoxSize();
     onApply(prefs);
     if (prefs.x != null && prefs.y != null) placeBar(prefs.x, prefs.y);
     if (handle) {
@@ -230,18 +304,8 @@ function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}
    * Remembers prefs.x/y; only clamps so it does not leave the screen.
    */
   const clampBar = () => {
-    const vw = window.visualViewport?.width || window.innerWidth;
-    const vh = window.visualViewport?.height || window.innerHeight;
-    const root = getComputedStyle(document.documentElement);
-    const px = (name) => {
-      const n = parseFloat(root.getPropertyValue(name));
-      return Number.isFinite(n) ? n : 0;
-    };
-    const pad = 8;
-    const padL = pad + px("--safe-l");
-    const padT = pad + px("--safe-t");
-    const padR = pad + px("--safe-r");
-    const padB = pad + px("--safe-b");
+    const { vw, vh, padL, padT, padR, padB } = boxPad();
+    applyBoxSize();
     const r = bar.getBoundingClientRect();
     let minX = padL;
     const minY = padT;
@@ -267,6 +331,42 @@ function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}
   window.addEventListener("resize", clampBar);
   window.visualViewport?.addEventListener("resize", clampBar);
   requestAnimationFrame(clampBar);
+
+  /* Corner resize: same mountCornerResize helper as tooltips (tooltip.js). */
+  if (typeof mountCornerResize === "function") {
+    mountCornerResize(bar, {
+      minW: 180,
+      minH: 120,
+      maxW: () => {
+        const { vw, padL, padR } = boxPad();
+        return Math.max(180, vw - padL - padR);
+      },
+      maxH: () => {
+        const { vh, padT, padB } = boxPad();
+        return Math.max(120, vh - padT - padB);
+      },
+      disabled: () => !!(prefs.collapsed || prefs.minimized),
+      getSize: () => {
+        if (prefs.collapsed || prefs.minimized) return null;
+        const r = bar.getBoundingClientRect();
+        return {
+          w: prefs.w != null ? prefs.w : Math.round(r.width),
+          h: prefs.h != null ? prefs.h : Math.round(r.height),
+        };
+      },
+      onMove: (w, h) => {
+        prefs.w = w;
+        prefs.h = h;
+        if (scroll) scroll.style.maxHeight = "none";
+      },
+      onSize: (w, h) => {
+        prefs.w = w;
+        prefs.h = h;
+        saveDevBarPrefs(prefs, key);
+        clampBar();
+      },
+    });
+  }
 
   /* čtverec: klik = sbalit/rozbalit (kotva = handle); táhni = přesun */
   if (handle) {
@@ -324,7 +424,39 @@ function mountFloatBox(bar, handle, key, { defaultPos = null, onApply = () => {}
       window.addEventListener("pointercancel", onUp);
     });
   }
-  return { prefs, placeBar, applyChrome, clampBar };
+  return { prefs, placeBar, applyChrome, clampBar, applyBoxSize };
+}
+
+/**
+ * Level-2 sticky summaries (details.dev-sub > summary) park at --stick-2. When their parent
+ * subsection scrolls away, CSS sticky pulls them up through the level-1 slot. Hide any sub
+ * header that has been dragged above its park line so it never paints under the section row.
+ */
+function bindStickyStack(scroll) {
+  if (!scroll) return;
+  let raf = 0;
+  const sync = () => {
+    raf = 0;
+    const bar = scroll.closest(".storybook-bar");
+    if (!bar || bar.classList.contains("is-collapsed") || bar.classList.contains("is-minimized")) return;
+    const sr = scroll.getBoundingClientRect();
+    if (sr.height < 1) return;
+    const sample = bar.querySelector("summary.box-subhead, .dev-sys-sec > summary");
+    const subH = (sample && sample.getBoundingClientRect().height) || 24;
+    const park = sr.top + subH;
+    scroll.querySelectorAll("details.dev-sub > summary").forEach((sum) => {
+      const top = sum.getBoundingClientRect().top;
+      sum.style.visibility = top < park - 1.5 ? "hidden" : "";
+    });
+  };
+  const onScroll = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(sync);
+  };
+  scroll.addEventListener("scroll", onScroll, { passive: true });
+  scroll.addEventListener("toggle", onScroll, true);
+  requestAnimationFrame(sync);
+  return sync;
 }
 
 function initDevBar() {
@@ -333,7 +465,7 @@ function initDevBar() {
   if (!bar || !panel) return;
 
   /* Scroll of the dev box (.dev-scroll): restored once it is open and laid out (a collapsed box has no height). */
-  const devScroll = bar.querySelector(".dev-scroll");
+  const devScroll = ensureDevBody(bar);
   const devOpen = () => !!devScroll && !bar.classList.contains("is-collapsed");
   const restoreDevScroll = () => {
     if (devOpen()) devScroll.scrollTop = loadDevScroll();
@@ -377,6 +509,7 @@ function initDevBar() {
       saveDevSubPrefs(subPrefs);
     });
   });
+  const syncSticky = bindStickyStack(devScroll);
   /* Written throttled while the box is open (a collapsed box reports 0 and is not stored). */
   let devScrollT = 0;
   devScroll?.addEventListener(
@@ -400,6 +533,7 @@ function initDevBar() {
     if (devOpen()) saveDevScroll(devScroll.scrollTop);
   });
   box.applyChrome();
+  if (typeof syncSticky === "function") requestAnimationFrame(syncSticky);
 
   document.addEventListener("keydown", (e) => {
     if (!(e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d"))) return;
@@ -417,6 +551,7 @@ function initDevBar() {
 function initStatusBox() {
   const bar = $("status-bar");
   if (!bar) return;
+  ensureDevBody(bar);
   const box = mountFloatBox(bar, $("status-drag"), STATUS_BAR_KEY, {
     tipLabel: "Stav systému",
     defaultPos: () => {
@@ -429,7 +564,9 @@ function initStatusBox() {
   });
   clampStatusBar = box.clampBar;
   box.applyChrome();
-  if (typeof bindScrollFade === "function") bindScrollFade(bar.querySelector(".dev-scroll"));
+  const statusScroll = bar.querySelector(".dev-scroll");
+  if (typeof bindScrollFade === "function") bindScrollFade(statusScroll);
+  bindStickyStack(statusScroll);
   /* Own transparency slider: same helpers as the dev box, separate localStorage key. */
   applyDevOpacity(bar, loadStatusOpacity(), "status-opacity");
   $("status-opacity")?.addEventListener("input", (e) => {

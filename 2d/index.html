@@ -18,11 +18,36 @@
     (function () {
       document.documentElement.classList.add("boot-pending");
       document.documentElement.classList.add("boot-settling");
+      /* Floating boxes: no open/close transition until two frames after boot (persisted state lands static). */
+      document.documentElement.classList.add("boxes-boot");
       try {
         var s = JSON.parse(sessionStorage.getItem("lom.storybook") || "null");
         if (s && s.peek) document.documentElement.classList.add("boot-peek");
         if (s && s.scenarioId) document.documentElement.classList.add("boot-storybook");
       } catch (e) {}
+      /* Persisted open/closed before first paint (same key shape as uiPrefKey / ClientState.uiKey). */
+      try {
+        var acc = document.documentElement.getAttribute("data-account") || "";
+        if (!acc) {
+          var m = /(?:^|;\s*)lom_account=([^;]*)/.exec(document.cookie || "");
+          if (m) acc = decodeURIComponent(m[1] || "");
+        }
+        if (!acc) acc = "anon";
+        var pref = function (name) {
+          try {
+            var raw = localStorage.getItem("lom.ui." + acc + "." + name);
+            if (raw === "1") return true;
+            if (raw === "0") return false;
+            if (!raw) return true;
+            var j = JSON.parse(raw);
+            return !!(j && (j.collapsed || j.minimized));
+          } catch (err) {
+            return true;
+          }
+        };
+        if (!pref("lom.devBarCollapsed")) document.documentElement.classList.add("boot-box-dev-open");
+        if (!pref("lom.statusBarCollapsed")) document.documentElement.classList.add("boot-box-status-open");
+      } catch (e2) {}
     })();
 
   </script>
@@ -32,7 +57,7 @@
 </head>
 <body>
   <!-- DEV - skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
-  <aside class="storybook-bar is-collapsed" data-dev-only hidden aria-label="Vývojářský storybook">
+  <aside class="storybook-bar is-collapsed" id="dev-bar" data-dev-only hidden aria-label="Vývojářský storybook">
     <div class="dev-row dev-chrome box-head">
       <button type="button" class="dev-drag has-tip" id="dev-drag" aria-label="Otevřít nebo přesunout panel" aria-expanded="false" aria-controls="dev-detail-panel"><span class="dev-drag-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" focusable="false"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span></button>
       <span class="dev-drag-slot" aria-hidden="true"></span>
@@ -91,6 +116,20 @@
       </div>
     </div>
   </aside>
+  <script>
+    /* Apply persisted open state on the asides before first paint (html flags from head). */
+    (function () {
+      var root = document.documentElement;
+      var dev = document.getElementById("dev-bar");
+      var st = document.getElementById("status-bar");
+      if (dev && root.classList.contains("boot-box-dev-open")) {
+        dev.classList.remove("is-collapsed", "is-minimized");
+      }
+      if (st && root.classList.contains("boot-box-status-open")) {
+        st.classList.remove("is-collapsed", "is-minimized");
+      }
+    })();
+  </script>
   <!-- Admin switch (top-left, mirror of the eye); shown by app.js only in dev or for an admin session on the world server. Same corner and size as the 2D button in the admin. -->
   <a class="admin-switch has-tip" id="admin-switch" href="/" data-tip="Admin" aria-label="Admin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13M13.5 4.5 17 8l-3.5 3.5"/><path d="M20 16H7M10.5 12.5 7 16l3.5 3.5"/></svg></a>
 
@@ -130,6 +169,7 @@
   <script src="ui-kit.js"></script>
   <script src="tooltip.js"></script>
   <script src="js/ui/boot-hold.js"></script>
+  <script src="js/ui/prolog-scene.js"></script>
   <script src="app.js"></script>
   <script src="js/ui/peek.js"></script>
   <script src="js/ui/devbar.js"></script>

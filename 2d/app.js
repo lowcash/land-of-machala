@@ -251,8 +251,12 @@ const IMAGE_SET_TYPE =
 const MIME = { avif: "image/avif", webp: "image/webp", jpeg: "image/jpeg" };
 /** Šířka souboru podle okna: nejmenší ≥ potřeba (cover → delší strana 16:9), jinak největší. */
 function bakeWidth(widths) {
+  /* Before layout (0×0) never pick the smallest tier – that locked a 720px bake and looked like heavy JPEG/upscale mush. */
+  const vw = window.visualViewport?.width || window.innerWidth || 0;
+  const vh = window.visualViewport?.height || window.innerHeight || 0;
+  if (!(vw > 0 && vh > 0)) return widths[widths.length - 1];
   /* The camera zooms the picture (PROLOG_DETAIL_ZOOM): pick the width that stays sharp at that zoom. */
-  const need = Math.max(window.innerWidth, (window.innerHeight * 16) / 9) * Math.min(window.devicePixelRatio || 1, 2) * PROLOG_DETAIL_ZOOM;
+  const need = Math.max(vw, (vh * 16) / 9) * Math.min(window.devicePixelRatio || 1, 3) * PROLOG_DETAIL_ZOOM;
   return widths.find((w) => w >= need * 0.9) || widths[widths.length - 1];
 }
 /** Hodnota `background-image` pro klíč pozadí; photoreal prolog = image-set podle šířky okna. */
@@ -593,23 +597,55 @@ function prologShotId() {
 }
 
 /**
+ * Step → scene visibility (deterministic from the current step only).
+ * All four prolog beats keep the tavern plate; Svatava leaving is a cast hide, not a blackout.
+ */
+function prologSceneVisibleForStep(stepIndex = state.originStep) {
+  const pick = (ORIGIN_STEPS[stepIndex] || {}).pick;
+  return !!(LOM.PrologScene && LOM.PrologScene.visibleForPick(pick));
+}
+
+/** Eye control only while a bake/scene is on for this step. */
+function syncPeekButtonForStep() {
+  const btn = document.querySelector(".peek-btn");
+  if (!btn) return;
+  const show = state.screen === "origins" && prologSceneVisibleForStep(state.originStep);
+  btn.hidden = !show;
+  if (!show && typeof isOriginsPeeking === "function" && isOriginsPeeking()) {
+    exitPeekMode();
+    setPeekButtonState(btn, false);
+  }
+}
+
+/**
  * Prolog / Postava: pečená krčma S1/S2 × doba. Storybook: jen `tavern`; jiné místo → bez pozadí.
+ * Visibility follows the current step only (no stale soft shot / boot flash).
  */
 function prologBgKey() {
+  if (!prologSceneVisibleForStep(state.originStep)) return null;
   const place = state.activeScenario ? storyPlaceId : "tavern";
   if (place !== "tavern") return null;
   const key = `tavern-prolog-${DEFAULT_PROLOG_STYLE}-${prologShotId()}-${prologBakePhase()}`;
-  // počasí dne jen tehdy, když jeho finální obraz existuje (PROLOG_WEATHER_FINALS); jinak jasná sada
-  const wk = PROLOG_WEATHER ? `${key}-${weatherNow().kind}` : key;
-  return PROLOG_WEATHER_FINALS.has(wk) ? wk : key;
+  // denní počasí jen s hotovým finálem (PROLOG_WEATHER_FINALS); jinak jasná sada (okno skládá scene-compose)
+  return pickPrologWeatherKey(key, PROLOG_WEATHER ? weatherNow().kind : "clear", PROLOG_WEATHER_FINALS, PROLOG_WEATHER);
+}
+/**
+ * Pick prolog bake key for a weather kind. Missing final → clear base key.
+ * Contract mirrored in 2d/js/test/prolog-weather-selection.test.js.
+ */
+function pickPrologWeatherKey(baseKey, kind, finals, enabled) {
+  if (!enabled || !baseKey) return baseKey;
+  if (!kind || kind === "clear") return baseKey;
+  const wk = `${baseKey}-${kind}`;
+  return finals && finals.has(wk) ? wk : baseKey;
 }
 /** Počasí dne ze semínka (js/systems/weather.js, docs/reference/weather.md). */
 function weatherNow() {
   return LOM.Weather.weatherFor(state.seed, state.clock.day);
 }
-/* Počasí v obraze prologu (zataženo, déšť): zapnuto. Finální obrazy počasí pozadí zatím nejsou, proto prolog padá na jasno. */
+/* Počasí v obraze prologu (okno: zataženo, déšť, mlha, sníh). Finály pozadí chybí → prolog padá na jasno. */
 const PROLOG_WEATHER = true;
-/* Klíče finálních obrazů počasí prologu, které jsou na disku (prolog-<shot>-<ph>-<počasí>-16x9). Zatím žádné. */
+/* Klíče finálních obrazů počasí prologu na disku (prolog-<shot>-<ph>-<počasí>-16x9). Zatím žádné. */
 const PROLOG_WEATHER_FINALS = new Set();
 /** Částice (js/systems/particles.js): kontext podle záběru, doby a počasí; jen u fotorealistického stylu. */
 function syncParticles(composeParticles) {
@@ -637,8 +673,15 @@ function setPrologBg() {
     prologBgKey()
   );
   syncPhaseLook();
-  if (sceneDemo?.on && LOM.SceneView?.enabled) syncSceneCompose();
-  else syncParticles();
+  if (sceneDemo?.on && LOM.SceneView?.enabled) {
+    if (prologSceneVisibleForStep(state.originStep)) syncSceneCompose();
+    else {
+      if (typeof sceneSceneKey !== "undefined") sceneSceneKey = "";
+      LOM.SceneView.unmount();
+      syncParticles();
+    }
+  } else syncParticles();
+  syncPeekButtonForStep();
 }
 /**
  * Snapshot ::before / ::after sky tones into real overlays, then swap data-phase and fade the overlays out.
@@ -984,15 +1027,28 @@ function scrollContentNeedsOverflow(el) {
   return contentSize > contentBox + 1;
 }
 
+/** Per-step scroll-fade flags for revisited prolog steps (sync on mount, no grow-in). */
+const prologFadeByStep = Object.create(null);
+
 function bindScrollFade(el, opts = {}) {
   if (!el) return;
   const topEl = opts.topEl || null;
   const bottomEl = opts.bottomEl || null;
   const useOverlay = !!(topEl || bottomEl);
+  const cacheKey = opts.cacheKey;
+  const snap = !!opts.snap;
+  if (snap) el.classList.add("fade-snap");
   const update = () => {
     const needsScroll = scrollContentNeedsOverflow(el);
-    /* While boot-settling, keep a restored scrollTop even if layout has not measured overflow yet. */
-    if (!needsScroll && el.scrollTop && !BootHold.skipEntrance(document.documentElement)) el.scrollTop = 0;
+    /* While boot-settling or a pending restore, keep scrollTop even if layout has not measured overflow yet. */
+    if (
+      !needsScroll &&
+      el.scrollTop &&
+      !BootHold.skipEntrance(document.documentElement) &&
+      !pendingPrologScroll
+    ) {
+      el.scrollTop = 0;
+    }
     const canUp = needsScroll && el.scrollTop > 2;
     const canDown = needsScroll && el.scrollTop + el.clientHeight < el.scrollHeight - 2;
     if (useOverlay) {
@@ -1003,7 +1059,22 @@ function bindScrollFade(el, opts = {}) {
       el.classList.toggle("fade-top", canUp);
       el.classList.toggle("fade-bottom", canDown);
     }
+    if (cacheKey != null) {
+      prologFadeByStep[cacheKey] = { top: canUp, bottom: canDown };
+    }
   };
+  /* Revisited step: apply cached fade classes before first paint so --pf/--fade do not animate from 0. */
+  if (snap && cacheKey != null && prologFadeByStep[cacheKey]) {
+    const c = prologFadeByStep[cacheKey];
+    if (!useOverlay || opts.mask) {
+      el.classList.toggle("fade-top", !!c.top);
+      el.classList.toggle("fade-bottom", !!c.bottom);
+    }
+    if (useOverlay) {
+      topEl?.classList.toggle("is-on", !!c.top);
+      bottomEl?.classList.toggle("is-on", !!c.bottom);
+    }
+  }
   if (!el.dataset.fade) {
     el.dataset.fade = "1";
     el.addEventListener("scroll", update, { passive: true });
@@ -1021,16 +1092,32 @@ function bindScrollFade(el, opts = {}) {
     }
   }
   update();
-  requestAnimationFrame(update);
+  if (snap) {
+    /* Drop fade-snap after two frames so later user scrolls can ease again. */
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        el.classList.remove("fade-snap");
+      })
+    );
+  } else {
+    requestAnimationFrame(update);
+  }
 }
 
 /**
  * Scroll ▴▾:
  * - one-scroll (portrait / short landscape) → pair on the card (whole column)
  * - desktop two panes → pair per pane (text / choices), not one OR’d pair
+ * opts.snap: already-visited / boot – fade state is final at first paint (no grow-in).
  */
-function bindPrologScrollFades(box) {
+function bindPrologScrollFades(box, opts = {}) {
   if (!box) return;
+  const snap =
+    !!opts.snap ||
+    BootHold.skipEntrance(document.documentElement) ||
+    prologSeenSteps.has(state.originStep);
+  if (snap) box.classList.add("fade-snap");
+  else box.classList.remove("fade-snap");
   const card = originsCard();
   const cardTop = card?.querySelector(":scope > .origin-scroll-edge.top");
   const cardBottom = card?.querySelector(":scope > .origin-scroll-edge.bottom");
@@ -1050,21 +1137,40 @@ function bindPrologScrollFades(box) {
   cardTop?.classList.remove("is-on");
   cardBottom?.classList.remove("is-on");
   box.querySelectorAll(".pane-edge").forEach((h) => h.classList.remove("is-on"));
+  const stepKey = `${state.originStep}:${oneScroll ? "flow" : "panes"}`;
 
   if (oneScroll && flowScroll) {
-    bindScrollFade(flowScroll, { topEl: cardTop, bottomEl: cardBottom, mask: true });
+    bindScrollFade(flowScroll, {
+      topEl: cardTop,
+      bottomEl: cardBottom,
+      mask: true,
+      snap,
+      cacheKey: `${stepKey}:flow`,
+    });
+    if (snap) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => box.classList.remove("fade-snap"))
+      );
+    }
     return;
   }
-  const bindPane = (pane, scroller) => {
+  const bindPane = (pane, scroller, part) => {
     if (!pane || !scroller) return;
     bindScrollFade(scroller, {
       topEl: pane.querySelector(":scope > .pane-edge.top"),
       bottomEl: pane.querySelector(":scope > .pane-edge.bottom"),
       mask: true,
+      snap,
+      cacheKey: `${stepKey}:${part}`,
     });
   };
-  bindPane(bodyPane, body);
-  bindPane(choicePane, choices);
+  bindPane(bodyPane, body, "body");
+  bindPane(choicePane, choices, "choices");
+  if (snap) {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => box.classList.remove("fade-snap"))
+    );
+  }
 }
 
 function syncDevHitboxes() {
@@ -1213,10 +1319,12 @@ function paintOriginsContent(box, step, opts = {}) {
   const token = ++originRevealToken;
   prologSeenSteps.add(state.originStep);
   if (opts.instant) {
-    /* Static paint: no awaiting-reveal class, no word spans; scroll + fades land in final state. */
-    bindPrologScrollFades(box);
+    /* Static paint: no awaiting-reveal class, no word spans; scroll + fades land in final state (no fade grow-in). */
+    bindPrologScrollFades(box, { snap: true });
     applyPendingPrologScroll(box);
-    bindPrologScrollFades(box);
+    bindPrologScrollFades(box, { snap: true });
+    /* After layout: re-apply. Clear only outside boot (boot clears in waitBootPose after settling). */
+    settlePendingPrologScroll(box, { clear: !BootHold.skipEntrance(document.documentElement) });
     return;
   }
   const choiceBtns = [...box.querySelectorAll(".choice.btn-action")];
@@ -1253,6 +1361,7 @@ function paintOriginsContent(box, step, opts = {}) {
   bindPrologScrollFades(box);
   applyPendingPrologScroll(box);
   bindPrologScrollFades(box);
+  settlePendingPrologScroll(box, { clear: !BootHold.skipEntrance(document.documentElement) });
 }
 
 /* Prolog state per tab (Admin switch reloads the page): resume the same step. Every access is in try/catch. */
@@ -1290,6 +1399,24 @@ function applyPendingPrologScroll(box) {
   });
 }
 
+/**
+ * Re-apply pending scroll after layout (two rAFs). clear: drop the pending map after settle
+ * (boot keeps it until waitBootPose so a late layout pass can restore again).
+ */
+function settlePendingPrologScroll(box, opts) {
+  const root = box || $("origins-box");
+  if (!root || !pendingPrologScroll) return;
+  const clear = !!(opts && opts.clear);
+  applyPendingPrologScroll(root);
+  requestAnimationFrame(() => {
+    applyPendingPrologScroll(root);
+    requestAnimationFrame(() => {
+      applyPendingPrologScroll(root);
+      if (clear) pendingPrologScroll = null;
+    });
+  });
+}
+
 function scheduleSavePrologScroll() {
   if (prologScrollSaveRaf || !prologSessionReady) return;
   prologScrollSaveRaf = requestAnimationFrame(() => {
@@ -1298,13 +1425,16 @@ function scheduleSavePrologScroll() {
   });
 }
 
+/** Bound by initDevStorybook so chrome ↺ can re-apply the selected preset (loadPreset is local there). */
+let loadDevPreset = () => {};
+
 /** Dev ↺: forget the stored prolog and the storybook session, then re-apply the preset of the selected scenario. */
 function resetDevToPreset() {
   clearProlog();
   try {
     sessionStorage.removeItem(STORYBOOK_SESSION_KEY);
   } catch (_) {}
-  loadPreset();
+  loadDevPreset();
 }
 
 /* The prolog is stored with the scenario id it belongs to; restoreProlog only applies it to that same scenario. */
@@ -1386,17 +1516,17 @@ function renderOrigins() {
   const bootSkip = BootHold.skipEntrance(document.documentElement);
   /* Back, or a step already revealed this session: quick fade and an instant paint (no word reveal again). */
   const quick = bootSkip || back || prologSeenSteps.has(state.originStep);
-  setPrologBg();
-  applyPrologCamera(true);
-  const maxReached = Math.max(state.originStep, state.originReached || 0);
-  state.originReached = maxReached;
-  lastOriginStep = state.originStep;
-  /* A new attention target ends the whole-scene view (the eye): otherwise the camera stays released and does not move to the speaker. */
+  /* Leave peek before the new step's camera: otherwise prologCameraWanted stays false and the speaker never frames. */
   const scrNow = document.querySelector('[data-screen="origins"]');
   if (stepChanged && prevStep >= 0 && scrNow && (scrNow.classList.contains("is-peek") || scrNow.classList.contains("is-peek-expanding"))) {
     exitPeekMode();
     setPeekButtonState(document.querySelector(".peek-btn"), false);
   }
+  setPrologBg();
+  applyPrologCamera(true);
+  const maxReached = Math.max(state.originStep, state.originReached || 0);
+  state.originReached = maxReached;
+  lastOriginStep = state.originStep;
   /*
    * Opakovaný render stejného kroku (např. po kliku na volbu) nesmí přepsat innerHTML
    * uprostřed náběhu – jen obnoví picked. Jinak druhé volání smaže span.w.
@@ -1427,6 +1557,7 @@ function renderOrigins() {
     bindPrologScrollFades(box);
     applyPendingPrologScroll(box);
     bindPrologScrollFades(box);
+    settlePendingPrologScroll(box, { clear: !BootHold.skipEntrance(document.documentElement) });
     return;
   }
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1713,6 +1844,7 @@ function initDevStorybook() {
     sel.addEventListener("change", () => {
       loadPreset();
     });
+  loadDevPreset = loadPreset;
   if (!publicBar) $("dev-reset")?.addEventListener("click", resetDevToPreset);
   if (!publicBar) renderDevStatus();
   if (!publicBar) {
@@ -1788,8 +1920,8 @@ function initDevStorybook() {
     if (savedSession.world) restoreWorldDemoFromSession(savedSession.world);
     else resetDevWorldSceneFromPreset();
     if (savedSession.scene) restoreSceneDemoFromSession(savedSession.scene);
-    if (savedSession.peek && state.screen === "origins") {
-      /* Seed camera BEFORE enterPeekMode so the first cover layout keeps the saved pose (no rAF flip). */
+    if (savedSession.peek && state.screen === "origins" && prologSceneVisibleForStep(state.originStep)) {
+      /* Seed camera BEFORE enterPeekMode so the first paint keeps the saved pose (no rAF flip). */
       restorePeekCameraFromSession(savedSession);
       enterPeekMode({ keepPan: true });
       setPeekButtonState(document.querySelector(".peek-btn"), true);
@@ -1816,6 +1948,8 @@ const BOOT_POSE_WAIT_MS = 1500;
 /* The prolog pose is in when the bake is painted and the camera has been applied to it (else the first visible frames show the un-posed stage). */
 function prologPoseReady() {
   if (state.screen !== "origins") return true;
+  /* No bake on this step: first paint is already final (nothing to wait for). */
+  if (!prologSceneVisibleForStep(state.originStep)) return true;
   const bg = document.querySelector('[data-screen="origins"] .landing-bg');
   if (!bg) return true;
   if (!bg.style.backgroundImage) return false;
@@ -1842,17 +1976,43 @@ function waitBootPose(deadline) {
   /* Sync scroll + fade of the animation window to the stored snapshot before the body fades in. */
   const box = $("origins-box");
   if (box) {
-    bindPrologScrollFades(box);
+    bindPrologScrollFades(box, { snap: true });
     applyPendingPrologScroll(box);
-    bindPrologScrollFades(box);
+    bindPrologScrollFades(box, { snap: true });
   }
-  pendingPrologScroll = null;
   try {
     document.documentElement.classList.add("boot-ready");
     document.documentElement.classList.remove("boot-pending");
     /* One frame after reveal: entrance animations may run again (user-triggered changes only). */
     requestAnimationFrame(() => {
       document.documentElement.classList.remove("boot-settling");
+      /* Re-pick bake width / peek canvas now that layout has a real viewport (avoids 720px mush / squeeze). */
+      try {
+        if (typeof bakeWidth === "function" && typeof PROLOG_WEB !== "undefined") {
+          const w = bakeWidth(PROLOG_WEB.avif);
+          if (typeof prologBgWidth !== "undefined" && w !== prologBgWidth) {
+            prologBgWidth = w;
+            if (state.screen === "origins" && typeof setPrologBg === "function") setPrologBg();
+          }
+        }
+        if (typeof isOriginsPeeking === "function" && isOriginsPeeking() && typeof layoutPeekFullImage === "function") {
+          layoutPeekFullImage(null, { resetPan: false });
+        }
+      } catch (_) {}
+      /* After settling + possible bake resize: restore action-box scroll once layout is final. */
+      if (box) {
+        bindPrologScrollFades(box, { snap: true });
+        settlePendingPrologScroll(box, { clear: true });
+      } else {
+        pendingPrologScroll = null;
+      }
+      /* Two frames: floating boxes may animate open/close on user toggle only. */
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove("boxes-boot");
+        document.documentElement.classList.add("boxes-ready");
+      });
     });
-  } catch (_) {}
+  } catch (_) {
+    pendingPrologScroll = null;
+  }
 }

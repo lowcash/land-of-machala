@@ -1,10 +1,56 @@
 /** Push worldDemo + sceneDemo into SceneView (parallax always on while composing). */
 /** Bake key of the prolog scene the composed layers last showed (see syncSceneCompose). */
 let sceneSceneKey = "";
+/** Pinned plate for the current prolog scene+time+cast: camera shot changes must not reload it. */
+let scenePlatePin = null;
+/** Last plateSrc applied; used to wait for decode before swapping a cast-matched bake. */
+let scenePlateSrcApplied = null;
+/** Whether scenePlateSrcApplied was a cast-matched bake (people in the paint). */
+let scenePlateHasCastApplied = false;
+/** In-flight bake decode for a pending plate swap (no empty frame). */
+let scenePlateDecodeGen = 0;
+/** Cast-free plate failed to load once this scene+time: fall back to cast-matched bake (no retry loop). */
+let sceneCastFreeFailed = false;
 
-function syncSceneCompose() {
+/** Hi-res cast-free plate candidates: 3840 then 1920, AVIF only. */
+function castFreePlateUrls(shot, phase) {
+  const PS = typeof LOM !== "undefined" ? LOM.PrologScene : null;
+  if (PS && typeof PS.castFreePlateUrls === "function") return PS.castFreePlateUrls(shot, phase);
+  if (!shot || !phase) return [];
+  const base = `../assets/runtime/locations/tavern/clean-${shot}-${phase}-16x9`;
+  return [3840, 1920].map((w) => `${base}-${w}.avif`);
+}
+
+/** CSS width × dpr hint for picking 3840 vs 1920 (stage if mounted, else the window). */
+function sceneDisplayHint() {
+  const stage = document.querySelector(".scene-compose-stage");
+  const cssW =
+    (stage && stage.clientWidth) ||
+    window.visualViewport?.width ||
+    window.innerWidth ||
+    0;
+  const SD = typeof LOM !== "undefined" ? LOM.SceneDisplay : null;
+  const cap = SD && SD.DPR_CAP ? SD.DPR_CAP : 3;
+  const dpr =
+    SD && typeof SD.pickDevicePixelRatio === "function"
+      ? SD.pickDevicePixelRatio(window.devicePixelRatio || 1, cap)
+      : Math.min(window.devicePixelRatio || 1, cap);
+  return { cssW, dpr };
+}
+
+/** Rewrite a prolog bake key's s1|s2 so the cast-matched painting is fetched, not only the camera shot. */
+function bakeKeyForPlate(plateShot) {
+  const cur = typeof prologBgKey === "function" ? prologBgKey() : null;
+  if (!cur || (plateShot !== "s1" && plateShot !== "s2")) return cur;
+  return String(cur).replace(/-s[12]-/, `-${plateShot}-`);
+}
+
+function syncSceneCompose(opts) {
   /* Boot hold: the stored state is not applied yet, so composing now would show the defaults first (releaseBootCompose composes). */
   if (bootHold.held()) return;
+  /* Eye mode owns the bake alone; remounting compose here would stack a second, non-draggable plate.
+   * underPeek: exit path restores the scene under the still-visible peek frame (no empty paint). */
+  if (!(opts && opts.underPeek) && typeof isOriginsPeeking === "function" && isOriginsPeeking()) return;
   if (!LOM.SceneCompose || !LOM.SceneView?.enabled || !sceneDemo?.on) {
     if (LOM.SceneView && sceneDemo && !sceneDemo.on) LOM.SceneView.unmount();
     return;
@@ -21,10 +67,171 @@ function syncSceneCompose() {
   const onPrologScreen = state.screen === "origins";
   /* Prolog: the composed scene follows the beat (plate = the baked S1/S2, Svatava removed once she leaves). */
   const beat = onPrologScreen ? LOM.SceneCompose.prologBeat((ORIGIN_STEPS[state.originStep] || {}).pick) : null;
+  const show = beat ? LOM.SceneCompose.applyBeatShow(sceneDemo.show, beat) : sceneDemo.show;
+  /*
+   * Sharp + smooth prolog plates:
+   *  1) Hi-res cast-free plate (if a web clean exists) + cutouts that fade by opacity.
+   *  2) Else cast-matched high-res bake (same URLs as eye/peek): S1 paint = both people, S2 = sit only.
+   *     Camera shot can differ (race keeps Svatava on an S1 bake while the camera is on s2).
+   *     Cast change crossfades two bakes; decode before swap (old plate held until the new texture is ready).
+   *  3) Else layer clean + cutouts (authoring size).
+   */
+  let plateSrc = null;
+  let plateHasCast = false;
+  let plateKey = onPrologScreen && typeof prologShotId === "function" ? prologShotId() : null;
+  let castOverride = false;
+  let wantStand = true;
+  let wantSit = true;
+  let castPlate = null;
+  let sig = "00";
+  if (onPrologScreen) {
+    castOverride = !!(sceneDemo.cast && Object.keys(sceneDemo.cast).length);
+    wantStand = show && show["stand-table"] !== false;
+    wantSit = show && show["sit-right"] !== false;
+    const PS = LOM.PrologScene || {};
+    castPlate =
+      typeof PS.castBakePlate === "function"
+        ? PS.castBakePlate(wantStand, wantSit, castOverride)
+        : !castOverride && wantSit && wantStand
+          ? "s1"
+          : !castOverride && wantSit && !wantStand
+            ? "s2"
+            : null;
+    sig =
+      typeof PS.castSig === "function"
+        ? PS.castSig(wantStand, wantSit, castOverride)
+        : castOverride
+          ? "override"
+          : `${wantStand ? 1 : 0}${wantSit ? 1 : 0}`;
+    const phase = typeof prologBakePhase === "function" ? prologBakePhase() : null;
+    const freeUrls = castFreePlateUrls(castPlate || plateKey, phase);
+    const hint = sceneDisplayHint();
+    const castFreeUrl =
+      !sceneCastFreeFailed && freeUrls.length
+        ? typeof PS.pickCastFreePlateUrl === "function"
+          ? PS.pickCastFreePlateUrl(freeUrls, hint.cssW, hint.dpr)
+          : freeUrls[0]
+        : null;
+    let bakeUrl = null;
+    if (castPlate && typeof bakeCandidateUrls === "function") {
+      const urls = bakeCandidateUrls(bakeKeyForPlate(castPlate));
+      if (urls && urls[0]) bakeUrl = urls[0];
+    }
+    /* Hi-res cleans are on disk for all 8 shots; prefer cast-free + cutouts, bake only on load failure. */
+    const knownCastFree = true;
+    const picked =
+      typeof PS.pickPlateSource === "function"
+        ? PS.pickPlateSource({
+            castFreeUrl: knownCastFree ? castFreeUrl : null,
+            castPlate,
+            bakeUrl,
+            shot: plateKey,
+            plate: castPlate || plateKey,
+          })
+        : bakeUrl && castPlate
+          ? { mode: "bake", plateSrc: bakeUrl, plateHasCast: true, plate: castPlate }
+          : { mode: "clean", plateSrc: null, plateHasCast: false, plate: plateKey };
+    plateSrc = picked.plateSrc;
+    plateHasCast = !!picked.plateHasCast;
+    plateKey = picked.plate || plateKey;
+  }
+  /* Prolog: reload the background only when scene or time of day changes; shot change = camera (+ cast fade). */
+  let instant = false;
+  if (onPrologScreen) {
+    const key = typeof prologBgKey === "function" ? prologBgKey() : null;
+    const decide =
+      LOM.PrologScene && typeof LOM.PrologScene.shouldReloadBackground === "function"
+        ? LOM.PrologScene.shouldReloadBackground
+        : LOM.PrologCamera?.prologNeedsSceneFade;
+    const reloadBg = !key || !decide || decide(sceneSceneKey, key);
+    if (reloadBg) sceneCastFreeFailed = false;
+    /* First composition is a cut: nothing was shown before it. */
+    instant = !sceneSceneKey || !reloadBg;
+    /* Cast-free: pin with a fixed sig so beat cast changes only fade cutouts (no plate reload). */
+    const pinSig = plateHasCast ? sig : "cast-free";
+    const pin =
+      LOM.PrologScene && typeof LOM.PrologScene.nextPlatePin === "function"
+        ? LOM.PrologScene.nextPlatePin(scenePlatePin, plateKey, pinSig, reloadBg)
+        : !reloadBg && scenePlatePin && scenePlatePin.castSig === pinSig
+          ? { plate: scenePlatePin.plate, castSig: pinSig, changed: false }
+          : { plate: plateKey, castSig: pinSig, changed: true };
+    scenePlatePin = { plate: pin.plate, castSig: pin.castSig };
+    plateKey = pin.plate || plateKey;
+    /* Re-resolve URL for the pinned plate (camera shot may differ). */
+    if (plateHasCast && plateKey && typeof bakeCandidateUrls === "function") {
+      const urls = bakeCandidateUrls(bakeKeyForPlate(plateKey));
+      if (urls && urls[0]) plateSrc = urls[0];
+    } else if (!plateHasCast && plateKey && !sceneCastFreeFailed) {
+      const phase = typeof prologBakePhase === "function" ? prologBakePhase() : null;
+      const freeUrls = castFreePlateUrls(plateKey, phase);
+      const hint = sceneDisplayHint();
+      const PS = LOM.PrologScene || {};
+      plateSrc =
+        typeof PS.pickCastFreePlateUrl === "function"
+          ? PS.pickCastFreePlateUrl(freeUrls, hint.cssW, hint.dpr)
+          : freeUrls[0] || plateSrc;
+      plateHasCast = false;
+    }
+    /* Decode the new plate before swapping plateSrc; keep the previous one on screen meanwhile. */
+    if (plateSrc && plateSrc !== scenePlateSrcApplied && typeof decodeBakeUrl === "function") {
+      const prevSrc = scenePlateSrcApplied;
+      const prevHasCast = scenePlateHasCastApplied;
+      const gen = ++scenePlateDecodeGen;
+      const target = plateSrc;
+      const targetHasCast = plateHasCast;
+      decodeBakeUrl(target).then(
+        () => {
+          if (gen !== scenePlateDecodeGen) return;
+          scenePlateSrcApplied = target;
+          scenePlateHasCastApplied = targetHasCast;
+          syncSceneCompose();
+        },
+        () => {
+          if (gen !== scenePlateDecodeGen) return;
+          if (!targetHasCast && !sceneCastFreeFailed) {
+            /* Once: drop cast-free and recompose onto the cast-matched bake. */
+            sceneCastFreeFailed = true;
+            scenePlateSrcApplied = prevSrc;
+            scenePlateHasCastApplied = prevHasCast;
+            syncSceneCompose();
+            return;
+          }
+          scenePlateSrcApplied = target;
+          scenePlateHasCastApplied = targetHasCast;
+          syncSceneCompose();
+        }
+      );
+      if (prevSrc) {
+        /* Keep the last decoded plate this frame; the callback re-enters compose with the new src. */
+        plateSrc = prevSrc;
+        plateHasCast = prevHasCast;
+      } else {
+        /* First plate: assign now; SceneView holds draw until the texture uploads. */
+        scenePlateSrcApplied = target;
+        scenePlateHasCastApplied = targetHasCast;
+      }
+    } else if (plateSrc) {
+      scenePlateSrcApplied = plateSrc;
+      scenePlateHasCastApplied = plateHasCast;
+    } else {
+      scenePlateSrcApplied = null;
+      scenePlateHasCastApplied = false;
+    }
+    sceneSceneKey = key;
+  } else {
+    sceneSceneKey = "";
+    scenePlatePin = null;
+    scenePlateSrcApplied = null;
+    scenePlateHasCastApplied = false;
+    sceneCastFreeFailed = false;
+  }
   const desc = {
-    ...(onPrologScreen ? { phase: prologBakePhase(), plate: prologShotId() } : { time: worldDemo.hour }),
+    ...(onPrologScreen
+      ? { phase: prologBakePhase(), plate: (scenePlatePin && scenePlatePin.plate) || plateKey || prologShotId() }
+      : { time: worldDemo.hour }),
     shot: sceneDemo.shot || "celek",
-    show: beat ? LOM.SceneCompose.applyBeatShow(sceneDemo.show, beat) : sceneDemo.show,
+    show,
+    ...(plateSrc ? { plateSrc, plateHasCast } : {}),
     parallax: true,
     parallaxTune: sceneDemo.tune,
     instances: {
@@ -42,14 +249,6 @@ function syncSceneCompose() {
     weather: sceneDemo.weather || "clear",
     placements: sceneDemo.placements || {},
   };
-  /* Prolog: fade only when the scene or time of day changes (a shot change in one scene is a plate cut under the camera tween). */
-  let instant = false;
-  if (onPrologScreen) {
-    const key = prologBgKey();
-    /* The first composition is a cut: nothing was shown before it. */
-    instant = !sceneSceneKey || !LOM.PrologCamera.prologNeedsSceneFade(sceneSceneKey, key);
-    sceneSceneKey = key;
-  }
   LOM.SceneView.setFromDesc(desc, { instant });
   /* The plan can recreate the stage (.scene-compose-stage): the hotspot outlines are rebuilt on it, not only on toggle. */
   renderSceneHotspots();
@@ -227,9 +426,9 @@ function sceneWeatherHtml() {
   const { phase } = devPlateKey();
   const wxOpts = SC.weatherOptions(phase);
   const wx = wxOpts.find((o) => o.id === (sceneDemo.weather || "clear")) || wxOpts[0];
-  return `<p class="dev-scene-label">Počasí za oknem</p>
+  return `<p class="dev-scene-label">Počasí</p>
     <div class="dev-scene-row">
-      <select id="dev-scene-weather" aria-label="Počasí za oknem">${wxOpts
+      <select id="dev-scene-weather" aria-label="Počasí">${wxOpts
         .map((o) => `<option value="${o.id}" ${o.id === wx.id ? "selected" : ""} ${o.ok ? "" : "disabled"}>${escapeHtml(o.label)}${o.ok ? "" : " (chybí)"}</option>`)
         .join("")}</select>
       ${wx.ok ? "" : `<span class="dev-scene-warn">chybí</span>`}
@@ -501,6 +700,14 @@ function initSceneComposeDemo() {
     updateSceneComposeReadout();
     updateSceneProbes();
     renderSceneHotspots();
+  });
+  /* Cast-free plate 404 / decode miss in the view: fall back to bake once (no retry loop). */
+  document.addEventListener("lom:scene-tex-error", (e) => {
+    const src = e?.detail?.src || "";
+    if (!src || sceneCastFreeFailed) return;
+    if (!/\/clean-s[12]-.*-(1920|3840)\.avif(?:$|\?)/.test(src)) return;
+    sceneCastFreeFailed = true;
+    syncSceneCompose();
   });
   const box = $("origins-box");
   if (box && !box.dataset.sceneBreathBound) {

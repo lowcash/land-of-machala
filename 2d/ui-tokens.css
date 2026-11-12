@@ -25,4 +25,54 @@
   --ui-ok: #6a9e6a;
   --ui-warn: #c9a24a;
   --ui-danger: #c15a4a;
+
+  /* Shared typography for tool surfaces (admin, 3d, 2d dev/status boxes). Player prose keeps Iowan via --ui-font-num. */
+  --ui-font: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --ui-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Display/player stack (Iowan). Tool-surface numbers/logs use --ui-font-mono instead. */
+  --ui-font-num: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  /* Type scale (tool surfaces). Older --ui-fs-* names kept as aliases. */
+  --ui-fs-card: 15px;
+  --ui-fs-section: 12px;
+  --ui-fs-label: 12px;
+  --ui-fs-helper: 11.5px;
+  --ui-fs-body: 13px;
+  --ui-fs-chip: 0.75rem;
+  /* Aliases for prior head/sub names */
+  --ui-fs-head: var(--ui-fs-card);
+  --ui-fs-sub: var(--ui-fs-section);
+
+  --ui-fw-head: 600;
+  --ui-fw-label: 500;
+  --ui-fw-body: 400;
+  --ui-fw-num: 600;
+  --ui-head-tracking: 0.06em;
+  --ui-card-lh: 1.3;
+
+  /* Role colours (admin measured values): one token per role across tool surfaces. */
+  --ui-color-title: rgb(224, 211, 188);
+  --ui-color-section: rgb(143, 129, 110);
+  --ui-color-label: rgb(143, 129, 110);
+  --ui-color-helper: rgb(143, 129, 110);
+
+  /* Compact form controls: one height/radius/size for admin + 2d/dev box + 3d bar. */
+  --ui-control-h: 32px;
+  --ui-control-radius: var(--ui-radius);
+  --ui-control-fs: 13px;
+  /* Alias kept for older rules (admin reset-btn, prior --ui-ctrl-h uses). */
+  --ui-ctrl-h: var(--ui-control-h);
+
+  /* Node map (admin AdminLib.MAP_VB + node radius; 3d sidebar reuses the same geometry). */
+  --ui-map-vb-w: 420;
+  --ui-map-vb-h: 320;
+  --ui-map-aspect: 420 / 320;
+  --ui-map-node-r: 18;
+  --ui-map-node-hit: 26;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --ui-control-h: 40px;
+  }
 }

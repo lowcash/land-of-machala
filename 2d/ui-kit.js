@@ -1,6 +1,9 @@
 /*
  * Tiny shared HTML-string kit for 2d and admin. Classic script, no DOM access at load.
  * Every helper returns an escaped HTML string; attribute values and text are always escaped.
+ * Form control sizing for floating boxes uses tokens from ui-tokens.css:
+ *   --ui-control-h (32px, 40px on pointer:coarse), --ui-control-radius, --ui-control-fs (alias --ui-ctrl-h).
+ * Type roles: --ui-fs-card/section/label/helper/body and --ui-color-title/section/label/helper.
  * Exposed as window.UiKit (and module.exports in node tests).
  */
 (function (root, factory) {

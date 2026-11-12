@@ -102,3 +102,22 @@ abbr.kodex {
     transition: none;
   }
 }
+
+/* Shared corner resize (mountCornerResize in tooltip.js): 2d floating boxes + admin map tips. */
+.float-resize,
+[data-float-resize] {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  z-index: 6;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: linear-gradient(135deg, transparent 55%, rgba(185, 168, 148, 0.85) 55%);
+  border-radius: 0 0 7px 0;
+  pointer-events: auto;
+}
+.is-resizing {
+  user-select: none;
+}
