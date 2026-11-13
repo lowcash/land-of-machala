@@ -51,6 +51,32 @@
     return '<p class="ui-state ui-state-' + esc(k) + '" role="' + role + '">' + esc(text) + "</p>";
   }
 
+  /**
+   * Native select matching admin .sel / .ctx-pick (height --ui-control-h, class "sel").
+   * opts = [{ value, label, selected? }], map = attribute bag for attrs().
+   */
+  function select(opts, map) {
+    var o = map || {};
+    var cls = "sel" + (o.className ? " " + esc(o.className) : "");
+    var amap = Object.assign({}, o.attrs || {});
+    if (!amap.class && !amap.className) amap.class = cls;
+    else amap.class = cls + (amap.class ? " " + amap.class : "");
+    var body = (opts || [])
+      .map(function (it) {
+        return (
+          '<option value="' +
+          esc(it.value) +
+          '"' +
+          (it.selected ? " selected" : "") +
+          ">" +
+          esc(it.label) +
+          "</option>"
+        );
+      })
+      .join("");
+    return "<select" + attrs(amap) + ">" + body + "</select>";
+  }
+
   return {
     esc: esc,
     escAttr: esc,
@@ -58,5 +84,6 @@
     chip: chip,
     note: note,
     stateLine: stateLine,
+    select: select,
   };
 });

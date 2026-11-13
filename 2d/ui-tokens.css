@@ -63,12 +63,35 @@
   /* Alias kept for older rules (admin reset-btn, prior --ui-ctrl-h uses). */
   --ui-ctrl-h: var(--ui-control-h);
 
+  /* Native select / .sel / .ctx-pick: admin character picker is the source of truth. */
+  --ui-select-pad-inline-start: 0.65rem;
+  --ui-select-pad-inline-end: 1.85rem;
+  --ui-select-chevron-inset: 0.65rem;
+  --ui-select-chevron-size: 12px 8px;
+  --ui-select-padding: 0 var(--ui-select-pad-inline-end) 0 var(--ui-select-pad-inline-start);
+
+  /* Compact filter badges (Žurnál / Uživatel chips): shorter than --ui-control-h (max 24px). */
+  --ui-filter-chip-h: 22px;
+  --ui-filter-chip-pad-x: 0.5rem;
+  --ui-filter-chip-fs: var(--ui-fs-chip);
+
   /* Node map (admin AdminLib.MAP_VB + node radius; 3d sidebar reuses the same geometry). */
   --ui-map-vb-w: 420;
   --ui-map-vb-h: 320;
   --ui-map-aspect: 420 / 320;
   --ui-map-node-r: 18;
   --ui-map-node-hit: 26;
+
+  /* Map place/character tooltips (admin .place-pin + 3d host .Map tips): compact card chrome.
+     Icon buttons are 28px square (compact tip; not the 32px --ui-control-h). Same tokens in both hosts. */
+  --ui-map-tip-btn: 28px;
+  --ui-map-tip-icon: 14px;
+  --ui-map-tip-pad: 0.75rem;
+  --ui-map-tip-gap: 0.35rem;
+  --ui-map-tip-label-w: 4.5em;
+  --ui-map-tip-max-w: 220px;
+  --ui-map-tip-max-h: 240px;
+  --ui-map-tip-radius: var(--ui-radius);
 }
 
 @media (pointer: coarse) {

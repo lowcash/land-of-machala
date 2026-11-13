@@ -6,6 +6,7 @@ Format: dated sections; versions follow `APP_VERSION` in `2d/app.js` when it cha
 
 ## Unreleased
 
+- Home-screen app on iOS: no blurred strip at the top; the status bar is opaque black and the page starts below it. Remove the icon and add it again to get the new look.
 - The 2D starts directly in the prologue: the landing/sign-in screen is gone from this repository.
 - The public build is now prologue only: combat, map, inventory, quests and the other locations are no longer part of this repository.
 - Prolog: the camera frames the speaking character on desktop too; "Celá scéna" (eye) zooms out and can be dragged, with a small hint.

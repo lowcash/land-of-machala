@@ -2,11 +2,13 @@
 <html lang="cs">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- No viewport-fit=cover: with it iOS draws the page under the status bar and blurs it (gradient strip on the home-screen app). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0a0806" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- Dark page: opaque black bar, content starts below it. iOS reads this when the icon is added (re-add to change). -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Machala" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
@@ -52,52 +54,56 @@
 
   </script>
   <link rel="stylesheet" href="ui-tokens.css" />
+  <link rel="stylesheet" href="ui-dropdown.css" />
   <link rel="stylesheet" href="tooltip.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- DEV - skrytá mimo file:/localhost, nebo ?dev=0; ?dev=1 / Ctrl+Shift+D ji ukáže -->
-  <aside class="storybook-bar is-collapsed" id="dev-bar" data-dev-only hidden aria-label="Vývojářský storybook">
+  <aside class="storybook-bar is-collapsed" id="dev-bar" data-dev-only hidden aria-label="Nastavení">
     <div class="dev-row dev-chrome box-head">
       <button type="button" class="dev-drag has-tip" id="dev-drag" aria-label="Otevřít nebo přesunout panel" aria-expanded="false" aria-controls="dev-detail-panel"><span class="dev-drag-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" focusable="false"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span></button>
       <span class="dev-drag-slot" aria-hidden="true"></span>
-      <div class="dev-knob dev-main">
-        <select id="dev-scenario" aria-label="Předvolba scény (nastaví přepínače)"></select>
-      </div>
-      <button type="button" class="dev-btn dev-reset reset-btn" id="dev-reset" aria-label="Obnovit podle presetu scény" title="Obnovit podle presetu scény">↺</button>
+      <span class="status-bar-title">Nastavení</span>
       <label class="dev-opacity has-tip" data-tip="Průhlednost panelu"><span class="sr-only">Průhlednost</span><input type="range" id="dev-opacity" min="0" max="100" value="100" /></label>
     </div>
     <div class="dev-scroll">
       <div id="dev-detail-panel" class="dev-detail" hidden>
-        <!-- Order: Čas a počasí (subsections Čas, Počasí) → Scéna (Kamera, Pozice, Objekty, Efekty) → Ladění. Stav systému is its own box below.
-             Subsections are nested dev-sub details (indented, open state per browser). Same model as the 3D view (systems/scene-controls.js). -->
+        <!-- Preset row alone at top (not in a section). L1: Čas a počasí, Scéna, Pozice a obsazení, Objekty, Efekty, Vývojářské.
+             Under Scéna: Místnost / Záběr rows, then L2 Kamera. Stav systému is its own box below. -->
+        <div class="dev-cas-row dev-preset-row" id="dev-preset-row">
+          <span class="dev-cas-lbl" id="dev-scenario-lbl">Předvolba</span>
+          <div class="dev-field-ctl dev-main">
+            <select id="dev-scenario" aria-label="Předvolba scény (nastaví přepínače)" aria-labelledby="dev-scenario-lbl"></select>
+            <button type="button" class="dev-btn dev-reset reset-btn" id="dev-reset" aria-label="Obnovit podle presetu scény" title="Obnovit podle presetu scény">↺</button>
+          </div>
+        </div>
         <details class="dev-sec" data-sec="cas" open><summary class="box-subhead">Čas a počasí</summary>
           <details class="dev-sub" data-sub="cas" open><summary>Čas</summary>
-            <div class="dev-row dev-world-clock-row" id="dev-world-clock"></div>
-            <div class="dev-row dev-knobs" data-knob-sec="cas"></div>
+            <div class="dev-cas-row dev-world-clock-row" id="dev-world-clock"></div>
+            <div class="dev-knobs" data-knob-sec="cas"></div>
           </details>
           <details class="dev-sub" data-sub="pocasi" open><summary>Počasí</summary>
             <div class="dev-scene-compose" id="dev-weather"></div>
           </details>
         </details>
         <details class="dev-sec" data-sec="world" open><summary class="box-subhead">Scéna</summary>
-          <div class="dev-row dev-knobs" data-knob-sec="world"></div>
+          <div class="dev-knobs" data-knob-sec="world"></div>
           <details class="dev-sub" data-sub="kamera" open><summary>Kamera</summary>
             <div class="dev-scene-compose" id="dev-scene-camera"></div>
           </details>
-          <details class="dev-sub" data-sub="pozice" open><summary>Pozice a obsazení</summary>
-            <div class="dev-scene-compose" id="dev-scene-compose"></div>
-          </details>
-          <details class="dev-sub" data-sub="objekty" open><summary>Objekty</summary>
-            <div class="dev-world-objects" id="dev-world-objects" aria-live="polite"></div>
-            <pre class="dev-world-out" id="dev-world-out" aria-live="polite"></pre>
-          </details>
-          <details class="dev-sub" data-sub="efekty" open><summary>Efekty</summary>
-            <div class="dev-scene-compose" id="dev-scene-effects"></div>
-          </details>
         </details>
-        <p class="dev-group">Vývojářské</p>
-        <details class="dev-sec" data-sec="debug"><summary class="box-subhead">Ladení</summary><div class="dev-row dev-toggles" id="dev-debug-toggles" role="group" aria-label="Ladení layoutu (dev)"></div></details>
+        <details class="dev-sec" data-sec="pozice" open><summary class="box-subhead">Pozice a obsazení</summary>
+          <div class="dev-scene-compose" id="dev-scene-compose"></div>
+        </details>
+        <details class="dev-sec" data-sec="objekty" open><summary class="box-subhead">Objekty</summary>
+          <div class="dev-world-objects" id="dev-world-objects" aria-live="polite"></div>
+          <pre class="dev-world-out" id="dev-world-out" aria-live="polite"></pre>
+        </details>
+        <details class="dev-sec" data-sec="efekty" open><summary class="box-subhead">Efekty</summary>
+          <div class="dev-scene-compose" id="dev-scene-effects"></div>
+        </details>
+        <details class="dev-sec" data-sec="debug"><summary class="box-subhead">Vývojářské</summary><div class="dev-row dev-toggles" id="dev-debug-toggles" role="group" aria-label="Vývojářské nástroje (dev)"></div></details>
       </div>
       <p id="dev-note" class="dev-note hidden"></p>
     </div>
@@ -165,8 +171,10 @@
   <script src="js/systems/particles.js"></script>
   <script src="js/systems/kodex.js"></script>
   <script src="js/ui/particles-view.js"></script>
+  <script src="js/ui/scene-compose-display.js"></script>
   <script src="js/dev/scenarios.js"></script>
   <script src="ui-kit.js"></script>
+  <script src="js/ui/dropdown.js"></script>
   <script src="tooltip.js"></script>
   <script src="js/ui/boot-hold.js"></script>
   <script src="js/ui/prolog-scene.js"></script>
@@ -178,5 +186,6 @@
   <script src="js/ui/scene-compose-demo.js"></script>
   <script src="app-boot.js"></script>
   <script src="js/ui/pwa-register.js"></script>
+  <script>if (window.Dropdown) Dropdown.auto(document);</script>
 </body>
 </html>

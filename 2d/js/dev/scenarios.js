@@ -43,19 +43,36 @@
     },
     {
       id: "phase",
-      label: "Doba",
-      /* 4 pečené doby (afternoon ve hře = evening bake) */
+      label: "Čas",
+      /* 4 pečené doby + live (wall clock Europe/Prague); afternoon ve hře = evening bake */
       opts: [
         ["morning", "ráno"],
         ["noon", "poledne"],
         ["evening", "večer"],
         ["night", "noc"],
+        ["live", "živé"],
       ],
       from: (sc) => {
         if (sc.phase) return sc.phase === "afternoon" ? "evening" : sc.phase;
         return "evening";
       },
       apply: (sc, v) => {
+        if (v === "live") {
+          /* UI-only "živé": resolve Europe/Prague hour to a bake phase (same cuts as SceneCompose.phaseOfHour). */
+          let hour = new Date().getHours();
+          try {
+            const parts = new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Europe/Prague",
+              hour: "numeric",
+              hourCycle: "h23",
+            }).formatToParts(new Date());
+            const hp = parts.find((p) => p.type === "hour");
+            if (hp) hour = Number(hp.value);
+          } catch (_) {}
+          sc.phase =
+            hour >= 5 && hour < 10 ? "morning" : hour >= 10 && hour < 15 ? "noon" : hour >= 15 && hour < 21 ? "evening" : "night";
+          return;
+        }
         sc.phase = v === "afternoon" ? "evening" : v;
       },
     },

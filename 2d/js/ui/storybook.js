@@ -266,7 +266,37 @@ function syncDevUi() {
     note.classList.toggle("hidden", !sc?.note);
   }
   mirrorLiveToKnobs();
+  normalizeDevHourRow();
+  wrapDevRowSelects();
+  hideDuplicateSceneHeads();
+  watchDevHourRow();
+  watchDevComposeHosts();
   syncDevPad();
+}
+
+/** Re-normalize when world-demo rebuilds #dev-world-clock innerHTML. */
+function watchDevHourRow() {
+  const clock = $("dev-world-clock");
+  if (!clock || clock.dataset.hourWatch === "1") return;
+  clock.dataset.hourWatch = "1";
+  new MutationObserver(() => {
+    normalizeDevHourRow();
+    wrapDevRowSelects();
+    hideDuplicateSceneHeads();
+  }).observe(clock, { childList: true, subtree: true });
+}
+
+/** Re-wrap after scene compose hosts rewrite their innerHTML. */
+function watchDevComposeHosts() {
+  ["dev-weather", "dev-scene-camera", "dev-scene-compose", "dev-scene-effects"].forEach((id) => {
+    const host = $(id);
+    if (!host || host.dataset.gridWatch === "1") return;
+    host.dataset.gridWatch = "1";
+    new MutationObserver(() => {
+      wrapDevRowSelects();
+      hideDuplicateSceneHeads();
+    }).observe(host, { childList: true, subtree: true });
+  });
 }
 
 /** Stav systému: progress tracker from LOM.SYSTEMS (js/dev/scenarios.js), rank funguje → maketa → chybí. Dev box only. */
@@ -278,8 +308,7 @@ function renderDevStatus() {
   const total = Math.round(list.reduce((n, x) => n + x.pct, 0) / list.length);
   st.innerHTML = `
     <div class="box-subhead">
-    <p class="dev-total"><strong>Hotovost 2D ≈ ${total} %</strong> <span>(hrubý odhad podle systémů)</span></p>
-    <p class="dev-legend"><span class="sys-funguje">funguje</span> = skutečná pravidla, testy · <span class="sys-maketa">maketa</span> = UI je, efekt jen zčásti nebo vůbec · <span class="sys-chybí">chybí</span> = nic</p>
+    <p class="dev-total"><strong>Hotovost 2D ≈ ${total} %</strong></p>
     </div>
     ${["funguje", "maketa", "chybí"]
       .map((stt) => {
@@ -288,7 +317,7 @@ function renderDevStatus() {
         return `<details class="dev-sec dev-sys-sec"${stt === "funguje" ? "" : " open"}><summary><span class="sys-${stt}">${stt}</span> ${items.length}</summary><ul class="dev-sys-list">${items
           .map(
             (x) =>
-              `<li><span class="dev-sys-name">${x.name}${x.phase ? ` <span class="dev-phase">${x.phase}</span>` : ""}</span><span class="dev-sys-pct">${x.pct}&nbsp;%</span><i class="dev-bar" aria-hidden="true"><b style="width:${x.pct}%"></b></i>${x.note ? `<em class="dev-sys-note">${x.note}</em>` : ""}</li>`
+              `<li><span class="dev-sys-name">${x.name}${x.phase ? ` <span class="dev-phase">${x.phase}</span>` : ""}</span><span class="dev-sys-pct">${x.pct}&nbsp;%</span><i class="dev-bar" aria-hidden="true"><b style="width:${x.pct}%"></b></i></li>`
           )
           .join("")}</ul></details>`;
       })
@@ -311,9 +340,65 @@ function knobControlHtml(k) {
     const tipAttr = k.tip ? ` data-tip="${String(k.tip).replace(/"/g, "&quot;")}"` : "";
     return `<label class="dev-chk${tipCls}"${tipAttr}><input type="checkbox" data-knob="${k.id}" /> ${k.label}</label>`;
   }
-  return `<label class="dev-knob">${k.label}<select data-knob="${k.id}">${(k.opts || [])
+  return `<label class="dev-knob dev-cas-row"><span class="dev-cas-lbl">${k.label}</span><span class="dev-field-ctl"><select data-knob="${k.id}">${(k.opts || [])
     .map(([v, l]) => `<option value="${v}">${l}</option>`)
-    .join("")}</select></label>`;
+    .join("")}</select></span></label>`;
+}
+
+/**
+ * World hour row arrives as column label+range with a sibling readout (world-demo.js).
+ * Normalize to the shared label | control grid: label column + (range + right-aligned value).
+ */
+function normalizeDevHourRow() {
+  const clock = $("dev-world-clock");
+  if (!clock) return;
+  /* Already normalized and world-demo has not rebuilt the column knob. */
+  if (clock.querySelector(":scope > .dev-field-ctl") && !clock.querySelector(".dev-world-hour-knob")) return;
+  const knob = clock.querySelector(".dev-world-hour-knob");
+  const readout = clock.querySelector(".dev-world-hour-label");
+  const input = clock.querySelector("#dev-world-hour") || knob?.querySelector('input[type="range"]');
+  if (!knob || !readout || !input) return;
+  let labelText = "";
+  [...knob.childNodes].forEach((n) => {
+    if (n.nodeType === 3) labelText += n.textContent;
+  });
+  labelText = labelText.replace(/\s+/g, " ").trim() || "Hodina scény";
+  const lbl = document.createElement("span");
+  lbl.className = "dev-cas-lbl";
+  lbl.id = "dev-world-hour-lbl";
+  lbl.textContent = labelText;
+  const ctl = document.createElement("div");
+  ctl.className = "dev-field-ctl";
+  ctl.appendChild(input);
+  ctl.appendChild(readout);
+  clock.className = "dev-cas-row dev-world-clock-row";
+  clock.replaceChildren(lbl, ctl);
+}
+
+/** Drop duplicate in-body section titles (parent summary already names Kamera / Pozice / Objekty). */
+function hideDuplicateSceneHeads() {
+  document.querySelectorAll("#dev-scene-camera .dev-scene-head, #dev-scene-compose .dev-scene-head").forEach((el) => {
+    el.hidden = true;
+  });
+  document.querySelectorAll(".dev-world-objects > .dev-scene-label").forEach((el) => {
+    el.hidden = true;
+  });
+}
+
+/** Wrap naked row selects (or their .dd-wrap) in .dev-field-ctl so min-content cannot blow the grid cell. */
+function wrapDevRowSelects() {
+  document.querySelectorAll(".storybook-bar .dev-cas-row > select, .storybook-bar .dev-scene-row > select, .storybook-bar .dev-cas-row > .dd-wrap, .storybook-bar .dev-scene-row > .dd-wrap").forEach((el) => {
+    if (el.parentElement?.classList.contains("dev-field-ctl")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "dev-field-ctl";
+    el.replaceWith(wrap);
+    wrap.appendChild(el);
+  });
+  document.querySelectorAll(".storybook-bar .dev-field-ctl > select, .storybook-bar .dev-scene-slot-ctl > select, .storybook-bar .dev-field-ctl > .dd-wrap, .storybook-bar .dev-scene-slot-ctl > .dd-wrap").forEach((el) => {
+    el.style.minWidth = "8rem";
+    el.style.width = "100%";
+    el.style.maxWidth = "100%";
+  });
 }
 
 /**
@@ -358,8 +443,8 @@ function refreshScenarioOptionLabels(knobs = {}) {
   });
 }
 
-/** Veřejná lišta: jen Místo (krčma) + Doba (4); bez předvolby / režimu / stylu / systémů. */
-const PUBLIC_DEV_KNOB_IDS = new Set(["place", "phase"]);
+/** Veřejná lišta: jen Místo (krčma); Doba is the world-hour slider (no phase select). */
+const PUBLIC_DEV_KNOB_IDS = new Set(["place"]);
 
 function publicDevKnobs() {
   return LOM.KNOBS.filter((k) => PUBLIC_DEV_KNOB_IDS.has(k.id)).map((k) => {

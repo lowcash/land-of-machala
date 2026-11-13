@@ -30,7 +30,7 @@ describe("float corner resize (tooltip.js + floating boxes)", () => {
 
   it("styles hide inner resets and keep chrome reset compact", () => {
     const css = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
-    assert.match(css, /\.storybook-bar\s+\.dev-scroll\s+\.dev-reset/);
+    assert.match(css, /\.storybook-bar\s+\.dev-scroll\s+\.dev-reset:not\(#dev-reset\)/);
     assert.match(css, /display:\s*none\s*!important/);
     assert.match(css, /\.dev-chrome\s*>\s*\.dev-btn:not\(\.dev-reset\)/);
   });

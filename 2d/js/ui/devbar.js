@@ -73,6 +73,9 @@ function loadDevBarPrefs(key = DEV_BAR_KEY) {
       cas: true,
       svet: true,
       world: true,
+      pozice: true,
+      objekty: true,
+      efekty: true,
       boj: false,
       debug: false,
     },
@@ -107,10 +110,12 @@ function saveDevBarPrefs(prefs, key = DEV_BAR_KEY) {
 }
 
 /**
- * Open / closed state of the collapsible subsections of the dev box (Čas, Počasí, Kamera, Pozice, Objekty, Efekty); per account.
+ * Open / closed state of the collapsible subsections of the dev box (legacy Čas/Počasí, Kamera); per account.
  * Only boolean values for the current keys are read: stale or hand-edited storage falls back to the HTML default.
  */
 const DEV_SUB_KEY = "lom.devSub";
+/* cas/pocasi are flat rows under "Čas a počasí" (no nested details); keep ids for legacy prefs only.
+ * pozice/objekty/efekty are level-1 sections now; keep ids so old prefs do not throw. */
 const DEV_SUB_IDS = ["cas", "pocasi", "kamera", "pozice", "objekty", "efekty"];
 function loadDevSubPrefs() {
   const out = {};
@@ -463,6 +468,8 @@ function initDevBar() {
   const bar = document.querySelector(".storybook-bar");
   const panel = $("dev-detail-panel");
   if (!bar || !panel) return;
+  /* Early flatten so sticky prefs do not bind to nested Čas / Počasí details that will be removed. */
+  if (typeof flattenCasPocasiSection === "function") flattenCasPocasiSection();
 
   /* Scroll of the dev box (.dev-scroll): restored once it is open and laid out (a collapsed box has no height). */
   const devScroll = ensureDevBody(bar);
@@ -471,7 +478,7 @@ function initDevBar() {
     if (devOpen()) devScroll.scrollTop = loadDevScroll();
   };
   const box = mountFloatBox(bar, $("dev-drag"), DEV_BAR_KEY, {
-    tipLabel: "Vývojářský panel",
+    tipLabel: "Nastavení",
     onApply: (prefs) => {
       /* Panel stays in DOM – collapse animates .dev-scroll (hidden would hard-cut). */
       panel.hidden = false;

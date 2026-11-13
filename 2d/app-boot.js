@@ -59,8 +59,10 @@ document.body.addEventListener("click", (e) => {
   }
 
   if (t.dataset.originChoice !== undefined) {
+    if (typeof PLAY_PROLOG !== "undefined" && PLAY_PROLOG) return;
     const step = ORIGIN_STEPS[state.originStep];
-    const choice = step.choices[Number(t.dataset.originChoice)];
+    const choice = step && step.choices && step.choices[Number(t.dataset.originChoice)];
+    if (!choice) return;
     /* drzá odpověď: prolog jde dál bez povolání (neznámý poutník), Svatava to komentuje v dalším kroku */
     if (choice.cheek) state.prologCheek += 1;
     if (choice.cheek) state.prologDone.class = false; /* drzá odpověď po dřívější volbě živnosti: poutník bez živnosti */

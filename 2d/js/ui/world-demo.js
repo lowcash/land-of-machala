@@ -70,29 +70,30 @@ function worldDemoRecompute(demo) {
 
 
 /**
- * With the world-time slider the Doba switch is redundant (297. kolo): the slider readout names the asset set. The select
- * stays in the DOM (hidden) because the bake crossfade and the session read it. Without the slider (public demo) it stays.
+ * World-time slider is the only Doba control: drop the phase <select> (and its label) from the DOM.
+ * Bake phase follows the slider via syncPhaseKnobFromWorldHour; softApply still tolerates a missing select.
  */
 function hidePhaseKnob() {
-  const lbl = document.querySelector('select[data-knob="phase"]')?.closest("label");
-  if (lbl) lbl.hidden = true;
+  const sel = document.querySelector('select[data-knob="phase"]');
+  const lbl = sel?.closest("label");
+  if (lbl) lbl.remove();
+  else if (sel) sel.remove();
 }
 
-/** Keep Doba knob in sync when world-hour crosses a bake phase (slider = source of truth). */
+/** Apply bake phase when world-hour crosses a band (slider = source of truth). */
 function syncPhaseKnobFromWorldHour(hour, { applyBake = true } = {}) {
   const SC = LOM.SceneCompose;
   if (!SC?.phaseOfHour) return;
   const phase = SC.phaseOfHour(hour);
   const sel = document.querySelector('select[data-knob="phase"]');
-  if (sel && sel.value !== phase) {
-    sel.value = phase;
-    if (applyBake && LOM.PHASES) {
-      const idx = Math.max(0, LOM.PHASES.findIndex((p) => p.id === phase));
-      state.clock = { day: state.clock?.day || 1, tick: idx * LOM.TICKS_PER_PHASE };
-      if (state.screen === "origins") setPrologBg();
-      else syncPhaseLook();
-    }
-  }
+  if (sel) sel.value = phase;
+  if (!applyBake || !LOM.PHASES) return;
+  const idx = Math.max(0, LOM.PHASES.findIndex((p) => p.id === phase));
+  const tick = idx * LOM.TICKS_PER_PHASE;
+  if ((state.clock?.tick | 0) === tick) return;
+  state.clock = { day: state.clock?.day || 1, tick };
+  if (state.screen === "origins") setPrologBg();
+  else syncPhaseLook();
 }
 
 /** Doba → set world hour to a mid-phase value (0–24); recompute instances. */
@@ -316,7 +317,7 @@ function worldObjPlaceSelectHtml(anchor) {
       return `<option value="${o.id}"${sel}${dis}>${escapeHtml(o.label)}${o.ok ? "" : " (chybí výřez)"}</option>`;
     })
     .join("");
-  return `<label class="dev-obj-state" title="Co na této pozici stojí. Jiný objekt potřebuje vlastní výřez object-<objekt>@<pozice>.">objekt
+  return `<label class="dev-obj-state">objekt
         <select data-scene-place="${anchor.id}">${opts}</select></label>`;
 }
 
@@ -340,7 +341,7 @@ function worldObjCardHtml(objDef, inst) {
   const placed = sceneDemo?.placements?.[anchor?.id];
   const warn = placed && placed !== anchor.object ? `<span class="dev-scene-warn">chybí výřez</span>` : "";
   return `<div class="dev-obj" data-world-target="${key}">
-    <div class="dev-obj-head"><span class="dev-obj-name" title="Pozice objektu (kotva ${anchor ? anchor.id : key})">${escapeHtml(anchor ? anchor.label : objDef.label)}</span>
+    <div class="dev-obj-head"><span class="dev-obj-name">${escapeHtml(anchor ? anchor.label : objDef.label)}</span>
       ${LOM.SceneControls.resetButtonHtml(`data-world-obj-reset="${key}"`, DEV_RESET_TITLE)}
     </div>
     <div class="dev-obj-head dev-obj-head--controls">
@@ -350,7 +351,7 @@ function worldObjCardHtml(objDef, inst) {
       </label>
       ${warn}
     </div>
-    <div class="dev-obj-prog" title="${prog.text}">
+    <div class="dev-obj-prog">
       <div class="dev-obj-bar"><i style="width:${pct}%"></i></div>
       <span class="dev-obj-prog-label">${prog.text}</span>
     </div>
@@ -374,7 +375,7 @@ function renderWorldDemo({ rebuildClock = true } = {}) {
     clock.innerHTML = `<label class="dev-knob dev-world-hour-knob">${LOM.SceneControls ? LOM.SceneControls.LABELS.hour : "Hodina scény"}
     <input type="range" id="dev-world-hour" min="0" max="24" step="0.25" value="${h}" />
   </label>
-  <span class="dev-world-hour-label" id="dev-world-hour-label" title="Hodina scény · denní doba, podle které se bere sada obrazů">${labelText}</span>`;
+  <span class="dev-world-hour-label" id="dev-world-hour-label">${labelText}</span>`;
     hidePhaseKnob();
   } else {
     const input = $("dev-world-hour");
@@ -384,7 +385,7 @@ function renderWorldDemo({ rebuildClock = true } = {}) {
   }
   /* Objects belong to the place: only a place with anchors (the tavern) has them; switching Místo empties the list. */
   if (!devPlaceAnchors().length) {
-    objects.innerHTML = `<p class="dev-scene-note">Objekty: toto místo zatím nemá skládanou scénu (pozice objektů má jen ${escapeHtml(PLACE.tavern?.title || "krčma")}).</p>`;
+    objects.innerHTML = `<p class="dev-scene-note">Toto místo zatím nemá objekty.</p>`;
   } else {
     objects.innerHTML =
       `<p class="dev-scene-label">Objekty na pozicích</p>` +

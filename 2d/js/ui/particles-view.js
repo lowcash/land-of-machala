@@ -54,8 +54,10 @@
   function resize(v, el) {
     const r = el.getBoundingClientRect();
     const w = Math.round(el.clientWidth || r.width), h = Math.round(el.clientHeight || r.height);
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    if (w !== v.w || h !== v.h || dpr !== v.dpr) {
+    /* Buffer density follows the on-screen size (css x dpr x ancestor zoom, e.g. the prolog camera scale) so dots stay as sharp as the scene; capped at 3840 px wide. */
+    const zoom = w > 0 && r.width > 0 ? Math.max(1, r.width / w) : 1;
+    const dpr = Math.round(Math.min(window.devicePixelRatio || 1, 3) * Math.min(zoom, 2) * Math.min(1, 3840 / Math.max(1, w * Math.min(window.devicePixelRatio || 1, 3) * Math.min(zoom, 2))) * 100) / 100;
+    if (w !== v.w || h !== v.h || Math.abs(dpr - v.dpr) > 0.05) {
       v.w = w; v.h = h; v.dpr = dpr;
       v.cv.width = Math.max(1, Math.round(w * dpr));
       v.cv.height = Math.max(1, Math.round(h * dpr));

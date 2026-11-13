@@ -56,7 +56,7 @@ img, svg { display: block; max-width: 100%; }
   --vv-left: 0px;
   /* Full visual viewport; chrome pads with --safe-* (PWA notch / home indicator). */
   --shell-h: var(--vvh);
-  /* Shared scene bezel (letterbox bars, PWA unsafe bands, theme-color). */
+  /* Shared scene bezel (letterbox bars, theme-color). Without viewport-fit=cover the --safe-* insets are 0 on iOS. */
   --scene-void: #0a0806;
   --scene-fade-ms: 420ms;
   /* Shared with SCENE_FADE_EASE in app.js – peek melt/stage/letterbox/bg together. */
@@ -150,10 +150,11 @@ html, body {
   color: var(--ui-color-label, var(--muted));
   overflow: hidden;
   box-shadow: 0 8px 28px rgba(0, 0, 0, calc(0.45 * var(--dev-opacity)));
-  /* height:auto + max-height – obě směry (otevřít i sbalit) jdou animovat */
+  /* height:auto + max-height – open/close. Width is not transitioned here: animating
+     width from the 2rem handle through mid sizes reflows content tall-then-wide (status box "shot down").
+     Collapsed rules below re-enable width transition only while closing to the handle. */
   height: auto;
   transition:
-    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     border-radius 0.28s ease,
     box-shadow 0.28s ease;
@@ -174,14 +175,20 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
 .storybook-bar.is-minimized > .float-resize,
 .storybook-bar.is-collapsed > [data-float-resize],
 .storybook-bar.is-minimized > [data-float-resize] { display: none; }
-/* sbaleno = jen čtverec; jen width + max-height (bez max-width:2rem → X hardcut) */
+/* sbaleno = jen čtverec; width animates only while collapsing (open snaps to full width first). */
 .storybook-bar.is-collapsed,
 .storybook-bar.is-minimized {
   width: 2rem;
+  min-width: 2rem;
   min-height: 2rem;
   max-height: 2rem;
   border-radius: 8px;
   padding: 0;
+  transition:
+    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.28s ease,
+    box-shadow 0.28s ease;
 }
 /* Inset frame around the scrollport: bar border > .dev-body (pad) > .dev-scroll. */
 .storybook-bar .dev-body {
@@ -338,6 +345,7 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
   font-size: var(--ui-fs-card, 15px);
   font-weight: var(--ui-fw-head, 600);
   letter-spacing: var(--ui-head-tracking, 0.06em);
+  /* Box titles stay uppercase; field / row labels elsewhere use sentence case. */
   text-transform: uppercase;
   line-height: var(--ui-card-lh, 1.3);
   color: var(--ui-color-title, var(--fg));
@@ -510,6 +518,8 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
   height: var(--ui-control-h);
   min-height: var(--ui-control-h);
   max-height: var(--ui-control-h);
+  min-width: 0;
+  max-width: 100%;
   padding: 0 0.5rem;
   font-family: var(--ui-font);
   font-size: var(--ui-control-fs);
@@ -560,9 +570,9 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
   transform: none;
   border-radius: var(--ui-control-radius);
 }
-/* One reset only (chrome #dev-reset): hide section / object-card ↺ in the scroll body. */
-.storybook-bar .dev-scroll .dev-reset,
-.storybook-bar .dev-scroll .reset-btn {
+/* One reset only (#dev-reset next to Předvolba): hide section / object-card ↺ in the scroll body. */
+.storybook-bar .dev-scroll .dev-reset:not(#dev-reset),
+.storybook-bar .dev-scroll .reset-btn:not(#dev-reset) {
   display: none !important;
 }
 .storybook-bar button,
@@ -577,18 +587,22 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
 .storybook-bar .dev-drag { cursor: grab; }
 .storybook-bar .dev-drag:active,
 .storybook-bar.is-dragging .dev-drag { cursor: grabbing; }
-/* veřejná ukázka: jen drag (toggle) / průhlednost + Místo + Doba */
+/* veřejná ukázka: jen drag (toggle) / průhlednost + Místo (+ slider); hide preset / chrome reset */
 .storybook-bar.is-public-demo .dev-main,
+.storybook-bar.is-public-demo .dev-preset-row,
 .storybook-bar.is-public-demo #dev-reset { display: none !important; }
 .storybook-bar.is-public-demo .dev-chrome { border-bottom: none; }
 .storybook-bar.is-public-demo:not(.is-collapsed):not(.is-minimized) .dev-chrome {
   border-bottom: 1px solid rgba(185, 168, 148, 0.22);
 }
-.storybook-bar.is-public-demo .dev-group,
 .storybook-bar.is-public-demo .dev-sec[data-sec="boj"],
 .storybook-bar.is-public-demo .dev-sec[data-sec="debug"],
 .storybook-bar.is-public-demo .dev-sec[data-sec="svet"],
-.storybook-bar.is-public-demo .dev-sub[data-sub="efekty"] { display: none !important; }
+.storybook-bar.is-public-demo .dev-sec[data-sec="pozice"],
+.storybook-bar.is-public-demo .dev-sec[data-sec="objekty"],
+.storybook-bar.is-public-demo .dev-sec[data-sec="efekty"],
+.storybook-bar.is-public-demo .dev-sub[data-sub="efekty"],
+.storybook-bar.is-public-demo .dev-sub[data-sub="kamera"] { display: none !important; }
 .storybook-bar.is-public-demo .dev-sec[data-sec="cas"] > summary,
 .storybook-bar.is-public-demo .dev-sec[data-sec="world"] > summary { display: none; }
 .storybook-bar.is-public-demo .dev-sec[data-sec="cas"],
@@ -599,8 +613,39 @@ html.boxes-boot .storybook-bar .dev-chrome > :not(.dev-drag) {
 body:not(.has-dev) .storybook-bar,
 .storybook-bar[hidden] { display: none !important; }
 .dev-row { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; }
-.dev-knob { display: inline-flex; flex-direction: column; gap: 0.1rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500); color: var(--ui-color-label, var(--muted)); }
-.dev-knob select, .dev-main select {
+/* Shared labelled-row grid for the whole dev box: fixed label column + 1fr control column.
+   Shrink the label column when the floating box is narrow so control text is not clipped. */
+.storybook-bar {
+  --dev-label-col: 7.5rem;
+  container-type: inline-size;
+  container-name: lom-devbar;
+}
+@container lom-devbar (max-width: 260px) {
+  .storybook-bar,
+  .dev-detail,
+  .dev-scroll,
+  .dev-cas-pocasi,
+  .dev-knobs,
+  .dev-scene-compose,
+  .dev-world-objects,
+  .dev-preset-row,
+  .dev-cas-row,
+  .dev-scene-slot,
+  .dev-knob,
+  .dev-scene-row {
+    --dev-label-col: 4.25rem;
+  }
+}
+.dev-knob {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+}
+.dev-knob select, .dev-main select, .dev-field-ctl select {
   font-family: var(--ui-font);
   font-size: var(--ui-control-fs);
   padding: 0 0.5rem;
@@ -608,12 +653,102 @@ body:not(.has-dev) .storybook-bar,
   background: rgba(0,0,0,0.4);
   color: var(--fg);
   border: 1px solid var(--line);
-  max-width: 11rem;
 }
-.dev-main { flex-direction: row; align-items: center; gap: 0.3rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500); color: var(--ui-color-label, var(--muted)); }
-.dev-main select { max-width: 17rem; }.dev-row.dev-knobs,
+.dev-main, .dev-field-ctl {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+}
+.dev-row.dev-knobs,
 .dev-scene-compose .dev-scene-row {
   align-items: center;
+}
+/* Scéna / Čas knobs: one column of labelled rows on the shared grid. */
+.storybook-bar .dev-knobs[data-knob-sec="world"],
+.storybook-bar .dev-knobs[data-knob-sec="cas"] {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0.35rem 0 0;
+  text-align: left;
+}
+.storybook-bar .dev-knobs > .dev-cas-row.dev-knob,
+.storybook-bar .dev-knobs > .dev-knob {
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  width: 100%;
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+}
+.storybook-bar .dev-knobs .dev-field-ctl {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.storybook-bar .dev-knobs select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* Preset: standalone top row (not inside a section), same label|control grid as body rows. */
+.storybook-bar .dev-preset-row {
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  width: 100%;
+  margin: 0.2rem 0 0.35rem;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+}
+.storybook-bar .dev-preset-row .dev-main,
+.storybook-bar .dev-preset-row .dev-field-ctl {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+}
+.storybook-bar .dev-preset-row .dev-main select,
+.storybook-bar .dev-preset-row .dev-field-ctl select {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+}
+.storybook-bar .dev-preset-row #dev-reset {
+  flex: 0 0 var(--ui-control-h);
+  width: var(--ui-control-h);
+  min-width: var(--ui-control-h);
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .dev-row .dev-btn,
 .dev-obj-acts .dev-btn {
@@ -701,49 +836,122 @@ body:not(.has-dev) .storybook-bar,
   width: 100%;
   box-sizing: border-box;
 }
-/* Čas: title above; slider + readout one nowrap flex row (slider flex 1, output fixed). */
-.storybook-bar .dev-world-clock-row {
-  display: flex;
-  flex-wrap: nowrap;
-  width: 100%;
-  gap: 0.5rem;
-  align-items: flex-end;
-  /* Clear sticky Čas a počasí + Čas rows (Hodina scény must sit fully below the chain). */
-  scroll-margin-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
-  margin-top: 0.35rem;
-  padding-top: 0.15rem;
-}
-.storybook-bar .dev-world-hour-knob {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Flat "Čas a počasí": one section header, then Čas / Počasí rows (no nested details). */
+.storybook-bar .dev-cas-pocasi {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  align-items: stretch;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  width: 100%;
+}
+.storybook-bar .dev-cas-pocasi > .dev-knobs[data-knob-sec="cas"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+}
+.storybook-bar .dev-cas-row {
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.15rem;
+  width: 100%;
+  margin: 0;
+  text-align: left;
+}
+.storybook-bar .dev-cas-lbl,
+.storybook-bar .dev-cas-row.dev-knob,
+.storybook-bar .dev-knobs .dev-cas-lbl {
   font-family: var(--ui-font);
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  justify-self: stretch;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.storybook-bar .dev-cas-row > .sel,
+.storybook-bar .dev-cas-row > select,
+.storybook-bar .dev-cas-row select.sel,
+.storybook-bar .dev-cas-pocasi #dev-scene-weather,
+.storybook-bar .dev-cas-row > .dev-field-ctl,
+.storybook-bar .dev-cas-row > .dev-main {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
-  scroll-margin-top: calc(var(--stick-2) + var(--sub-h) + 0.5rem);
+}
+.storybook-bar .dev-field-ctl > select,
+.storybook-bar .dev-main > select,
+.storybook-bar .dev-scene-slot-ctl > select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.storybook-bar .dev-cas-row > .dev-cas-lbl {
+  grid-column: 1;
+}
+.storybook-bar .dev-cas-row > .sel,
+.storybook-bar .dev-cas-row > select,
+.storybook-bar .dev-cas-row > .dev-field-ctl,
+.storybook-bar .dev-cas-row > .dev-main {
+  grid-column: 2;
+}
+/* Čas: label column + (slider + right-aligned value) in the control column. */
+.storybook-bar .dev-world-clock-row {
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  width: 100%;
+  /* Clear sticky Čas a počasí section header. */
+  scroll-margin-top: calc(var(--stick-1, 0px) + var(--sub-h, 24px) + 0.5rem);
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
 }
 /* Keep subsection bodies clear of sticky L2 rows at the same level. */
 .storybook-bar details.dev-sub[open] > summary {
   margin-bottom: 0.4rem;
 }
+.storybook-bar .dev-world-clock-row .dev-field-ctl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+  overflow: visible;
+  height: var(--ui-control-h);
+}
+.storybook-bar .dev-world-clock-row input[type="range"],
 .storybook-bar .dev-world-hour-knob input[type="range"] {
+  grid-column: 1;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
   height: var(--ui-control-h);
   margin: 0;
   accent-color: var(--ui-accent, var(--accent));
   vertical-align: middle;
+  box-sizing: border-box;
 }
 .storybook-bar .dev-world-hour-label {
-  /* Fixed slot for longest readout ("15:00 · odpoledne"); never shrink so glyphs are not clipped. */
-  flex: 0 0 15ch;
-  width: 15ch;
-  min-width: 15ch;
-  max-width: 15ch;
+  /* Value sits in the control column (right cell); must not clip (scrollWidth <= clientWidth). */
+  grid-column: 2;
+  position: static;
+  transform: none;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
   height: var(--ui-control-h);
   min-height: var(--ui-control-h);
   max-height: var(--ui-control-h);
@@ -751,16 +959,30 @@ body:not(.has-dev) .storybook-bar,
   padding: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  text-align: right;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
   font-family: var(--ui-font);
-  font-size: 13px;
+  font-size: var(--ui-fs-label, 12px);
   line-height: normal;
   font-variant-numeric: tabular-nums;
   color: var(--fg);
+  background: none;
+  pointer-events: none;
 }
-.storybook-bar .dev-world-clock-row > .dev-btn {
-  align-self: flex-end;
+/* Fallback before normalizeDevHourRow runs (column knob from world-demo). */
+.storybook-bar .dev-world-hour-knob {
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  width: 100%;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  text-align: left;
 }
 .dev-world-objects {
   display: flex;
@@ -798,6 +1020,8 @@ body:not(.has-dev) .storybook-bar,
   gap: 0.3rem;
   font-size: 0.6rem;
   color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
 }
 .dev-obj-state select {
   font-family: var(--ui-font);
@@ -1089,21 +1313,22 @@ body.has-dev .view-full {
 .landing-bg.has-scene-compose {
   background-color: #140e0c;
 }
-/* Čas a počasí, Scéna: collapsible subsections (Čas, Počasí, Kamera, Pozice a obsazení, Objekty, Efekty); open state per browser (localStorage).
-   Indented with a thin left rule so the nesting under the section reads at a glance. */
+/* Čas a počasí, Scéna: collapsible subsections; open state per browser (localStorage).
+   No side indent: labelled rows share one left edge with the rest of the panel. Nesting = L2 sticky + chevron. */
 .storybook-bar details.dev-sub {
   margin: 0.25rem 0 0;
-  padding: 0.1rem 0 0.15rem 0.6rem;
-  border-left: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  padding: 0.1rem 0 0.15rem;
+  border-left: none;
 }
 .storybook-bar details.dev-sub > summary {
   cursor: pointer;
   list-style: none;
   font-family: var(--ui-font);
   font-size: var(--ui-fs-section, 12px);
-  font-weight: var(--ui-fw-head, 600);
-  text-transform: uppercase;
-  letter-spacing: var(--ui-head-tracking, 0.06em);
+  /* L2: normal case + semibold; only L1 section headers use uppercase. */
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--ui-color-section, var(--muted));
   /* level 2 sticky row: park under level 1 (--stick-2); never share level-1's top slot */
   position: sticky;
@@ -1115,16 +1340,32 @@ body.has-dev .view-full {
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  gap: 0.35rem;
   line-height: normal;
   overflow: hidden;
-  /* Left -0.6rem covers the sub indent rule; scroll has no side pad anymore. */
-  margin: 0 0 0 -0.6rem;
-  padding: 0 0.35rem 0 0.6rem;
+  margin: 0;
+  /* Same horizontal inset as level-1 .box-subhead */
+  padding: 0 0.35rem;
   background: var(--panel-solid);
+  text-align: left;
 }
 .storybook-bar details.dev-sub > summary::-webkit-details-marker { display: none; }
-.storybook-bar details.dev-sub > summary::before { content: "▸ "; }
-.storybook-bar details.dev-sub[open] > summary::before { content: "▾ "; }
+.storybook-bar details.dev-sub > summary::before {
+  content: "";
+  box-sizing: border-box;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translate(-0.14rem, 0) rotate(-45deg);
+  transform-origin: 50% 50%;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+  margin: 0;
+}
+.storybook-bar details.dev-sub[open] > summary::before {
+  transform: translate(0, -0.14rem) rotate(45deg);
+}
 /* Column of sub-blocks, everything left aligned. (It used to carry .dev-row too, whose align-items:center centred
    every child of the column: that was the centred "Efekty" block.) */
 .dev-scene-compose {
@@ -1141,23 +1382,57 @@ body.has-dev .view-full {
 .dev-scene-compose:empty { display: none; }
 .storybook-bar [hidden] { display: none !important; }
 .storybook-bar details.dev-sub[data-sub="efekty"] > .dev-scene-compose,
-.storybook-bar details.dev-sub[data-sub="pocasi"] > .dev-scene-compose { border-top: none; margin-top: 0; padding-top: 0; }
+.storybook-bar details.dev-sub[data-sub="kamera"] > .dev-scene-compose,
+.storybook-bar details.dev-sec[data-sec="pozice"] > .dev-scene-compose,
+.storybook-bar details.dev-sec[data-sec="efekty"] > .dev-scene-compose,
+.storybook-bar .dev-cas-pocasi > .dev-scene-compose {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+/* Section body inset matches L1/L2 header text (0.35rem) so control columns share one x. */
+.storybook-bar details.dev-sec > .dev-cas-pocasi,
+.storybook-bar details.dev-sec > .dev-knobs,
+.storybook-bar details.dev-sec > .dev-scene-compose,
+.storybook-bar details.dev-sec > .dev-world-objects,
+.storybook-bar details.dev-sec > .dev-world-out,
+.storybook-bar details.dev-sec > .dev-row.dev-toggles,
+.storybook-bar details.dev-sub > .dev-scene-compose {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  box-sizing: border-box;
+}
 .dev-scene-note { margin: 0; font-size: var(--ui-fs-helper, 11.5px); font-weight: var(--ui-fw-body, 400); font-family: var(--ui-font); color: var(--ui-color-helper, var(--muted)); }
 .dev-scene-warn { font-size: 0.6rem; color: #d9a066; white-space: nowrap; }
-/* Positions: one row per slot (title left, who + reset right, wraps on a narrow panel). */
-.dev-scene-slots { display: flex; flex-direction: column; gap: 0.3rem; }
+/* Positions: one labelled row per slot on the shared grid (title | cast select). */
+.dev-scene-slots { display: flex; flex-direction: column; gap: 0.3rem; width: 100%; }
 .dev-scene-compose .dev-scene-slot {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem 0.5rem;
+  column-gap: 0.6rem;
+  width: 100%;
 }
 .dev-scene-compose .dev-scene-slot-show {
-  flex: 1 1 9rem; font-family: var(--ui-font); font-size: var(--ui-fs-label, 12px); font-weight: var(--ui-fw-label, 500);
-  color: var(--ui-color-label, var(--fg)); text-transform: none; letter-spacing: 0;
+  grid-column: 1;
+  min-width: 0;
+  width: 100%;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--fg));
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
 }
-.dev-scene-slot-ctl { display: inline-flex; align-items: center; gap: 0.3rem; }
+.dev-scene-slot-ctl {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  width: 100%;
+}
 .dev-scene-compose .dev-scene-slot-ctl select,
 .dev-scene-compose #dev-scene-shot {
   font-family: var(--ui-font);
@@ -1172,8 +1447,16 @@ body.has-dev .view-full {
   background: rgba(0, 0, 0, 0.4);
   color: var(--fg);
   border: 1px solid var(--line);
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
 }
-.dev-scene-compose #dev-scene-shot { flex: 1 1 10rem; min-width: 0; max-width: 15rem; }
+.dev-scene-compose #dev-scene-shot {
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 /* Effect block: header = open/close, on switch, reset; details below, left aligned. */
 .dev-fx { display: flex; flex-direction: column; gap: 0.35rem; }
 .dev-fx-head { display: flex; align-items: center; gap: 0.5rem; }
@@ -1201,15 +1484,64 @@ body.has-dev .view-full {
   transition: transform 0.15s;
 }
 .dev-fx-toggle[aria-expanded="true"]::before { transform: translate(0, -0.1rem) rotate(45deg); }
-.dev-fx-on { font-size: 0.65rem; text-transform: none; letter-spacing: 0; }
-.dev-fx-body { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; padding-left: 0.2rem; }
+.dev-fx-on {
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  text-transform: none;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+}
+.dev-fx-body { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; padding-left: 0; }
+/* Checkbox rows: control column is a 32px-tall centered track. */
+.storybook-bar .dev-chk,
+.storybook-bar .dev-toggles .dev-chk,
+.storybook-bar .dev-scene-slot-show {
+  min-height: var(--ui-control-h);
+  height: var(--ui-control-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  box-sizing: border-box;
+}
 .dev-fx-body[hidden] { display: none; }
 .dev-obj-head--controls { justify-content: flex-start; }
 .dev-scene-compose .dev-scene-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
   align-items: center;
-  gap: 0.35rem 0.65rem;
+  column-gap: 0.6rem;
+  width: 100%;
+}
+.dev-scene-compose .dev-scene-row > .dev-cas-lbl {
+  grid-column: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+}
+.dev-scene-compose .dev-scene-row > select,
+.dev-scene-compose .dev-scene-row > .dev-field-ctl {
+  grid-column: 2;
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .dev-scene-compose .dev-scene-row label {
   display: inline-flex;
@@ -1227,48 +1559,74 @@ body.has-dev .view-full {
   align-items: center;
   gap: 0.3rem;
   font-family: var(--ui-font);
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--ui-fs-label, 12px);
+  font-weight: var(--ui-fw-label, 500);
+  color: var(--ui-color-label, var(--muted));
   min-width: 0;
 }
 .dev-scene-compose .dev-knob {
-  display: inline-flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
   align-items: center;
-  gap: 0.35rem;
+  column-gap: 0.6rem;
+  width: 100%;
 }
 .dev-scene-compose .dev-knob select {
-  min-width: 7.5rem;
-  max-width: 11rem;
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-.dev-scene-compose .dev-scene-label,
+/* Duplicate in-body titles (Kamera / Pozice / Objekty) – parent summary is the only header. */
+#dev-scene-camera .dev-scene-head,
+#dev-scene-compose .dev-scene-head,
 .dev-world-objects > .dev-scene-label {
+  display: none !important;
+}
+/* In-body section labels (not L1 sticky headers): sentence case, not uppercase. */
+.dev-scene-compose .dev-scene-label {
   margin: 0;
   font-family: var(--ui-font);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  opacity: 0.85;
+  font-size: var(--ui-fs-section, 12px);
+  font-weight: var(--ui-fw-head, 600);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ui-color-section, var(--muted));
+  text-align: left;
 }
 .dev-scene-compose .dev-knob.dev-range {
   display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr) 3.2rem;
+  grid-template-columns: var(--dev-label-col) minmax(0, 1fr);
   align-items: center;
-  gap: 0.4rem;
+  column-gap: 0.6rem;
+  width: 100%;
+  position: relative;
 }
-.dev-scene-compose .dev-range input[type="range"] {
+.dev-scene-compose .dev-knob.dev-range > input[type="range"] {
+  grid-column: 2;
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
-.dev-scene-compose .dev-range output {
+.dev-scene-compose .dev-knob.dev-range > output {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--ui-control-h);
+  min-width: 3.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
   text-align: right;
   font: 0.65rem ui-monospace, monospace;
+  padding-left: 0.35rem;
+  background: linear-gradient(90deg, transparent, var(--panel-solid) 35%);
+  pointer-events: none;
 }
 .dev-scene-compose .dev-scene-row input[type="range"] {
-  flex: 0 1 4.5rem;
-  min-width: 2.5rem;
+  width: 100%;
+  min-width: 0;
 }
 /* Fixed two-line readout: its text can change with the plate, the box below keeps its place (no jump). */
 .dev-scene-readout {
@@ -1571,9 +1929,8 @@ input[type="range"] {
 }
 /*
  * Floating boxes (dev / Stav systému): mask on .dev-scroll also faded sticky summaries.
- * Top fade stays a sticky overlay inside the scroll (z-index 1 < sticky 3–5) so headers stay opaque.
- * Bottom fade is on .dev-body, parked on the scroll element's bottom edge (above the body pad / box
- * border), and only paints while .fade-bottom is on (more content below) – never covers the last line at end.
+ * Top and bottom fades live on .dev-body (above the body pad / box border), each only while
+ * .fade-top / .fade-bottom is on. Sticky summaries (z 3–5) stay above the overlays (z 2).
  */
 .storybook-bar .dev-scroll[data-fade],
 .storybook-bar .dev-scroll.fade-top,
@@ -1582,46 +1939,33 @@ input[type="range"] {
   mask-image: none !important;
   position: relative;
 }
+/* Scroll pseudos are inert; real edge fades are .dev-body::before / ::after. */
 .storybook-bar .dev-scroll[data-fade]::before,
-.storybook-bar .dev-scroll[data-fade]::after {
-  content: "";
-  position: sticky;
-  left: 0;
-  right: 0;
-  display: block;
-  height: var(--fade-size, 2.4rem);
-  margin-bottom: calc(-1 * var(--fade-size, 2.4rem));
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.28s ease;
-  background: linear-gradient(to bottom, rgba(13, 9, 8, var(--dev-opacity)), transparent);
-}
-/* Bottom pseudo on the scroll is inert; real bottom fade is .dev-body::after. */
 .storybook-bar .dev-scroll[data-fade]::after {
   content: none;
   display: none;
-  top: auto;
-  bottom: 0;
-  margin-bottom: 0;
-  margin-top: calc(-1 * var(--fade-size, 2.4rem));
-  background: linear-gradient(to top, rgba(13, 9, 8, var(--dev-opacity)), transparent);
 }
-.storybook-bar .dev-scroll.fade-top::before { opacity: 1; top: 0; }
-.storybook-bar .dev-scroll.fade-bottom::after { opacity: 0; }
+.storybook-bar .dev-body::before,
 .storybook-bar .dev-body::after {
   content: "";
   position: absolute;
   left: var(--dev-body-pad, 0.5rem);
   right: var(--dev-body-pad, 0.5rem);
-  bottom: var(--dev-body-pad, 0.5rem);
   height: var(--fade-size, 2.4rem);
   pointer-events: none;
   z-index: 2;
   opacity: 0;
   transition: opacity 0.28s ease;
+}
+.storybook-bar .dev-body::before {
+  top: var(--dev-body-pad, 0.5rem);
+  background: linear-gradient(to bottom, rgba(13, 9, 8, var(--dev-opacity)), transparent);
+}
+.storybook-bar .dev-body::after {
+  bottom: var(--dev-body-pad, 0.5rem);
   background: linear-gradient(to top, rgba(13, 9, 8, var(--dev-opacity)), transparent);
 }
+.storybook-bar .dev-body:has(> .dev-scroll.fade-top)::before { opacity: 1; }
 .storybook-bar .dev-body:has(> .dev-scroll.fade-bottom)::after { opacity: 1; }
 /* telegraph - viz níže u combat FX */
 .bar {
@@ -2234,14 +2578,18 @@ button.locked,
     transition: none;
   }
 }
+/* Legacy group label: same level-1 section look (uppercase small) if still present. */
 .dev-group {
   margin: 0.25rem 0 0;
+  padding: 0 0.35rem;
   font-family: var(--ui-font);
-  font-size: var(--ui-fs-label);
-  font-weight: var(--ui-fw-label, 500);
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--ui-color-label, var(--muted));
+  font-size: var(--ui-fs-section, 12px);
+  font-weight: var(--ui-fw-head, 600);
+  letter-spacing: var(--ui-head-tracking, 0.06em);
+  text-transform: uppercase;
+  color: var(--ui-color-section, var(--muted));
+  text-align: left;
+  line-height: 1.3;
 }
 
 /* hover žlutého (primary) tlačítka: zůstává plné a jen zesvětlí, text tmavý; tmavé (secondary) se jen přibarví */
@@ -3816,16 +4164,38 @@ html.debug-hitboxes [data-screen="origins"]:is(.is-peek, .is-peek-expanding):not
   display: none;
 }
 
-/* One select look for every native select in the 2D (dev box, scenario picker …): chevron with room, never glued to the edge.
-   !important beats the many per-box select rules above, which set their own padding and background shorthands. */
-select {
+/* Dropdown trigger look for every enhanced select in the 2D (dev box, scenario picker …):
+   .dd-btn / .sel share --ui-control-h + --ui-select-* from ui-tokens.css (ui-dropdown.css owns the rest). */
+.dd-btn,
+.sel {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 1.7em !important;
+  box-sizing: border-box;
+  height: var(--ui-control-h);
+  min-height: var(--ui-control-h);
+  max-height: var(--ui-control-h);
+  padding: var(--ui-select-padding) !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5 6 6l4.5-4.5' fill='none' stroke='%23b9a894' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
-  background-position: right 0.55em center !important;
-  background-size: 0.75em 0.5em !important;
+  background-position: right var(--ui-select-chevron-inset) center !important;
+  background-size: var(--ui-select-chevron-size) !important;
+}
+.storybook-bar .dd-wrap {
+  flex: 1 1 auto;
+  min-width: 8rem;
+  max-width: 100%;
+}
+.storybook-bar .dev-field-ctl > .dd-wrap,
+.storybook-bar .dev-main > .dd-wrap,
+.storybook-bar .dev-scene-slot-ctl > .dd-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 8rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.storybook-bar .dd-btn {
+  min-width: 8rem;
 }
 
 /* Cmd+R: nejdřív tma (layout drží), po init krátký fade-in (boot-ready, max 120 ms). */

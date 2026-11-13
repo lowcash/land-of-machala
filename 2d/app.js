@@ -10,6 +10,19 @@ const pickedClass = () => (state.prologDone.class ? state.picks.class : null);
 
 /** Prolog step nav (side chevrons / swipe / keys). */
 function originNavState() {
+  if (typeof PLAY_PROLOG !== "undefined" && PLAY_PROLOG) {
+    const el = document.getElementById("play-prolog");
+    const idx = el ? Number(el.getAttribute("data-step-index") || 0) : state.originStep | 0;
+    const reached = el ? Number(el.getAttribute("data-reached") || 0) : state.originReached || 0;
+    const finished = !!(el && el.getAttribute("data-finished") === "1");
+    const showNav = reached > 0 || finished || state.prologDone.class || state.prologDone.race;
+    return {
+      showNav,
+      canBack: showNav && idx > 0,
+      canFwd: showNav && (idx < reached || finished),
+      maxReached: reached,
+    };
+  }
   const maxReached = Math.max(state.originStep, state.originReached || 0);
   const showNav = maxReached > 0 || state.prologDone.class || state.prologDone.race;
   return {
@@ -52,6 +65,13 @@ function syncOriginProgress() {
 function goOriginBack() {
   if (state.screen !== "origins") return false;
   if (!originNavState().canBack) return false;
+  if (typeof PLAY_PROLOG !== "undefined" && PLAY_PROLOG) {
+    const el = document.getElementById("play-prolog");
+    const idx = el ? Number(el.getAttribute("data-step-index") || 0) : state.originStep | 0;
+    if (idx <= 0) return false;
+    playPrologFetch(idx - 1);
+    return true;
+  }
   state.originStep -= 1;
   state.prologShot = null;
   originBackStep = true;
@@ -62,6 +82,24 @@ function goOriginBack() {
 
 function goOriginFwd() {
   if (state.screen !== "origins") return false;
+  if (typeof PLAY_PROLOG !== "undefined" && PLAY_PROLOG) {
+    if (!originNavState().canFwd) return false;
+    const el = document.getElementById("play-prolog");
+    if (!el) return false;
+    const idx = Number(el.getAttribute("data-step-index") || 0);
+    const live = Number(el.getAttribute("data-live-step") || 0);
+    const finished = el.getAttribute("data-finished") === "1";
+    if (idx < live) {
+      playPrologFetch(idx + 1 >= live ? null : idx + 1);
+      return true;
+    }
+    if (finished || state.prologDone.origin) {
+      afterPrologChoices();
+      mirrorLiveToKnobs();
+      return true;
+    }
+    return false;
+  }
   if (state.originStep < ORIGIN_STEPS.length - 1) {
     if (state.originStep >= (state.originReached || 0)) return false;
     state.originStep += 1;
@@ -205,6 +243,124 @@ const ORIGIN_STEPS = [
   },
 ];
 
+/**
+ * Gated /a/2d/app.js redacts ORIGIN_STEPS to meta stubs (pick/shot, no text). Detect that and drive
+ * the private 2D prolog from GET/POST /play/prolog fragments instead of the client catalogue.
+ */
+const PLAY_PROLOG = !ORIGIN_STEPS.some((s) => s && s.text);
+let playPrologBridgeReady = false;
+let playPrologEnded = false;
+
+function playPrologUrl(step) {
+  return step == null || step === "" ? "/play/prolog" : "/play/prolog?step=" + encodeURIComponent(String(step));
+}
+
+function playPrologFetch(step) {
+  const url = playPrologUrl(step);
+  if (window.htmx && typeof window.htmx.ajax === "function") {
+    window.htmx.ajax("GET", url, { target: "#play-prolog", swap: "outerHTML" });
+    return;
+  }
+  fetch(url, { credentials: "same-origin", headers: { "HX-Request": "true" } })
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((html) => {
+      if (!html) return;
+      const host = document.getElementById("play-prolog");
+      if (!host) return;
+      host.outerHTML = html;
+      const el = document.getElementById("play-prolog");
+      if (el) onPlayPrologSwapped(el);
+    })
+    .catch(() => {});
+}
+
+function syncPlayPrologFromDom(el) {
+  if (!el) return;
+  const n = (a) => Number(el.getAttribute(a) || 0);
+  state.originStep = n("data-step-index");
+  state.originReached = Math.max(state.originReached || 0, n("data-reached"));
+  state.picks.class = el.getAttribute("data-pick-class") || null;
+  state.picks.race = el.getAttribute("data-pick-race") || null;
+  state.picks.origin = el.getAttribute("data-pick-origin") || null;
+  state.prologDone.class = el.getAttribute("data-done-class") === "1";
+  state.prologDone.race = el.getAttribute("data-done-race") === "1";
+  state.prologDone.origin = el.getAttribute("data-done-origin") === "1";
+  const react = el.getAttribute("data-react");
+  state.prologReact = react || null;
+  state.prologCheek = n("data-cheek");
+  state.prologShot = null;
+  if (el.getAttribute("data-finished") === "0" || el.getAttribute("data-finished") == null) {
+    playPrologEnded = false;
+  }
+}
+
+function onPlayPrologSwapped(el) {
+  syncPlayPrologFromDom(el);
+  setPrologBg();
+  applyPrologCamera(true);
+  syncOriginProgress();
+  syncOriginSideNav();
+  syncPeekButtonForStep();
+  mirrorLiveToKnobs();
+  if (el.getAttribute("data-finished") === "1" && !playPrologEnded) {
+    playPrologEnded = true;
+    afterPrologChoices();
+  }
+}
+
+function ensureHtmx(cb) {
+  if (window.htmx) {
+    cb();
+    return;
+  }
+  if (!document.querySelector('meta[name="htmx-config"]')) {
+    const meta = document.createElement("meta");
+    meta.name = "htmx-config";
+    meta.content = '{"allowEval":false,"allowScriptTags":false,"selfRequestsOnly":true,"includeIndicatorStyles":false}';
+    document.head.appendChild(meta);
+  }
+  const existing = document.querySelector("script[data-play-htmx]");
+  if (existing) {
+    existing.addEventListener("load", () => cb());
+    return;
+  }
+  const s = document.createElement("script");
+  s.src = "vendor/htmx-2.0.11.min.js";
+  s.dataset.playHtmx = "1";
+  s.onload = () => cb();
+  document.head.appendChild(s);
+}
+
+function ensurePlayPrologBridge() {
+  if (!PLAY_PROLOG) return;
+  const box = $("origins-box");
+  if (!box) return;
+  if (!document.getElementById("play-prolog")) {
+    const host = document.createElement("div");
+    host.id = "play-prolog";
+    host.setAttribute("hx-get", "/play/prolog");
+    host.setAttribute("hx-trigger", "load");
+    host.setAttribute("hx-swap", "outerHTML");
+    box.textContent = "";
+    box.appendChild(host);
+  }
+  ensureHtmx(() => {
+    if (!playPrologBridgeReady) {
+      playPrologBridgeReady = true;
+      document.body.addEventListener("htmx:afterSwap", (ev) => {
+        const t = ev.detail && ev.detail.target;
+        const el =
+          t && t.id === "play-prolog"
+            ? t
+            : document.getElementById("play-prolog");
+        if (!el || el.id !== "play-prolog") return;
+        onPlayPrologSwapped(el);
+      });
+    }
+    if (window.htmx && typeof window.htmx.process === "function") window.htmx.process(box);
+  });
+}
+
 /** Původ v prologu podle kraje: Zdejší ⇒ ne poutník; Rodák jen u Zdejších. */
 function originChoiceAllowed(c) {
   if (!c?.origin) return true;
@@ -342,7 +498,7 @@ async function ensureBakeReady(key, { timeoutMs = BAKE_DECODE_MS } = {}) {
 /** Prefetch other phases, other shot, and next origin-step shot (deduped via cache). */
 function prefetchBakeNeighbors(key) {
   if (!key || !BG_BAKE.has(key)) return;
-  const m = /^tavern-prolog-([^-]+)-(s[12])-(morning|noon|evening|night)(?:-(overcast|rain|fog))?$/.exec(key);
+  const m = /^tavern-prolog-([^-]+)-(s[12])-(morning|noon|evening|night)(?:-(overcast|rain|fog|snow))?$/.exec(key);
   if (!m) return;
   const [, style, shot, phase, wx] = m;
   const sfx = wx ? `-${wx}` : "";
@@ -643,10 +799,20 @@ function pickPrologWeatherKey(baseKey, kind, finals, enabled) {
 function weatherNow() {
   return LOM.Weather.weatherFor(state.seed, state.clock.day);
 }
-/* Počasí v obraze prologu (okno: zataženo, déšť, mlha, sníh). Finály pozadí chybí → prolog padá na jasno. */
+/* Počasí v obraze prologu (okno: zataženo, déšť, mlha, sníh). Finály pečené lokálně (bake-weather-finals.py). */
 const PROLOG_WEATHER = true;
-/* Klíče finálních obrazů počasí prologu na disku (prolog-<shot>-<ph>-<počasí>-16x9). Zatím žádné. */
-const PROLOG_WEATHER_FINALS = new Set();
+/* Klíče finálních obrazů počasí prologu na disku (prolog-<shot>-<ph>-<počasí>-16x9). */
+const PROLOG_WEATHER_FINALS = (() => {
+  const s = new Set();
+  for (const shot of ["s1", "s2"]) {
+    for (const ph of PROLOG_BAKE_PHASES) {
+      for (const wx of ["overcast", "rain", "fog", "snow"]) {
+        s.add(`tavern-prolog-photoreal-${shot}-${ph}-${wx}`);
+      }
+    }
+  }
+  return s;
+})();
 /** Částice (js/systems/particles.js): kontext podle záběru, doby a počasí; jen u fotorealistického stylu. */
 function syncParticles(composeParticles) {
   const base = {
@@ -1499,6 +1665,17 @@ function restoreProlog() {
 }
 
 function renderOrigins() {
+  if (PLAY_PROLOG) {
+    ensurePlayPrologBridge();
+    const el = document.getElementById("play-prolog");
+    if (el && el.getAttribute("data-step")) syncPlayPrologFromDom(el);
+    setPrologBg();
+    applyPrologCamera(true);
+    syncOriginProgress();
+    syncOriginSideNav();
+    syncPeekButtonForStep();
+    return;
+  }
   const step = ORIGIN_STEPS[state.originStep];
   const box = $("origins-box");
   if (!box || !step) return;
@@ -1714,7 +1891,11 @@ function initDevStorybook() {
     host.innerHTML = list.filter((k) => !stageChecks.includes(k)).map(knobControlHtml).join("");
     const checks = document.querySelector(`[data-knob-sec="${sec}-checks"]`);
     if (checks) checks.innerHTML = stageChecks.map(knobControlHtml).join("");
+    /* Admin-matching .sel on Čas (phase) and any other cas-section selects. */
+    if (sec === "cas") host.querySelectorAll("select").forEach((el) => el.classList.add("sel"));
   });
+  if (typeof flattenCasPocasiSection === "function") flattenCasPocasiSection();
+  if (typeof revealCasPhaseKnob === "function") revealCasPhaseKnob();
   if (publicBar) {
     /* Public: Místo + Doba only (cas/world knobs); hide private image/objects chrome. */
     const pubSecs = new Set(["cas", "world"]);
@@ -1734,13 +1915,30 @@ function initDevStorybook() {
    * akční box a volby prologu se nepřerenderují.
    */
   const softApplyPrologVisuals = ({ fromPhaseKnob = false } = {}) => {
-    const ph = document.querySelector('select[data-knob="phase"]')?.value;
+    let ph = document.querySelector('select[data-knob="phase"]')?.value;
     const style = document.querySelector('select[data-knob="prologStyle"]')?.value;
     const shot = document.querySelector('select[data-knob="prologShot"]')?.value;
+    /* Čas = live: snap bake phase from Europe/Prague wall clock (same mental model as 3D "Aktuální"). */
+    if (ph === "live") {
+      let hour = new Date().getHours();
+      try {
+        const parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Prague",
+          hour: "numeric",
+          hourCycle: "h23",
+        }).formatToParts(new Date());
+        const h = parts.find((p) => p.type === "hour");
+        if (h) hour = Number(h.value);
+      } catch (_) {}
+      ph = LOM.SceneCompose?.phaseOfHour?.(hour) || LOM.SceneControls?.phaseOfHour?.(hour) || "evening";
+      const sel = document.querySelector('select[data-knob="phase"]');
+      /* Keep the control on "živé"; only the bake uses the resolved phase. */
+      if (sel && sel.value !== "live") sel.value = "live";
+    }
     if (ph && LOM.PHASES) {
       const idx = Math.max(0, LOM.PHASES.findIndex((p) => p.id === ph));
       state.clock = { day: state.clock?.day || 1, tick: idx * LOM.TICKS_PER_PHASE };
-      /* Doba knob snaps the continuous hour; slider remains the source of truth while scrubbing. */
+      /* Čas knob snaps the continuous hour; slider remains the source of truth while scrubbing. */
       if (fromPhaseKnob && worldDemo) syncWorldHourFromPhase(ph);
     }
     if (style) state.prologStyle = style;

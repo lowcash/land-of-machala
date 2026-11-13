@@ -64,13 +64,18 @@
   }
 
   /**
-   * Texture width for cast-free plates and cast cutouts: 3840 when displayed CSS width × dpr
-   * exceeds 1920, else 1920.
+   * Texture width for cast-free plates and cast cutouts: same srcset rule as SceneDisplay.pickTextureWidth
+   * over [1920, 3840] (covers displayCssWidth × dpr at 90 %).
    */
   function pickCastTextureWidth(displayCssWidth, dpr) {
-    const w = Number(displayCssWidth) || 0;
-    const r = Number(dpr) || 1;
-    return w * r > 1920 ? 3840 : 1920;
+    const g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : null;
+    const SD = g && g.LOM && g.LOM.SceneDisplay;
+    if (SD && typeof SD.pickTextureWidth === "function") {
+      return SD.pickTextureWidth(displayCssWidth, dpr, [1920, 3840]);
+    }
+    const need = (Number(displayCssWidth) || 0) * Math.min(Math.max(Number(dpr) || 1, 1), 3);
+    if (!(need > 0)) return 3840;
+    return need * 0.9 <= 1920 ? 1920 : 3840;
   }
 
   /** Hi-res cast-free plate candidates (3840 then 1920, AVIF only). */
@@ -115,17 +120,20 @@
     return { plate: plate || null, castSig: sig, changed: true };
   }
 
-  /** Basename of an authoring cutout (`char-…webp`) → hi-res cast URL at `width`. */
+  /** Basename of an authoring cutout (`char-…webp`) or cast tier URL → hi-res cast URL at `width`. */
   function hiresCastCutoutUrl(authoringSrc, width) {
     const file = String(authoringSrc || "").split("/").pop() || "";
-    const m = /^char-(.+)\.webp$/i.exec(file);
-    if (!m) return null;
     const w = width === 1920 || width === 3840 ? width : 3840;
-    return `${CAST_LAYER_BASE}/cast-${m[1]}-${w}.webp`;
+    let m = /^char-(.+)\.webp$/i.exec(file);
+    if (m) return `${CAST_LAYER_BASE}/cast-${m[1]}-${w}.webp`;
+    m = /^cast-(.+)-(1920|3840)\.webp$/i.exec(file);
+    if (m) return `${CAST_LAYER_BASE}/cast-${m[1]}-${w}.webp`;
+    return null;
   }
 
   /**
    * Cutout texture candidates: hi-res first (width from display × dpr), then the authoring cutout.
+   * Accepts an already-upgraded `cast-*-1920|3840` src so zoom/DPR growth can retarget 1920 → 3840.
    * Caller tries in order (onerror / tiny bitmap → next), once each, no loop.
    */
   function cutoutSrcCandidates(authoringSrc, displayCssWidth, dpr) {
@@ -135,7 +143,13 @@
     const hi = hiresCastCutoutUrl(src, w);
     const out = [];
     if (hi) out.push(hi);
-    if (!out.includes(src)) out.push(src);
+    const file = src.split("/").pop() || "";
+    if (/^cast-.+-(1920|3840)\.webp$/i.test(file)) {
+      const other = w === 3840 ? hiresCastCutoutUrl(src, 1920) : hiresCastCutoutUrl(src, 3840);
+      if (other && !out.includes(other)) out.push(other);
+    } else if (!out.includes(src)) {
+      out.push(src);
+    }
     return out;
   }
 

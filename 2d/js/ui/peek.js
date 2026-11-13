@@ -77,11 +77,6 @@ function peekRestingBgSize() {
  * `src` = element (live CSS) or `{ size, focus }`.
  */
 function peekDisplayedImageRect(box, iw, ih, src) {
-  const boxW = box.width;
-  const boxH = box.height;
-  if (!(boxW > 0 && boxH > 0 && iw > 0 && ih > 0)) {
-    return { left: box.left, top: box.top, width: boxW, height: boxH };
-  }
   let size;
   let focus;
   if (src && src.nodeType) {
@@ -90,6 +85,15 @@ function peekDisplayedImageRect(box, iw, ih, src) {
   } else {
     size = String(src?.size || "cover").split(",")[0].trim().toLowerCase();
     focus = src?.focus || { x: 0.5, y: 0.5 };
+  }
+  const SD = typeof LOM !== "undefined" ? LOM.SceneDisplay : null;
+  if (SD && typeof SD.displayedImageRect === "function") {
+    return SD.displayedImageRect(box, iw, ih, { size, focus });
+  }
+  const boxW = box.width;
+  const boxH = box.height;
+  if (!(boxW > 0 && boxH > 0 && iw > 0 && ih > 0)) {
+    return { left: box.left, top: box.top, width: boxW, height: boxH };
   }
   let dw;
   let dh;
@@ -292,14 +296,45 @@ function peekBgUrl(bg) {
   return m ? m[2] : "";
 }
 
+/** True while eye keeps the live compositor as the picture (no CSS bake swap). */
+let peekKeptCompose = false;
+
+/** Compositor plate URL already decoded for the scene (same pixels as the resting view). */
+function peekScenePlateUrl() {
+  if (typeof scenePlateSrcApplied === "string" && scenePlateSrcApplied) return scenePlateSrcApplied;
+  return "";
+}
+
 /**
- * Eye mode owns one interactive bake on .landing-bg. Hide (do not destroy) the scene-compose
- * layer so exit can reveal it under the peek frame without a rebuild flash. Restore bakeBg
- * onto the element while compose is hidden (compose had set backgroundImage to none).
+ * Eye mode owns .landing-bg. When the scene compositor is painting, keep it visible so the eye
+ * reuses the same bitmap/framing (hiding it and restoring CSS bakeBg was the HD jump). Otherwise
+ * fall back to an interactive CSS bake (hide compose if present; restore bakeBg).
  */
 function peekSuspendSceneLayer() {
   const bg = originsPeekBg();
-  if (!bg) return;
+  if (!bg) {
+    peekKeptCompose = false;
+    return;
+  }
+  const compose = bg.querySelector(":scope > .scene-compose");
+  const keepCompose = !!(
+    compose &&
+    !compose.hidden &&
+    typeof LOM !== "undefined" &&
+    LOM.SceneView?.enabled &&
+    typeof LOM.SceneView.getPlan === "function" &&
+    LOM.SceneView.getPlan()
+  );
+  peekKeptCompose = keepCompose;
+  if (keepCompose) {
+    LOM.SceneView.pauseBreathForUi?.();
+    /* No CSS bake under the plate – a second full background was a different crop/quality. */
+    if (bg.style.backgroundImage && bg.style.backgroundImage !== "none") {
+      bg.dataset.bakeBg = bg.style.backgroundImage;
+      bg.style.backgroundImage = "none";
+    }
+    return;
+  }
   bg.querySelectorAll(":scope > .scene-compose, :scope > .bg-particles").forEach((n) => {
     n.hidden = true;
   });
@@ -309,12 +344,47 @@ function peekSuspendSceneLayer() {
 }
 
 /**
+ * The eye opened on the CSS bake before the compositor existed (boot restore). Once the compositor
+ * mounts, the eye adopts it: same layers, parallax and particles as the resting view, no flat bake.
+ * The bake stays under until the first compositor layer is decoded, so there is no empty frame.
+ */
+function peekAdoptSceneCompose() {
+  const bg = originsPeekBg();
+  if (!bg || peekKeptCompose) return;
+  const compose = bg.querySelector(":scope > .scene-compose");
+  if (!compose || !LOM.SceneView?.getPlan?.()) return;
+  peekKeptCompose = true;
+  compose.hidden = false;
+  bg.querySelectorAll(":scope > .bg-particles").forEach((n) => {
+    n.hidden = false;
+  });
+  LOM.SceneView.pauseBreathForUi?.();
+  LOM.SceneView.relayout?.();
+  const t0 = performance.now();
+  const dropBake = () => {
+    if (!peekKeptCompose || !bg.isConnected) return;
+    const ready = (LOM.SceneView.getDebugInfo?.().entries || []).some((e) => e.ready);
+    if (!ready && performance.now() - t0 < 4000) {
+      requestAnimationFrame(dropBake);
+      return;
+    }
+    if (bg.style.backgroundImage && bg.style.backgroundImage !== "none") {
+      bg.dataset.bakeBg = bg.style.backgroundImage;
+      bg.style.backgroundImage = "none";
+    }
+  };
+  requestAnimationFrame(dropBake);
+}
+
+/**
  * Reveal the compositor after / under the eye. opts.underPeek: remount while is-peek is still
  * on, so the first post-exit paint is never an empty frame.
  */
 function peekResumeSceneLayer(opts) {
   const underPeek = !!(opts && opts.underPeek);
   const bg = originsPeekBg();
+  const kept = peekKeptCompose;
+  peekKeptCompose = false;
   if (bg) {
     bg.querySelectorAll(":scope > .scene-compose, :scope > .bg-particles").forEach((n) => {
       n.hidden = false;
@@ -325,11 +395,71 @@ function peekResumeSceneLayer(opts) {
       bg.style.backgroundImage = "none";
     }
   }
+  if (kept) LOM.SceneView?.resumeBreathForUi?.();
   if (typeof syncSceneCompose === "function") {
     syncSceneCompose(underPeek ? { underPeek: true } : undefined);
   } else if (typeof setPrologBg === "function") {
     setPrologBg();
   }
+}
+
+/**
+ * CSS-bake peek only: pick same-or-higher resolution URL, decode, then set backgroundImage
+ * before the cover canvas mounts (avoids a soft / differently cropped first paint).
+ */
+function peekPrepareBakeSource(bg) {
+  if (!bg || peekKeptCompose) return Promise.resolve();
+  const SD = typeof LOM !== "undefined" ? LOM.SceneDisplay : null;
+  const plate = peekScenePlateUrl();
+  const reusePlate = !!(plate && typeof scenePlateHasCastApplied !== "undefined" && scenePlateHasCastApplied);
+  const bakeUrl = peekBgUrl(bg);
+  const key = typeof prologBgKey === "function" ? prologBgKey() : null;
+  const cands =
+    typeof bakeCandidateUrls === "function" && key ? bakeCandidateUrls(key) : bakeUrl ? [bakeUrl] : [];
+  const vw = window.visualViewport?.width || window.innerWidth || 0;
+  const dpr = Math.min(window.devicePixelRatio || 1, (SD && SD.DPR_CAP) || 3);
+  /* Cover peek stretches the bake; match compositor zoom so HiDPI does not keep a soft tier. */
+  const zoom = Math.max(1, Number(peekPan?.scale) || 1);
+  const needWidth =
+    SD && typeof SD.displayedStageWidth === "function"
+      ? SD.displayedStageWidth(vw, zoom, 1) * dpr
+      : vw * dpr * zoom;
+  const picked =
+    SD && typeof SD.pickPeekImageSource === "function"
+      ? SD.pickPeekImageSource({
+          scenePlateUrl: plate,
+          reuseScenePlate: reusePlate,
+          bakeUrl,
+          bakeCandidates: cands,
+          needWidth,
+        })
+      : { url: reusePlate ? plate : bakeUrl || (cands[0] || null), via: reusePlate ? "scene-plate" : "bake" };
+  if (!picked || !picked.url) return Promise.resolve();
+  const url = picked.url;
+  const apply = () => {
+    if (!bg.isConnected) return;
+    bg.style.backgroundImage = `url("${url}")`;
+    if (bg.dataset) bg.dataset.bakeBg = `url("${url}")`;
+  };
+  if (typeof decodeBakeUrl === "function") {
+    return decodeBakeUrl(url).then(apply, apply);
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      apply();
+      resolve();
+    };
+    img.onerror = () => {
+      apply();
+      resolve();
+    };
+    img.src = url;
+    if (img.complete && img.naturalWidth) {
+      apply();
+      resolve();
+    }
+  });
 }
 
 /** Parsuje background-position na podíl 0–1 (center/left/… i %). */
@@ -367,9 +497,23 @@ function peekPanForFocus(ew, eh, vw, vh, focus) {
   };
 }
 
-function applyPeekTransform() {
+/** Snap pan translation to the device-pixel grid (idle only; avoids sub-pixel CSS resampling of the scene). */
+function snapPeekPanToDevicePixels() {
+  const SD = typeof LOM !== "undefined" ? LOM.SceneDisplay : null;
+  const dpr = Math.min(window.devicePixelRatio || 1, (SD && SD.DPR_CAP) || 3);
+  if (SD && typeof SD.snapCssToDevicePixel === "function") {
+    peekPan.x = SD.snapCssToDevicePixel(peekPan.x, dpr);
+    peekPan.y = SD.snapCssToDevicePixel(peekPan.y, dpr);
+  } else {
+    peekPan.x = Math.round(peekPan.x * dpr) / dpr;
+    peekPan.y = Math.round(peekPan.y * dpr) / dpr;
+  }
+}
+
+function applyPeekTransform(opts) {
   const bg = originsPeekBg();
   if (!bg) return;
+  if (opts && opts.snapPixels) snapPeekPanToDevicePixels();
   bg.style.transform = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
   LOM.SceneView?.setCamera?.(peekSceneCamera(), { snap: bootPoseSnap });
 }
@@ -444,7 +588,8 @@ function finishPeekCoverExit(scr, bg) {
 }
 
 function withPeekImageSize(bg, done) {
-  const url = peekBgUrl(bg);
+  /* Compose-kept peek has no CSS bake; measure the live plate (same aspect as the scene). */
+  const url = peekBgUrl(bg) || peekScenePlateUrl();
   if (!url) {
     done(0, 0);
     return;
@@ -549,7 +694,7 @@ function setPeekZoom(next, cx, cy) {
   peekPan.scale = scale;
   if (scale <= 1.01) peekPan.scale = 1;
   clampPeekPan();
-  applyPeekTransform();
+  applyPeekTransform({ snapPixels: true });
 }
 
 function showPeekHintOnce() {
@@ -728,10 +873,15 @@ function applyPrologCamera(animate = true) {
   /* The parallax camera is the picture's whole move (transform + background-position), not only the transform. */
   peekParallaxBias = pose.cam ? { x: pose.cam.x - pose.x, y: pose.cam.y - pose.y } : { x: 0, y: 0 };
   bg.style.transformOrigin = pose.origin || "center center";
-  applyPeekTransform();
-  /* After the camera tween settles, re-measure so the GL buffer matches the displayed (zoomed) size. */
-  if (ease > 0) LOM.SceneView?.scheduleSettleLayout?.(ease + 32);
-  else LOM.SceneView?.relayout?.();
+  /* After the camera tween settles, snap to device pixels and re-measure the GL buffer. */
+  if (ease > 0) {
+    applyPeekTransform();
+    LOM.SceneView?.scheduleSettleLayout?.(ease + 32);
+    setTimeout(() => applyPeekTransform({ snapPixels: true }), ease + 40);
+  } else {
+    applyPeekTransform({ snapPixels: true });
+    LOM.SceneView?.relayout?.();
+  }
 }
 
 function peekRestIdentity() {
@@ -914,7 +1064,14 @@ function enterPeekMode(opts = {}) {
     const { ew, eh } = peekFitSize(iw, ih, vw, vh);
     /* FLIP from the painted image (contain / auto 100% / half-plate), not the BG box. Re-read here, not a stale call-time value. */
     const fromBox = bg.getBoundingClientRect();
-    const from = peekDisplayedImageRect(fromBox, iw, ih, bg);
+    /*
+     * Compose-kept: the visible picture is the full plate (cover stage), not a CSS background-size
+     * crop of a missing bake – measuring via background would invent a wrong from-rect.
+     */
+    const from =
+      peekKeptCompose && iw > 0 && ih > 0
+        ? peekDisplayedImageRect(fromBox, iw, ih, { size: "cover", focus: peekFocus })
+        : peekDisplayedImageRect(fromBox, iw, ih, bg);
     /*
      * Prefer starting at the prologue camera pose (same crop/zoom). Zoom-out to the whole bake
      * is only by the user. If that pose cannot be represented on the cover canvas, fall back to
@@ -940,6 +1097,8 @@ function enterPeekMode(opts = {}) {
     scr.classList.add("is-peek-layout");
     void scr.offsetWidth;
     applyPeekCanvas(bg, ew, eh, vw, vh, { top, left }, { keepPan: seedKeep });
+    /* Cover canvas + live compose: force cover geometry (100% 100% would read as contain). */
+    if (peekKeptCompose) LOM.SceneView?.relayout?.();
     const endT = `translate(${peekPan.x}px, ${peekPan.y}px) scale(${peekPan.scale})`;
     let startT = endT;
     let motion = "fade";
@@ -985,15 +1144,23 @@ function enterPeekMode(opts = {}) {
     });
   });
   };
+  const kickCoverEnter = () => {
+    const go = () => {
+      if (gen !== peekEnterGen) return;
+      runCoverEnter();
+    };
+    /* Decode preferred bake before the first cover paint when not reusing the compositor. */
+    peekPrepareBakeSource(bg).then(go, go);
+  };
   /* Measure after layout (two frames at boot) so the cover canvas keeps bake aspect. */
   if (bootPoseSnap) {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         if (gen !== peekEnterGen) return;
-        runCoverEnter();
+        kickCoverEnter();
       })
     );
-  } else runCoverEnter();
+  } else kickCoverEnter();
 }
 
 function exitPeekMode() {
@@ -1226,6 +1393,8 @@ function initPrologPeekGestures() {
     if (pointers.size === 0) {
       dragging = false;
       bg.classList.remove("is-dragging");
+      clampPeekPan();
+      applyPeekTransform({ snapPixels: true });
       persistPeekEyeState(true);
       writeStorybookSession();
     } else if (pointers.size === 1) {
@@ -1259,7 +1428,7 @@ function initPrologPeekGestures() {
     if (peekPan.scale > 1.05) {
       peekPan.scale = 1;
       clampPeekPan();
-      applyPeekTransform();
+      applyPeekTransform({ snapPixels: true });
     } else {
       setPeekZoom(1.8, e.clientX, e.clientY);
     }

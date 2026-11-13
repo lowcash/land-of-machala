@@ -21,11 +21,14 @@ function castFreePlateUrls(shot, phase) {
   return [3840, 1920].map((w) => `${base}-${w}.avif`);
 }
 
-/** CSS width × dpr hint for picking 3840 vs 1920 (stage if mounted, else the window). */
+/**
+ * Displayed CSS width × dpr for picking 3840 vs 1920.
+ * Must include camera zoom and parallax overscan (bare stage box under-picks the soft 1920 tier on HiDPI).
+ */
 function sceneDisplayHint() {
   const stage = document.querySelector(".scene-compose-stage");
-  const cssW =
-    (stage && stage.clientWidth) ||
+  const boxW =
+    (stage && stage.classList.contains("is-sized") && stage.clientWidth) ||
     window.visualViewport?.width ||
     window.innerWidth ||
     0;
@@ -35,6 +38,12 @@ function sceneDisplayHint() {
     SD && typeof SD.pickDevicePixelRatio === "function"
       ? SD.pickDevicePixelRatio(window.devicePixelRatio || 1, cap)
       : Math.min(window.devicePixelRatio || 1, cap);
+  const zoom = (typeof peekPan !== "undefined" && Number(peekPan?.scale)) || 1;
+  const overscan = Number(LOM.SceneView?.getPlan?.()?.overscan) || 1;
+  const cssW =
+    SD && typeof SD.displayedStageWidth === "function"
+      ? SD.displayedStageWidth(boxW, zoom, overscan)
+      : boxW * Math.max(1, zoom) * Math.max(1, overscan);
   return { cssW, dpr };
 }
 
@@ -50,7 +59,9 @@ function syncSceneCompose(opts) {
   if (bootHold.held()) return;
   /* Eye mode owns the bake alone; remounting compose here would stack a second, non-draggable plate.
    * underPeek: exit path restores the scene under the still-visible peek frame (no empty paint). */
-  if (!(opts && opts.underPeek) && typeof isOriginsPeeking === "function" && isOriginsPeeking()) return;
+  /* Exception: the eye was restored at boot before the compositor ever mounted (Cmd+R in eye mode): mount it now and let the eye adopt it. */
+  const peekingNow = !(opts && opts.underPeek) && typeof isOriginsPeeking === "function" && isOriginsPeeking();
+  if (peekingNow && (peekKeptCompose || LOM.SceneView?.getPlan?.())) return;
   if (!LOM.SceneCompose || !LOM.SceneView?.enabled || !sceneDemo?.on) {
     if (LOM.SceneView && sceneDemo && !sceneDemo.on) LOM.SceneView.unmount();
     return;
@@ -257,6 +268,7 @@ function syncSceneCompose(opts) {
   updateSceneComposeReadout(plan);
   syncSceneSlotsIfStale();
   LOM.SceneView.setCamera?.(peekSceneCamera(), { snap: bootPoseSnap });
+  if (peekingNow && typeof peekAdoptSceneCompose === "function") peekAdoptSceneCompose();
 }
 
 function updateSceneComposeReadout(plan) {
@@ -375,7 +387,10 @@ function sceneShotHtml() {
   const items = CTL.cameraItems({ cameras, selected });
   return `${head}
     <div class="dev-scene-row">
-      <select id="dev-scene-shot" aria-label="Kamera místnosti: pozice a objekty">${CTL.presetSelectHtml(items, selected)}</select>
+      <span class="dev-cas-lbl" id="dev-scene-shot-lbl">Obraz</span>
+      <div class="dev-field-ctl">
+        <select id="dev-scene-shot" aria-label="Kamera místnosti: pozice a objekty" aria-labelledby="dev-scene-shot-lbl">${CTL.presetSelectHtml(items, selected)}</select>
+      </div>
     </div>
     <p class="dev-scene-readout" id="dev-scene-readout"></p>`;
 }
@@ -406,7 +421,7 @@ function sceneSlotsHtml() {
         .map((o) => `<option value="${o.char}" ${o.char === who ? "selected" : ""} ${o.ok ? "" : "disabled"}>${escapeHtml(o.label)}${o.ok ? "" : " (chybí výřez)"}</option>`)
         .join("");
       const shown = !!sceneDemo.show[sl.showKey];
-      return `<div class="dev-scene-slot" title="Pozice ${sl.id}: hloubka a pořadí patří pozici; jiná postava potřebuje výřez char-<postava>@${sl.id}">
+      return `<div class="dev-scene-slot">
         <label class="dev-scene-slot-show"><input type="checkbox" data-scene-show="${sl.showKey}" ${shown ? "checked" : ""}/> ${escapeHtml(CTL.slotTitle(sl))}</label>
         <span class="dev-scene-slot-ctl">
           <select data-scene-cast="${sl.id}" aria-label="Kdo stojí na pozici ${sl.n}">${optHtml}</select>
@@ -419,28 +434,71 @@ function sceneSlotsHtml() {
   return `${sceneSectionHeadHtml("Pozice (postavy)", "slots", DEV_RESET_TITLE)}<div class="dev-scene-slots">${rows}</div>`;
 }
 
-/** Čas a počasí: weather behind the window. A kind without its sky picture at this phase is "(chybí)" (disabled), never drawn. */
+/**
+ * One flat "Čas a počasí" section: unwrap nested Čas / Počasí details so the only header is the section title.
+ * Rows are Čas (phase select) and Počasí (weather select); no duplicate subsection labels.
+ */
+function flattenCasPocasiSection() {
+  const sec = document.querySelector('details.dev-sec[data-sec="cas"]');
+  if (!sec || sec.dataset.flatCas === "1") return;
+  const casSub = sec.querySelector(':scope > details.dev-sub[data-sub="cas"]');
+  const wxSub = sec.querySelector(':scope > details.dev-sub[data-sub="pocasi"]');
+  if (!casSub || !wxSub) return;
+  const wrap = document.createElement("div");
+  wrap.className = "dev-cas-pocasi";
+  const takeBody = (details) => {
+    [...details.childNodes].forEach((n) => {
+      if (n.nodeType === 1 && String(n.tagName).toLowerCase() === "summary") return;
+      wrap.appendChild(n);
+    });
+  };
+  takeBody(casSub);
+  takeBody(wxSub);
+  casSub.remove();
+  wxSub.remove();
+  sec.appendChild(wrap);
+  sec.dataset.flatCas = "1";
+}
+
+/** Místnost / Záběr: same left row class as Čas / Počasí (not centred column knobs). */
+function styleWorldKnobs() {
+  document.querySelectorAll('.dev-knobs[data-knob-sec="world"] > .dev-knob').forEach((lbl) => {
+    lbl.classList.add("dev-cas-row");
+  });
+}
+
+/** Slider-only Čas: drop the phase select if app.js still injected it; style Scéna knobs. */
+function revealCasPhaseKnob() {
+  if (typeof hidePhaseKnob === "function") hidePhaseKnob();
+  styleWorldKnobs();
+}
+
+/** Čas a počasí → Počasí row: always-selectable weather kinds (missing sky → clear fallback in plan). */
 function sceneWeatherHtml() {
   const SC = LOM.SceneCompose;
   if (!devPlaceAnchors().length) return "";
   const { phase } = devPlateKey();
   const wxOpts = SC.weatherOptions(phase);
   const wx = wxOpts.find((o) => o.id === (sceneDemo.weather || "clear")) || wxOpts[0];
-  return `<p class="dev-scene-label">Počasí</p>
-    <div class="dev-scene-row">
-      <select id="dev-scene-weather" aria-label="Počasí">${wxOpts
-        .map((o) => `<option value="${o.id}" ${o.id === wx.id ? "selected" : ""} ${o.ok ? "" : "disabled"}>${escapeHtml(o.label)}${o.ok ? "" : " (chybí)"}</option>`)
-        .join("")}</select>
-      ${wx.ok ? "" : `<span class="dev-scene-warn">chybí</span>`}
-    </div>`;
+  const kit = typeof UiKit !== "undefined" ? UiKit : null;
+  if (kit?.select) {
+    return `<div class="dev-cas-row"><span class="dev-cas-lbl" id="dev-weather-lbl">Počasí</span>${kit.select(
+      wxOpts.map((o) => ({ value: o.id, label: o.label, selected: o.id === wx.id })),
+      { attrs: { id: "dev-scene-weather", "aria-label": "Počasí", "aria-labelledby": "dev-weather-lbl" } }
+    )}</div>`;
+  }
+  return `<div class="dev-cas-row"><span class="dev-cas-lbl" id="dev-weather-lbl">Počasí</span>
+    <select id="dev-scene-weather" class="sel" aria-label="Počasí" aria-labelledby="dev-weather-lbl">${wxOpts
+      .map((o) => `<option value="${o.id}" ${o.id === wx.id ? "selected" : ""}>${escapeHtml(o.label)}</option>`)
+      .join("")}</select></div>`;
 }
 
-/* [key, label, step, format, hint]: the hint says what the knob changes and in which unit (tooltip). */
+/* [key, label, step, format] – labels only; no inline title hints. */
 const SCENE_TUNE_KNOBS = [
-  ["maxShiftPx", "Síla", 1, (v) => `${v} px`, "Síla parallaxu: o kolik pixelů (v obraze 1365 px) se posune nejbližší část scény při plném panu. 0 = bez posunu."],
-  ["fullPanFrac", "Dosah panu", 0.01, (v) => `${Math.round(v * 100)} %`, "Při jakém posunu kamery (v % šířky obrazu) dosáhne parallax plné síly. Menší číslo = citlivější."],
-  ["yScale", "Svislý posun", 0.05, (v) => `×${v.toFixed(2)}`, "Kolik z vodorovného posunu platí i svisle (1 = stejně, 0 = jen vodorovně)."],
-  ["charScale", "Hloubka postav", 0.1, (v) => `×${v.toFixed(1)}`, "Násobek hloubky postav (1 = podle dat; víc = postavy se při panu hýbou víc)."],
+  ["maxShiftPx", "Síla", 1, (v) => `${v} px`],
+  ["fullPanFrac", "Dosah panu", 0.01, (v) => `${Math.round(v * 100)} %`],
+  ["yScale", "Svislý posun", 0.05, (v) => `×${v.toFixed(2)}`],
+  ["charScale", "Hloubka postav", 0.1, (v) => `×${v.toFixed(1)}`],
 ];
 
 function sceneTuneDefaults() {
@@ -480,10 +538,10 @@ function resetSceneSection(sec) {
   writeStorybookSession();
 }
 
-function sceneTuneRowHtml([k, label, step, fmt, hint]) {
+function sceneTuneRowHtml([k, label, step, fmt]) {
   const [lo, hi] = LOM.SceneCompose.PARALLAX_LIMITS[k];
   const v = sceneDemo.tune[k];
-  return `<label class="dev-knob dev-range" title="${hint}">${label}
+  return `<label class="dev-knob dev-range">${label}
         <input type="range" data-scene-tune="${k}" min="${lo}" max="${hi}" step="${step}" value="${v}" />
         <output>${fmt(v)}</output></label>`;
 }
@@ -500,19 +558,19 @@ function sceneEffectsHtml() {
   <div class="dev-fx" data-fx="parallax">
     <div class="dev-fx-head">
       <button type="button" class="dev-fx-toggle" data-scene-fx-open aria-expanded="${open}" aria-controls="dev-fx-parallax">Parallax</button>
-      <label class="dev-fx-on" title="Zapnout / vypnout parallax (vypnuto = pevný obraz)"><input type="checkbox" data-scene-fx="parallax" ${fx.parallax !== false ? "checked" : ""}/> zapnuto</label>
+      <label class="dev-fx-on"><input type="checkbox" data-scene-fx="parallax" ${fx.parallax !== false ? "checked" : ""}/> zapnuto</label>
     </div>
     <div class="dev-fx-body" id="dev-fx-parallax" ${open ? "" : "hidden"}>
       ${rows}
-      <label class="dev-knob dev-range" title="Průhlednost hloubkové mapy přes obraz (tlačítko Hloubka)">Průhl. hloubky
+      <label class="dev-knob dev-range">Průhl. hloubky
         <input type="range" id="dev-scene-depth-op" min="0.1" max="1" step="0.05" value="${sceneDemo.depthOp}" aria-label="Průhlednost hloubkové mapy" />
         <output>${Math.round(sceneDemo.depthOp * 100)} %</output></label>
       <div class="dev-scene-row">
-        <button type="button" class="dev-btn" data-scene-dbg="depth" title="Přes obraz se ukáže mapa hloubky: modrá = daleko (nehýbe se), červená = blízko (hýbe se nejvíc)">Hloubka</button>
-        <button type="button" class="dev-btn" data-scene-dbg="split" title="Vlevo obraz bez parallaxu (A), vpravo s parallaxem (B), dělicí čára uprostřed">Půlit A | B</button>
-        <button type="button" class="dev-btn" data-scene-dbg="sweep" title="Kamera se sama kolébe z jednoho plného panu do druhého (perioda 4 s)">Kývat</button>
-        <button type="button" class="dev-btn" data-scene-hold="-1" title="Podržet plný pan vlevo">Držet vlevo</button>
-        <button type="button" class="dev-btn" data-scene-hold="1" title="Podržet plný pan vpravo">Držet vpravo</button>
+        <button type="button" class="dev-btn" data-scene-dbg="depth">Hloubka</button>
+        <button type="button" class="dev-btn" data-scene-dbg="split">Půlit A | B</button>
+        <button type="button" class="dev-btn" data-scene-dbg="sweep">Kývat</button>
+        <button type="button" class="dev-btn" data-scene-hold="-1">Držet vlevo</button>
+        <button type="button" class="dev-btn" data-scene-hold="1">Držet vpravo</button>
       </div>
       <p class="dev-scene-readout" id="dev-scene-probes"></p>
     </div>
@@ -676,6 +734,9 @@ function onSceneComposeClick(e) {
 
 function initSceneComposeDemo() {
   if (!LOM.SceneCompose || !LOM.SceneControls || !$("dev-scene-compose")) return;
+  flattenCasPocasiSection();
+  revealCasPhaseKnob();
+  styleWorldKnobs();
   /* Always on in Scéna (disable only with ?compose=0). Parallax comes with it. */
   sceneDemo = {
     on: true,
